@@ -28,6 +28,12 @@ importers:
 
   apps/web: {}
 
+  apps/worker: {}
+
+  packages/db: {}
+
+  packages/rules: {}
+
   packages/shared: {}
 
 packages:
