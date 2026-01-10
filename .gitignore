@@ -1,3 +1,9 @@
+# User added (from remote merge)
+.DS_Store
+*.pem
+.vercel
+next-env.d.ts
+
 # Logs
 logs
 *.log
