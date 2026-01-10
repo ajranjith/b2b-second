@@ -1,2 +1,2 @@
 # b2b-second
-my b2b page
+B2B dealer and admin portal.
