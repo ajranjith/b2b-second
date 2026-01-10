@@ -1,0 +1,9 @@
+{
+    "name": "worker",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "node src/index.js",
+        "start": "node src/index.js"
+    }
+}
