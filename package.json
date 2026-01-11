@@ -3,14 +3,18 @@
     "private": true,
     "scripts": {
         "build": "turbo run build",
-        "dev": "turbo run dev",
+        "dev": "pnpm dev:deps && pnpm db:migrate && pnpm db:seed && concurrently \"pnpm -C apps/api dev\" \"pnpm -C apps/web dev\"",
         "lint": "turbo run lint",
         "dev:deps": "docker compose -f infra/docker/docker-compose.yml up -d",
         "dev:deps:down": "docker compose -f infra/docker/docker-compose.yml down",
+        "db:migrate": "pnpm --filter db prisma migrate dev",
+        "db:seed": "pnpm --filter db prisma db seed",
+        "imports:all": "pnpm --filter worker run import:genuine && pnpm --filter worker run import:aftermarket && pnpm --filter worker run import:backorders",
         "format": "prettier -w ."
     },
     "devDependencies": {
         "@types/node": "^20.0.0",
+        "concurrently": "^9.2.1",
         "eslint": "^8.0.0",
         "prettier": "^3.7.4",
         "turbo": "^2.0.0",
