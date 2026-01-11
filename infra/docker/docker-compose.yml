@@ -1,44 +1,22 @@
-version: '3.8'
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:16
+    container_name: hotbray_postgres
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
       POSTGRES_DB: hotbray
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  pgadmin:
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: password
-    ports:
-      - "8080:80"
-    depends_on:
-      - postgres
+      - hotbray_pgdata:/var/lib/postgresql/data
 
   mailhog:
-    image: mailhog/mailhog
+    image: mailhog/mailhog:latest
+    container_name: hotbray_mailhog
     ports:
-      - "1025:1025"
       - "8025:8025"
-
-  minio:
-    image: minio/minio
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio_data:/data
+      - "1025:1025"
 
 volumes:
-  postgres_data:
-  minio_data:
+  hotbray_pgdata:

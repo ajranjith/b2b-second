@@ -1,0 +1,467 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  DEALER
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  OPS
+}
+
+enum DealerStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum PartType {
+  GENUINE
+  AFTERMARKET
+  BRANDED
+}
+
+enum ImportType {
+  PRODUCTS_GENUINE
+  PRODUCTS_AFTERMARKET
+  BACKORDERS
+  SUPERSESSION
+  FULFILLMENT_STATUS
+}
+
+enum ImportStatus {
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  SUCCEEDED_WITH_ERRORS
+}
+
+enum OrderStatus {
+  SUSPENDED
+  PROCESSING
+  SHIPPED
+  CANCELLED
+}
+
+enum ActorType {
+  ADMIN
+  DEALER
+  SYSTEM
+}
+
+model AppUser {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String
+  role         UserRole
+  adminRole    AdminRole?
+  isActive     Boolean    @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  dealerUser    DealerUser?
+  importBatches ImportBatch[] @relation("ImportBatchesUploadedBy")
+  auditLogs     AuditLog[]
+}
+
+model DealerAccount {
+  id          String       @id @default(uuid())
+  accountNo   String       @unique
+  companyName String
+  status      DealerStatus @default(ACTIVE)
+  mainEmail   String?
+  phone       String?
+
+  billingLine1    String?
+  billingLine2    String?
+  billingCity     String?
+  billingPostcode String?
+  billingCountry  String?
+
+  dispatchDefault String?
+
+  users           DealerUser[]
+  bandAssignments DealerBandAssignment[]
+  carts           Cart[]
+  orders          OrderHeader[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DealerUser {
+  id              String   @id @default(uuid())
+  dealerAccountId String
+  userId          String   @unique
+  isPrimary       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  dealerAccount DealerAccount @relation(fields: [dealerAccountId], references: [id], onDelete: Cascade)
+  user          AppUser       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  cart   Cart?
+  orders OrderHeader[]
+}
+
+model DealerBandAssignment {
+  id              String   @id @default(uuid())
+  dealerAccountId String
+  partType        PartType
+  bandCode        String
+  updatedAt       DateTime @updatedAt
+
+  dealerAccount DealerAccount @relation(fields: [dealerAccountId], references: [id], onDelete: Cascade)
+
+  // @@unique([dealerAccountId, partType])
+  // @@index([dealerAccountId, partType])
+}
+
+model Product {
+  id           String   @id @default(uuid())
+  productCode  String   @unique
+  supplier     String?
+  description  String
+  discountCode String?
+  partType     PartType
+  isActive     Boolean  @default(true)
+
+  landRoverNo String?
+  jaguarNo    String?
+
+  stock      ProductStock?
+  refPrice   ProductPriceReference?
+  bandPrices ProductPriceBand[]
+  aliases    ProductAlias[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // @@index([partType, isActive])
+  cartItems  CartItem[]
+  orderLines OrderLine[]
+}
+
+model ProductStock {
+  productId         String   @id
+  freeStock         Int      @default(0)
+  lastImportBatchId String?
+  updatedAt         DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductPriceReference {
+  productId         String   @id
+  costPrice         Decimal?
+  retailPrice       Decimal?
+  tradePrice        Decimal?
+  listPrice         Decimal?
+  minimumPrice      Decimal?
+  lastImportBatchId String?
+  updatedAt         DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductPriceBand {
+  id        String   @id @default(uuid())
+  productId String
+  bandCode  String
+  price     Decimal
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, bandCode])
+  @@index([productId, bandCode])
+}
+
+model ProductAlias {
+  id         String @id @default(uuid())
+  productId  String
+  aliasType  String
+  aliasValue String
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([aliasType, aliasValue])
+  @@index([aliasValue])
+}
+
+model ImportBatch {
+  id          String       @id @default(uuid())
+  importType  ImportType
+  fileName    String
+  fileHash    String
+  filePath    String?
+  status      ImportStatus @default(PROCESSING)
+  startedAt   DateTime     @default(now())
+  completedAt DateTime?
+  totalRows   Int          @default(0)
+  validRows   Int          @default(0)
+  invalidRows Int          @default(0)
+
+  uploadedById String?
+  uploadedBy   AppUser? @relation("ImportBatchesUploadedBy", fields: [uploadedById], references: [id])
+
+  errors            ImportError[]
+  stgProducts       StgProductPriceRow[]
+  stgBackorders     StgBackorderRow[]
+  backorderDatasets BackorderDataset[]
+}
+
+model ImportError {
+  id           String   @id @default(uuid())
+  batchId      String
+  rowNumber    Int
+  columnName   String?
+  errorCode    String?
+  errorMessage String
+  rawRowJson   Json?
+  createdAt    DateTime @default(now())
+
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+}
+
+model StgProductPriceRow {
+  batchId      String
+  rowNumber    Int
+  partType     PartType
+  supplier     String?
+  productCode  String?
+  description  String?
+  discountCode String?
+
+  costPrice   Decimal?
+  retailPrice Decimal?
+  tradePrice  Decimal?
+  listPrice   Decimal?
+  band1Price  Decimal?
+  band2Price  Decimal?
+  band3Price  Decimal?
+  band4Price  Decimal?
+  freeStock   Int?
+
+  isValid          Boolean @default(false)
+  validationErrors String?
+  rawRowJson       Json?
+
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@id([batchId, rowNumber])
+  @@index([batchId, isValid])
+}
+
+model StgBackorderRow {
+  batchId   String
+  rowNumber Int
+
+  accountNo    String?
+  customerName String?
+  yourOrderNo  String?
+  ourNo        String?
+  itemNo       String?
+  part         String?
+  description  String?
+
+  qtyOrdered     Int?
+  qtyOutstanding Int?
+  inWh           Int?
+
+  isValid          Boolean @default(false)
+  validationErrors String?
+  rawRowJson       Json?
+
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@id([batchId, rowNumber])
+  @@index([batchId, isValid])
+}
+
+model BackorderDataset {
+  id         String       @id @default(uuid())
+  batchId    String
+  status     ImportStatus
+  isActive   Boolean      @default(false)
+  uploadedAt DateTime     @default(now())
+
+  batch ImportBatch     @relation(fields: [batchId], references: [id])
+  lines BackorderLine[]
+
+  @@index([isActive])
+}
+
+model BackorderLine {
+  id        String @id @default(uuid())
+  datasetId String
+
+  accountNo    String
+  customerName String?
+  yourOrderNo  String?
+  ourNo        String
+  itemNo       String
+  part         String
+  description  String?
+
+  qtyOrdered     Int @default(0)
+  qtyOutstanding Int @default(0)
+  inWh           Int @default(0)
+
+  dataset BackorderDataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  @@index([accountNo])
+  @@index([datasetId])
+}
+
+model Cart {
+  id              String   @id @default(uuid())
+  dealerAccountId String
+  dealerUserId    String   @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  dealerAccount DealerAccount @relation(fields: [dealerAccountId], references: [id])
+  dealerUser    DealerUser    @relation(fields: [dealerUserId], references: [id], onDelete: Cascade)
+  items         CartItem[]
+}
+
+model CartItem {
+  id        String @id @default(uuid())
+  cartId    String
+  productId String
+  qty       Int
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId])
+  @@index([cartId])
+}
+
+model OrderHeader {
+  id              String      @id @default(uuid())
+  orderNo         String      @unique
+  dealerAccountId String
+  dealerUserId    String
+  status          OrderStatus @default(SUSPENDED)
+
+  dispatchMethod String?
+  poRef          String?
+  notes          String?
+
+  subtotal Decimal @default(0)
+  total    Decimal @default(0)
+  currency String  @default("GBP")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dealerAccount DealerAccount @relation(fields: [dealerAccountId], references: [id])
+  dealerUser    DealerUser    @relation(fields: [dealerUserId], references: [id])
+  lines         OrderLine[]
+  // @@index([status, createdAt])
+
+  @@index([dealerAccountId, createdAt])
+}
+
+model OrderLine {
+  id        String @id @default(uuid())
+  orderId   String
+  productId String
+
+  productCodeSnapshot String
+  descriptionSnapshot String
+  partTypeSnapshot    PartType
+
+  qty               Int
+  unitPriceSnapshot Decimal
+  bandCodeSnapshot  String
+  minPriceApplied   Boolean @default(false)
+
+  // optional fulfillment fields for future
+  lineStatus         String?
+  shippedQty         Int       @default(0)
+  backorderedQty     Int       @default(0)
+  trackingNo         String?
+  etaDate            DateTime?
+  lastStatusUpdateAt DateTime?
+
+  order   OrderHeader @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product     @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+}
+
+model SystemSetting {
+  key       String   @id
+  valueJson Json
+  updatedAt DateTime @updatedAt
+}
+
+model NewsPost {
+  id          String    @id @default(uuid())
+  title       String
+  bodyMd      String
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model ExclusiveDoc {
+  id         String   @id @default(uuid())
+  title      String
+  blobPath   String
+  mimeType   String
+  isActive   Boolean  @default(true)
+  uploadedAt DateTime @default(now())
+}
+
+model ExternalLink {
+  id        String   @id @default(uuid())
+  label     String
+  url       String
+  isActive  Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+}
+
+model ContentAttachment {
+  id             String   @id @default(uuid())
+  newsPostId     String?
+  exclusiveDocId String?
+  fileName       String
+  blobPath       String
+  mimeType       String
+  sizeBytes      BigInt   @default(0)
+  uploadedAt     DateTime @default(now())
+
+  // NOTE: Prisma can't enforce XOR constraint directly; enforce in app validation.
+}
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  actorType   ActorType
+  actorUserId String?
+  action      String
+  entityType  String
+  entityId    String?
+  beforeJson  Json?
+  afterJson   Json?
+  ipAddress   String?
+  createdAt   DateTime  @default(now())
+
+  actorUser AppUser? @relation(fields: [actorUserId], references: [id])
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+}

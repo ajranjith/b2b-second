@@ -4,6 +4,24 @@
     "private": true,
     "scripts": {
         "dev": "node src/index.js",
-        "start": "node src/index.js"
+        "start": "node src/index.js",
+        "import:genuine": "ts-node src/importProducts.ts --type=GENUINE --file=../../samples/Genuine_parts.xlsx",
+        "import:aftermarket": "ts-node src/importProducts.ts --type=AFTERMARKET --file=../../samples/aftermarket_parts.xlsx",
+        "import:backorders": "ts-node src/importBackorders.ts --file=../../samples/backorders.csv"
+    },
+    "dependencies": {
+        "@prisma/adapter-pg": "^7.2.0",
+        "@prisma/client": "^7.2.0",
+        "csv-parse": "^6.1.0",
+        "dotenv": "^17.2.3",
+        "pg": "^8.16.3",
+        "xlsx": "^0.18.5",
+        "zod": "^4.3.5"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "@types/pg": "^8.16.0",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.0.0"
     }
 }
