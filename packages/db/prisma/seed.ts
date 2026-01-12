@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient, UserRole, AdminRole, DealerStatus, PartType } from '@prisma/client';
+import { PrismaClient, UserRole, AdminRole, DealerStatus, PartType, Entitlement } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const connectionString = process.env.DATABASE_URL!;
@@ -44,12 +44,20 @@ async function main() {
             update: {
                 companyName: 'Test Dealer Ltd',
                 status: DealerStatus.ACTIVE,
+                entitlement: Entitlement.SHOW_ALL,
+                erpAccountNo: 'ERP001',
+                contactFirstName: 'John',
+                contactLastName: 'Smith',
                 mainEmail: 'dealer@test.com'
             },
             create: {
                 accountNo: 'DEAL001',
                 companyName: 'Test Dealer Ltd',
                 status: DealerStatus.ACTIVE,
+                entitlement: Entitlement.SHOW_ALL,
+                erpAccountNo: 'ERP001',
+                contactFirstName: 'John',
+                contactLastName: 'Smith',
                 mainEmail: 'dealer@test.com'
             }
         });
@@ -85,7 +93,9 @@ async function main() {
                 data: {
                     dealerAccountId: dealerAccount.id,
                     userId: dealerAppUser.id,
-                    isPrimary: true
+                    isPrimary: true,
+                    firstName: 'John',
+                    lastName: 'Smith'
                 }
             });
             console.log(`✅ Dealer user linked to account`);
@@ -133,12 +143,46 @@ async function main() {
             }
         }
 
+        // 5. Create Upload Templates
+        console.log('\n📄 Creating upload templates...');
+
+        const templates = [
+            {
+                templateName: 'GENUINE_PARTS',
+                fileName: 'Genuine_parts_template.xlsx',
+                blobPath: 'samples/Genuine_parts_template.xlsx',
+                description: 'Template for uploading genuine parts pricing and stock data'
+            },
+            {
+                templateName: 'AFTERMARKET_PARTS',
+                fileName: 'Aftermarket_parts_template.xlsx',
+                blobPath: 'samples/Aftermarket_parts_template.xlsx',
+                description: 'Template for uploading aftermarket parts pricing and stock data'
+            },
+            {
+                templateName: 'BACKORDERS',
+                fileName: 'Backorders_template.csv',
+                blobPath: 'samples/Backorders_template.csv',
+                description: 'Template for uploading backorder information'
+            }
+        ];
+
+        for (const template of templates) {
+            await prisma.uploadTemplate.upsert({
+                where: { templateName: template.templateName },
+                update: template,
+                create: template
+            });
+            console.log(`✅ Upload template created: ${template.templateName}`);
+        }
+
         console.log('\n✅ Seed completed successfully!');
         console.log('\n📊 Summary:');
         console.log(`   - Admin user: admin@hotbray.com (password: Admin123!)`);
-        console.log(`   - Dealer account: DEAL001 - Test Dealer Ltd`);
+        console.log(`   - Dealer account: DEAL001 - Test Dealer Ltd (John Smith)`);
         console.log(`   - Dealer user: dealer@test.com (password: Dealer123!)`);
         console.log(`   - Band assignments: GENUINE=1, AFTERMARKET=2, BRANDED=3`);
+        console.log(`   - Upload templates: 3 templates created`);
         console.log('\n💡 You can run this seed script multiple times safely (idempotent).');
 
     } catch (error) {

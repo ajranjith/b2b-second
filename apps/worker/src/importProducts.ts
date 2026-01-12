@@ -147,7 +147,7 @@ async function main() {
     // Create import batch
     console.log('\n📝 Creating import batch...');
     const importType = type === 'GENUINE' ? ImportType.PRODUCTS_GENUINE : ImportType.PRODUCTS_AFTERMARKET;
-    const partType = type === 'GENUINE' ? PartType.GENUINE : PartType.AFTERMARKET;
+    const partType = type === 'GENUINE' ? PartType.GENUINE : (type === 'BRANDED' ? PartType.BRANDED : PartType.AFTERMARKET);
 
     const batch = await prisma.importBatch.create({
         data: {
@@ -358,6 +358,23 @@ async function main() {
         });
 
         console.log(`\n📊 Import batch ${batch.id} completed with status: ${finalStatus}`);
+
+        // Generate Validation Report
+        const report = {
+            total: validCount,
+            genuine: partType === PartType.GENUINE ? validCount : 0,
+            aftermarket: partType === PartType.AFTERMARKET ? validCount : 0,
+            branded: partType === PartType.BRANDED ? validCount : 0
+        };
+
+        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('📊 FINAL IMPORT REPORT');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log(`Total Products: ${report.total}`);
+        console.log(`- GENUINE:     ${report.genuine}`);
+        console.log(`- AFTERMARKET: ${report.aftermarket}`);
+        console.log(`- BRANDED:     ${report.branded}`);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
     } catch (error) {
         console.error('\n❌ Import failed:', error);

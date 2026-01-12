@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { prisma } from 'db';
-import { PricingService } from 'rules';
+import { prisma, PartType, Entitlement, DealerStatus } from 'db';
+import { PricingService, EntitlementError } from 'rules';
 import { requireAuth, AuthenticatedRequest } from '../lib/auth';
 
 // Initialize PricingService
@@ -10,14 +10,17 @@ import { requireAuth, AuthenticatedRequest } from '../lib/auth';
 const pricingService = new PricingService(prisma);
 
 const dealerRoutes: FastifyPluginAsync = async (server) => {
-    // GET /dealer/search - Search products with dealer pricing
+    // GET /dealer/search - Search products with dealer pricing & entitlement filtering
     server.get('/search', {
         preHandler: requireAuth
     }, async (request: AuthenticatedRequest, reply) => {
-        // Validate query parameters
+        // 1. Validate query parameters
         const querySchema = z.object({
             q: z.string().min(1).optional(),
-            limit: z.string().transform(val => parseInt(val, 10)).pipe(z.number().int().min(1).max(100)).optional().default(20)
+            limit: z.coerce.number().int().min(1).max(100).optional().default(20),
+            partType: z.nativeEnum(PartType).optional(),
+            inStockOnly: z.preprocess((val) => val === 'true' || val === true, z.boolean()).optional(),
+            sortBy: z.enum(['price', 'code', 'stock']).optional()
         });
 
         const validation = querySchema.safeParse(request.query);
@@ -30,79 +33,91 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
             });
         }
 
-        const { q, limit } = validation.data;
+        const { q, limit, partType, inStockOnly, sortBy } = validation.data;
 
-        // Ensure user is authenticated and is a dealer
-        if (!request.user) {
-            return reply.status(401).send({
-                error: 'Unauthorized',
-                message: 'Authentication required'
+        // 2. Ensure user is authenticated and is a dealer
+        if (!request.user || request.user.role !== 'DEALER' || !request.user.dealerAccountId) {
+            return reply.status(request.user?.role !== 'DEALER' ? 403 : 401).send({
+                error: request.user?.role !== 'DEALER' ? 'Forbidden' : 'Unauthorized',
+                message: 'Dealer access required'
             });
         }
 
-        if (request.user.role !== 'DEALER') {
-            return reply.status(403).send({
-                error: 'Forbidden',
-                message: 'This endpoint is only accessible to dealers'
-            });
-        }
-
-        if (!request.user.dealerAccountId) {
-            return reply.status(400).send({
-                error: 'Bad Request',
-                message: 'Dealer account ID not found'
-            });
-        }
+        const dealerAccountId = request.user.dealerAccountId;
 
         try {
-            // Build search query
-            const searchConditions = q ? {
-                OR: [
-                    {
-                        productCode: {
-                            contains: q,
-                            mode: 'insensitive' as const
-                        }
-                    },
-                    {
-                        description: {
-                            contains: q,
-                            mode: 'insensitive' as const
-                        }
-                    },
-                    {
-                        aliases: {
-                            some: {
-                                aliasValue: {
-                                    contains: q,
-                                    mode: 'insensitive' as const
-                                }
-                            }
-                        }
-                    }
-                ]
-            } : {};
+            // 3. Look up DealerAccount for Status & Entitlement
+            const dealerAccount = await prisma.dealerAccount.findUnique({
+                where: { id: dealerAccountId },
+                select: { status: true, entitlement: true, companyName: true }
+            });
 
-            // Search products
+            if (!dealerAccount) {
+                return reply.status(404).send({ error: 'Not Found', message: 'Dealer account not found' });
+            }
+
+            // CHECK STATUS
+            if (dealerAccount.status === DealerStatus.INACTIVE) {
+                return reply.status(403).send({ error: 'Forbidden', message: 'Account inactive' });
+            }
+            // SUSPENDED or ACTIVE can proceed, but UI should show notice for SUSPENDED
+
+            // 4. Build PRISMA Where Conditions
+            const where: any = {
+                isActive: true
+            };
+
+            // Apply Search Query
+            if (q) {
+                where.OR = [
+                    { productCode: { contains: q, mode: 'insensitive' } },
+                    { description: { contains: q, mode: 'insensitive' } },
+                    { aliases: { some: { aliasValue: { contains: q, mode: 'insensitive' } } } }
+                ];
+            }
+
+            // Apply ENTITLEMENT FILTER
+            if (dealerAccount.entitlement === Entitlement.GENUINE_ONLY) {
+                where.partType = PartType.GENUINE;
+            } else if (dealerAccount.entitlement === Entitlement.AFTERMARKET_ONLY) {
+                // Anything EXCEPT Genuine
+                where.partType = { not: PartType.GENUINE };
+            }
+            // SHOW_ALL has no additional filter
+
+            // Apply Optional partType filter (narrowing down)
+            if (partType) {
+                where.partType = partType;
+            }
+
+            // Apply inStockOnly filter
+            if (inStockOnly) {
+                where.stock = { freeStock: { gt: 0 } };
+            }
+
+            // 5. Handle Sorting
+            let orderBy: any = { productCode: 'asc' }; // Default
+            if (sortBy === 'code') orderBy = { productCode: 'asc' };
+            if (sortBy === 'stock') orderBy = { stock: { freeStock: 'desc' } };
+            // Note: global sortBy price is omitted due to architecture (per-dealer bands), but sorted in memory below for the page.
+
+            // 6. Search Products
             const products = await prisma.product.findMany({
-                where: {
-                    isActive: true,
-                    ...searchConditions
-                },
+                where,
                 include: {
                     stock: true,
                     aliases: true
                 },
-                take: limit
+                take: limit,
+                orderBy
             });
 
-            // Get pricing for each product
+            // 7. Get pricing for each product
             const results = await Promise.all(
                 products.map(async (product) => {
                     try {
-                        // Calculate dealer-specific price
                         const pricing = await pricingService.calculatePrice(
-                            request.user!.dealerAccountId!,
+                            dealerAccountId,
                             product.productCode,
                             1
                         );
@@ -112,38 +127,45 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
                             productCode: product.productCode,
                             description: product.description,
                             partType: product.partType,
-                            supplier: product.supplier,
                             freeStock: product.stock?.freeStock || 0,
                             yourPrice: pricing.unitPrice,
                             bandCode: pricing.bandCode,
-                            minPriceApplied: pricing.minPriceApplied,
+                            available: pricing.available,
                             currency: pricing.currency
                         };
                     } catch (error) {
-                        // Handle pricing errors gracefully
-                        server.log.warn(`Pricing error for product ${product.productCode}:`, error);
+                        if (error instanceof EntitlementError) return null; // Filter out if calculatePrice catches an edge case
 
+                        server.log.warn(`Pricing error for product ${product.productCode}:`, error);
                         return {
                             id: product.id,
                             productCode: product.productCode,
                             description: product.description,
                             partType: product.partType,
-                            supplier: product.supplier,
                             freeStock: product.stock?.freeStock || 0,
                             yourPrice: null,
                             bandCode: null,
-                            minPriceApplied: false,
-                            currency: 'GBP',
+                            available: false,
                             priceError: 'Price unavailable'
                         };
                     }
                 })
             );
 
+            // Filter out any nulls (from EntitlementError) and mask sensitive info
+            let filteredResults = results.filter(r => r !== null) as any[];
+
+            // In-memory sort by price if requested (only for current page)
+            if (sortBy === 'price') {
+                filteredResults.sort((a, b) => (a.yourPrice || 0) - (b.yourPrice || 0));
+            }
+
             return reply.status(200).send({
-                results,
-                count: results.length,
-                query: q || null
+                results: filteredResults,
+                count: filteredResults.length,
+                query: q || null,
+                entitlement: dealerAccount.entitlement,
+                status: dealerAccount.status
             });
 
         } catch (error) {
@@ -848,6 +870,27 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
         }
 
         try {
+            // 0. CHECK DEALER STATUS
+            const dealerAccount = await prisma.dealerAccount.findUnique({
+                where: { id: request.user.dealerAccountId },
+                select: { status: true }
+            });
+
+            if (!dealerAccount) {
+                return reply.status(404).send({ error: 'Not Found', message: 'Dealer account not found' });
+            }
+
+            if (dealerAccount.status === DealerStatus.SUSPENDED) {
+                return reply.status(403).send({
+                    error: 'Forbidden',
+                    message: 'Account suspended. Cannot place order. Please contact customer service team.'
+                });
+            }
+
+            if (dealerAccount.status === DealerStatus.INACTIVE) {
+                return reply.status(403).send({ error: 'Forbidden', message: 'Account inactive' });
+            }
+
             // Find dealer user
             const dealerUser = await prisma.dealerUser.findUnique({
                 where: { userId: request.user.userId }

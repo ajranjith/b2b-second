@@ -2,7 +2,9 @@
     "name": "rules",
     "version": "0.0.0",
     "main": "./src/index.ts",
-    "types": "./src/index.ts",
+    "scripts": {
+        "test": "vitest run"
+    },
     "dependencies": {
         "@prisma/adapter-pg": "^7.2.0",
         "@prisma/client": "^7.2.0",

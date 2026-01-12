@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import multipart from '@fastify/multipart';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
@@ -25,19 +26,39 @@ const server = Fastify({
 
 // Register CORS
 server.register(cors, {
-    origin: ['http://localhost:3000', 'http://localhost:3001'],
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    credentials: true
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true,
+    exposedHeaders: ['set-cookie']
+});
+
+// Register Multipart
+server.register(multipart, {
+    limits: {
+        fileSize: 10 * 1024 * 1024 // 10MB
+    }
+});
+
+// Process-level error handling to catch unexpected crashes
+process.on('uncaughtException', (err: Error) => {
+    console.error('CRITICAL: Uncaught Exception:', err.message);
+    console.error(err.stack);
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason: unknown) => {
+    console.error('CRITICAL: Unhandled Rejection at:', reason);
 });
 
 // Global error handler
-server.setErrorHandler((error, request, reply) => {
-    server.log.error(error);
+server.setErrorHandler((err: Error, request, reply) => {
+    server.log.error(err);
 
-    reply.status(error.statusCode || 500).send({
+    reply.status((err as any).statusCode || 500).send({
         error: {
-            message: error.message || 'Internal Server Error',
-            statusCode: error.statusCode || 500
+            message: err.message || 'Internal Server Error',
+            statusCode: (err as any).statusCode || 500
         }
     });
 });
@@ -58,11 +79,11 @@ const registerRoutes = async () => {
         await server.register(import('./routes/dealer'), { prefix: '/dealer' });
 
         // Admin routes
-        // await server.register(import('./routes/admin'), { prefix: '/admin' });
+        await server.register(import('./routes/admin'), { prefix: '/admin' });
 
         server.log.info('Routes registered successfully');
-    } catch (error) {
-        server.log.error('Error registering routes:', error);
+    } catch (error: any) {
+        server.log.error('Error registering routes: ' + (error?.message || String(error)));
         throw error;
     }
 };

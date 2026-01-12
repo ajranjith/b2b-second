@@ -1,6 +1,12 @@
+import { PrismaClient, PartType, Prisma, Entitlement } from '@prisma/client';
 
-import { PrismaClient, PartType, Prisma } from '@prisma/client';
-import { z } from 'zod';
+// Export EntitlementError as requested
+export class EntitlementError extends Error {
+    constructor(message: string = "Product not available") {
+        super(message);
+        this.name = "EntitlementError";
+    }
+}
 
 // Export PriceResult type as required
 export interface PriceResult {
@@ -14,11 +20,47 @@ export interface PriceResult {
     unitPrice: number;
     totalPrice: number;
     currency: string;
+    available: boolean; // NEW: based on entitlement check
 }
 
 // We accept a Prisma Client instance to allow dependency injection / reuse
 export class PricingService {
     constructor(private prisma: PrismaClient) { }
+
+    /**
+     * Checks if a dealer is entitled to view a product based on its part type.
+     */
+    async canDealerViewProduct(dealerAccountId: string, partType: PartType): Promise<boolean> {
+        const dealer = await this.prisma.dealerAccount.findUnique({
+            where: { id: dealerAccountId },
+            select: { entitlement: true }
+        });
+
+        if (!dealer) {
+            throw new Error(`Dealer account not found: ${dealerAccountId}`);
+        }
+
+        const entitlement = dealer.entitlement;
+
+        // Entitlement Logic:
+        // GENUINE_ONLY: can only see GENUINE
+        // AFTERMARKET_ONLY: can see anything except GENUINE (AFTERMARKET, BRANDED)
+        // SHOW_ALL: can see everything
+
+        if (entitlement === Entitlement.GENUINE_ONLY) {
+            return partType === PartType.GENUINE;
+        }
+
+        if (entitlement === Entitlement.AFTERMARKET_ONLY) {
+            return partType !== PartType.GENUINE;
+        }
+
+        if (entitlement === Entitlement.SHOW_ALL) {
+            return true;
+        }
+
+        return false;
+    }
 
     async calculatePrice(dealerAccountId: string, productCode: string, qty: number = 1): Promise<PriceResult> {
         // 1. Fetch Product
@@ -38,7 +80,13 @@ export class PricingService {
             throw new Error(`Product is inactive: ${productCode}`);
         }
 
-        // 2. Fetch Dealer Band Assignment for this PartType
+        // 2. CHECK ENTITLEMENT FILTER
+        const isVisible = await this.canDealerViewProduct(dealerAccountId, product.partType);
+        if (!isVisible) {
+            throw new EntitlementError("Product not available");
+        }
+
+        // 3. Fetch Dealer Band Assignment for this PartType
         const assignment = await this.prisma.dealerBandAssignment.findFirst({
             where: {
                 dealerAccountId,
@@ -52,7 +100,7 @@ export class PricingService {
 
         const bandCode = assignment.bandCode;
 
-        // 3. Lookup Price for Band
+        // 4. Lookup Price for Band
         const priceBand = product.bandPrices.find(pb => pb.bandCode === bandCode);
 
         if (!priceBand) {
@@ -61,7 +109,7 @@ export class PricingService {
 
         let finalPrice = Number(priceBand.price);
 
-        // 4. Apply Minimum Price Logic
+        // 5. Apply Minimum Price Logic
         let minPriceApplied = false;
         if (product.refPrice?.minimumPrice) {
             const minPrice = Number(product.refPrice.minimumPrice);
@@ -81,7 +129,8 @@ export class PricingService {
             qty,
             unitPrice: finalPrice,
             totalPrice: finalPrice * qty,
-            currency: 'GBP'
+            currency: 'GBP',
+            available: true
         };
     }
 }

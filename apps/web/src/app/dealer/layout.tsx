@@ -1,45 +1,23 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { removeToken, getUser, User } from '@/lib/auth';
-
-export default function DealerLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
-    const router = useRouter();
-    const [user, setUser] = useState<User | null>(null);
-
-    useEffect(() => {
-        setUser(getUser());
-    }, []);
-
-    const handleLogout = () => {
-        removeToken();
-        router.push('/login');
-    };
-
+export default function DealerLayout({ children }: { children: React.ReactNode }) {
     return (
-        <div className="min-h-screen flex flex-col">
-            <header className="bg-slate-800 text-white p-4 flex justify-between items-center shadow-md">
-                <div className="flex flex-col">
-                    <h1 className="text-xl font-bold">Dealer Portal</h1>
-                    {user?.companyName && <span className="text-sm text-slate-300">{user.companyName}</span>}
+        <div className="min-h-screen bg-slate-50 flex flex-col">
+            <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm">
+                <div className="flex items-center gap-8">
+                    <div className="text-xl font-bold text-blue-900 tracking-tight">Hotbray Portal</div>
+                    <nav className="flex gap-6">
+                        {/* Links */}
+                    </nav>
                 </div>
-                <nav className="flex items-center space-x-6">
-                    <Link href="/dealer/search" className="hover:text-amber-400 transition-colors">Search</Link>
-                    <Link href="/dealer/cart" className="hover:text-amber-400 transition-colors">Cart</Link>
-                    <Link href="/dealer/orders" className="hover:text-amber-400 transition-colors">Orders</Link>
-                    <div className="border-l border-slate-600 h-6 mx-2"></div>
-                    <button onClick={handleLogout} className="text-red-300 hover:text-red-100 transition-colors">Logout</button>
-                </nav>
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600">D</div>
+                </div>
             </header>
-            <main className="flex-1 p-8 bg-gray-50">
+            <main className="flex-1">
                 {children}
             </main>
+            <footer className="h-16 bg-white border-t border-slate-200 flex items-center justify-center text-sm text-slate-500">
+                © 2024 Hotbray Ltd.
+            </footer>
         </div>
     );
 }

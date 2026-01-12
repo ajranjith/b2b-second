@@ -1,0 +1,1 @@
+export default function Page() { return (<div className='p-8'><h1 className='text-2xl font-bold mb-4'>BACKORDERS</h1><p className='text-muted-foreground'>This page is under construction.</p></div>); }
