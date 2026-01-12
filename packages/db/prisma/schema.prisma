@@ -20,6 +20,13 @@ enum AdminRole {
 enum DealerStatus {
   ACTIVE
   INACTIVE
+  SUSPENDED
+}
+
+enum Entitlement {
+  GENUINE_ONLY
+  AFTERMARKET_ONLY
+  SHOW_ALL
 }
 
 enum PartType {
@@ -77,8 +84,13 @@ model DealerAccount {
   accountNo   String       @unique
   companyName String
   status      DealerStatus @default(ACTIVE)
+  entitlement Entitlement  @default(SHOW_ALL)
   mainEmail   String?
   phone       String?
+
+  erpAccountNo     String? @unique
+  contactFirstName String?
+  contactLastName  String?
 
   billingLine1    String?
   billingLine2    String?
@@ -102,6 +114,8 @@ model DealerUser {
   dealerAccountId String
   userId          String   @unique
   isPrimary       Boolean  @default(false)
+  firstName       String?
+  lastName        String?
   createdAt       DateTime @default(now())
 
   dealerAccount DealerAccount @relation(fields: [dealerAccountId], references: [id], onDelete: Cascade)
@@ -119,6 +133,11 @@ model DealerBandAssignment {
   updatedAt       DateTime @updatedAt
 
   dealerAccount DealerAccount @relation(fields: [dealerAccountId], references: [id], onDelete: Cascade)
+
+  // Note: Bands are now filtered by entitlement:
+  // - GENUINE_ONLY: only GENUINE band applies
+  // - AFTERMARKET_ONLY: only AFTERMARKET and BRANDED bands apply
+  // - SHOW_ALL: all three bands (GENUINE, AFTERMARKET, BRANDED) apply
 
   // @@unique([dealerAccountId, partType])
   // @@index([dealerAccountId, partType])
@@ -464,4 +483,30 @@ model AuditLog {
 
   @@index([createdAt])
   @@index([entityType, entityId])
+}
+
+model EmailLog {
+  id             String   @id @default(uuid())
+  recipientEmail String
+  subject        String
+  bodyText       String
+  sentAt         DateTime @default(now())
+  status         String // SENT, FAILED
+  errorMessage   String?
+
+  @@index([recipientEmail])
+  @@index([sentAt])
+}
+
+model UploadTemplate {
+  id           String   @id @default(uuid())
+  templateName String   @unique
+  fileName     String
+  blobPath     String
+  description  String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive])
 }
