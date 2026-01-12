@@ -38,7 +38,7 @@ describe('PricingService Integration', () => {
 
         expect(result).toBeDefined();
         expect(result.productCode).toBe('BP-1001');
-        expect(result.bandUsed).toBe('A');
+        expect(result.bandCode).toBe('A');
         expect(result.unitPrice).toBe(45.00);
         expect(result.totalPrice).toBe(90.00);
     });

@@ -38,7 +38,7 @@ export class CheckoutRules {
             unitPrice: item.unitPrice,
             lineTotal: item.totalPrice,
             description: item.description,
-            bandCode: item.bandUsed,
+            bandCode: item.bandCode,
             minPriceApplied: item.minPriceApplied
         }));
 

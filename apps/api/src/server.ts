@@ -256,6 +256,10 @@ server.post('/admin/dealers', async (req, reply) => {
 // Start
 const start = async () => {
     try {
+        // Verify database connection
+        const result = await prisma.$queryRaw<{ current_database: string }[]>`SELECT current_database()`;
+        console.log("API connected to DB:", result[0]?.current_database);
+
         await server.listen({ port: 3001, host: '0.0.0.0' });
         console.log('Server listening on http://localhost:3001');
     } catch (err) {

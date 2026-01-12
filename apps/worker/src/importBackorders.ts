@@ -86,16 +86,16 @@ async function main() {
             const mapped: any = {
                 batchId: batch.id,
                 rowNumber: rowFn,
-                accountNo: raw['Account'],
+                accountNo: raw['Account No'] || raw['Account'],
                 customerName: raw['Customer Name'], // Optional in sample
                 yourOrderNo: raw['Your Order No'], // Optional
-                ourNo: raw['Order No'], // 'Order No' in csv -> 'ourNo' in DB
-                itemNo: raw['Item No'] || String(i), // Sample didn't have Item No, defaulting
-                part: raw['Part No'],
-                description: raw['Description'],
-                qtyOrdered: raw['Qty Ordered'] ? parseInt(raw['Qty Ordered'], 10) : 0,
-                qtyOutstanding: raw['Qty Outstanding'] ? parseInt(raw['Qty Outstanding'], 10) : 0,
-                inWh: raw['In Wh'] ? parseInt(raw['In Wh'], 10) : 0,
+                ourNo: raw['Our No'] || raw['Order No'], // Support both column names
+                itemNo: raw['Itm'] || raw['Item No'] || String(i),
+                part: raw['Part'] || raw['Part No'],
+                description: raw['Descriptio'] || raw['Description'],
+                qtyOrdered: (raw['Q Ord'] || raw['Qty Ordered']) ? parseInt(raw['Q Ord'] || raw['Qty Ordered'], 10) : 0,
+                qtyOutstanding: (raw['Q/O'] || raw['Qty Outstanding']) ? parseInt(raw['Q/O'] || raw['Qty Outstanding'], 10) : 0,
+                inWh: (raw['In WH'] || raw['In Wh']) ? parseInt(raw['In WH'] || raw['In Wh'], 10) : 0,
                 rawRowJson: raw
             };
 

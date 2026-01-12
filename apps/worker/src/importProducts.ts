@@ -1,82 +1,180 @@
-
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../../packages/db/.env') });
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient, ImportType, ImportStatus, PartType, Prisma } from '@prisma/client';
-import * as xlsx from 'xlsx';
-import { z } from 'zod';
+import { PrismaClient, PartType, ImportType, ImportStatus } from '@prisma/client';
+import * as XLSX from 'xlsx';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 
-// Argument parsing basics
-const args = process.argv.slice(2);
-const typeArg = args.find(a => a.startsWith('--type='));
-const fileArg = args.find(a => a.startsWith('--file='));
-
-if (!typeArg || !fileArg) {
-    console.error('Usage: ts-node src/importProducts.ts --type=<GENUINE|AFTERMARKET> --file=<path>');
-    process.exit(1);
-}
-
-const partTypeInput = typeArg.split('=')[1] as string;
-const filePathInput = fileArg.split('=')[1] as string;
-
-// Validate inputs
-if (!['GENUINE', 'AFTERMARKET'].includes(partTypeInput)) {
-    console.error('Invalid type. Must be GENUINE or AFTERMARKET');
-    process.exit(1);
-}
-const partType = partTypeInput as PartType;
-const importType = partType === 'GENUINE' ? ImportType.PRODUCTS_GENUINE : ImportType.PRODUCTS_AFTERMARKET;
-
-const absoluteFilePath = path.resolve(process.cwd(), filePathInput);
-if (!fs.existsSync(absoluteFilePath)) {
-    console.error(`File not found: ${absoluteFilePath}`);
-    process.exit(1);
-}
-
-// Database setup
 const connectionString = process.env.DATABASE_URL!;
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient({ adapter } as any);
 
-// Zod Schema for Row Validation
-const RowSchema = z.object({
-    productCode: z.string().min(1),
-    description: z.string().min(1),
-    listPrice: z.number().min(0).optional(),
-    discountCode: z.string().optional(),
-    supplier: z.string().optional(),
-});
+interface ImportArgs {
+    type: 'GENUINE' | 'AFTERMARKET' | 'BRANDED';
+    file: string;
+}
+
+interface ExcelRow {
+    Supplier?: string;
+    'Product Code'?: string;
+    Description?: string;
+    'Full Description'?: string;  // Synonym for Description
+    'Discount Code'?: string;
+    'Cost Price'?: number;
+    'Retail Price'?: number;
+    'Trade Price'?: number;
+    'List Price'?: number;
+    'Band 1'?: number;
+    'Band 2'?: number;
+    'Band 3'?: number;
+    'Band 4'?: number;
+    'Free Stock'?: number;
+}
+
+interface ValidationResult {
+    isValid: boolean;
+    errors: string[];
+}
+
+function parseArgs(): ImportArgs {
+    const args = process.argv.slice(2);
+    const typeIndex = args.indexOf('--type');
+    const fileIndex = args.indexOf('--file');
+
+    if (typeIndex === -1 || fileIndex === -1) {
+        console.error('❌ Usage: ts-node importProducts.ts --type GENUINE|AFTERMARKET|BRANDED --file <path-to-xlsx>');
+        process.exit(1);
+    }
+
+    const type = args[typeIndex + 1] as 'GENUINE' | 'AFTERMARKET';
+    const file = args[fileIndex + 1];
+
+    if (!['GENUINE', 'AFTERMARKET', 'BRANDED'].includes(type)) {
+        console.error('❌ Type must be GENUINE, AFTERMARKET, or BRANDED');
+        process.exit(1);
+    }
+
+    if (!file) {
+        console.error('❌ File path is required');
+        process.exit(1);
+    }
+
+    return { type, file };
+}
+
+function calculateFileHash(filePath: string): string {
+    const fileBuffer = fs.readFileSync(filePath);
+    const hashSum = crypto.createHash('sha256');
+    hashSum.update(fileBuffer);
+    return hashSum.digest('hex');
+}
+
+function validateRow(row: ExcelRow, rowNumber: number): ValidationResult {
+    const errors: string[] = [];
+
+    // Required fields
+    if (!row['Product Code'] || row['Product Code'].trim() === '') {
+        errors.push('Product Code is required');
+    }
+
+    // Accept either Description or Full Description
+    const description = row.Description || row['Full Description'];
+    if (!description || description.trim() === '') {
+        errors.push('Description is required');
+    }
+
+    // Price validations
+    const priceFields = [
+        'Cost Price', 'Retail Price', 'Trade Price', 'List Price',
+        'Band 1', 'Band 2', 'Band 3', 'Band 4'
+    ] as const;
+
+    for (const field of priceFields) {
+        const value = row[field];
+        if (value !== undefined && value !== null && value < 0) {
+            errors.push(`${field} cannot be negative`);
+        }
+    }
+
+    // Stock validation
+    if (row['Free Stock'] !== undefined && row['Free Stock'] !== null && row['Free Stock'] < 0) {
+        errors.push('Free Stock cannot be negative');
+    }
+
+    return {
+        isValid: errors.length === 0,
+        errors
+    };
+}
+
+function parseDecimal(value: any): number | null {
+    if (value === undefined || value === null || value === '') return null;
+    const num = typeof value === 'number' ? value : parseFloat(value);
+    return isNaN(num) ? null : num;
+}
+
+function parseInt(value: any): number | null {
+    if (value === undefined || value === null || value === '') return null;
+    const num = typeof value === 'number' ? value : Number(value);
+    return isNaN(num) ? null : Math.floor(num);
+}
 
 async function main() {
-    console.log(`Starting import for ${partType} from ${absoluteFilePath}`);
+    const { type, file } = parseArgs();
 
-    // 1. Create ImportBatch
-    const fileBuffer = fs.readFileSync(absoluteFilePath);
-    // In a real app we'd hash the file, for now just placeholder
-    const fileHash = 'hash_' + Date.now();
+    console.log('📦 Product Import Worker');
+    console.log(`   Type: ${type}`);
+    console.log(`   File: ${file}\n`);
+
+    // Resolve file path
+    const filePath = path.isAbsolute(file) ? file : path.resolve(process.cwd(), file);
+
+    if (!fs.existsSync(filePath)) {
+        console.error(`❌ File not found: ${filePath}`);
+        process.exit(1);
+    }
+
+    console.log(`📂 Reading file: ${filePath}`);
+
+    // Calculate file hash
+    const fileHash = calculateFileHash(filePath);
+    console.log(`🔐 File hash: ${fileHash.substring(0, 16)}...`);
+
+    // Create import batch
+    console.log('\n📝 Creating import batch...');
+    const importType = type === 'GENUINE' ? ImportType.PRODUCTS_GENUINE : ImportType.PRODUCTS_AFTERMARKET;
+    const partType = type === 'GENUINE' ? PartType.GENUINE : PartType.AFTERMARKET;
 
     const batch = await prisma.importBatch.create({
         data: {
             importType,
-            fileName: path.basename(absoluteFilePath),
-            filePath: absoluteFilePath,
+            fileName: path.basename(filePath),
             fileHash,
-            status: ImportStatus.PROCESSING
+            filePath,
+            status: ImportStatus.PROCESSING,
+            totalRows: 0,
+            validRows: 0,
+            invalidRows: 0
         }
     });
 
-    try {
-        // 2. Parse XLSX
-        const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const rows = xlsx.utils.sheet_to_json<any>(sheet);
+    console.log(`✅ Import batch created: ${batch.id}`);
 
-        console.log(`Found ${rows.length} rows`);
+    try {
+        // Read Excel file
+        console.log('\n📊 Parsing Excel file...');
+        const workbook = XLSX.readFile(filePath);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const rows: ExcelRow[] = XLSX.utils.sheet_to_json(worksheet);
+
+        console.log(`   Found ${rows.length} rows\n`);
+
+        // Update total rows
         await prisma.importBatch.update({
             where: { id: batch.id },
             data: { totalRows: rows.length }
@@ -84,139 +182,187 @@ async function main() {
 
         let validCount = 0;
         let invalidCount = 0;
+        let processedCount = 0;
 
-        // 3. Process Rows
+        // Process each row
         for (let i = 0; i < rows.length; i++) {
-            const rowFn = i + 2; // Excel row number (1-based, +header)
-            const raw = rows[i];
+            const row = rows[i];
+            const rowNumber = i + 2; // Excel rows start at 1, header is row 1
 
-            // Map Excel columns to Staging Fields
-            // Expecting: 'Part No', 'Description', 'List Price', 'Discount Code', 'Supplier'
-            const mapped: any = {
-                batchId: batch.id,
-                rowNumber: rowFn,
-                partType, // From Arg
-                productCode: raw['Part No'] ? String(raw['Part No']).trim() : undefined,
-                description: raw['Description'],
-                supplier: raw['Supplier'],
-                discountCode: raw['Discount Code'],
-                listPrice: raw['List Price'] ? Number(raw['List Price']) : undefined,
-                // band1Price, band2Price... if they existed in excel
-                rawRowJson: raw
-            };
+            // Validate row
+            const validation = validateRow(row, rowNumber);
 
-            // Validate
-            const validation = RowSchema.safeParse(mapped);
-            let isValid = validation.success;
-            let validationErrors: string | null = null;
-            if (!validation.success) {
-                validationErrors = validation.error.issues.map(i => i.message).join(', ');
-            }
-
-            // Create Staging Row
+            // Insert into staging table
             await prisma.stgProductPriceRow.create({
                 data: {
-                    ...mapped,
-                    isValid,
-                    validationErrors
+                    batchId: batch.id,
+                    rowNumber,
+                    partType,
+                    supplier: row.Supplier || null,
+                    productCode: row['Product Code'] || null,
+                    description: row.Description || row['Full Description'] || null,
+                    discountCode: row['Discount Code'] || null,
+                    costPrice: parseDecimal(row['Cost Price']),
+                    retailPrice: parseDecimal(row['Retail Price']),
+                    tradePrice: parseDecimal(row['Trade Price']),
+                    listPrice: parseDecimal(row['List Price']),
+                    band1Price: parseDecimal(row['Band 1']),
+                    band2Price: parseDecimal(row['Band 2']),
+                    band3Price: parseDecimal(row['Band 3']),
+                    band4Price: parseDecimal(row['Band 4']),
+                    freeStock: parseInt(row['Free Stock']),
+                    isValid: validation.isValid,
+                    validationErrors: validation.errors.length > 0 ? validation.errors.join('; ') : null,
+                    rawRowJson: row as any
                 }
             });
 
-            if (isValid) {
+            if (validation.isValid) {
                 validCount++;
-            } else {
-                invalidCount++;
-                // Create ImportError
-                await prisma.importError.create({
-                    data: {
-                        batchId: batch.id,
-                        rowNumber: rowFn,
-                        errorMessage: validationErrors || 'Unknown error',
-                        rawRowJson: raw
+
+                // Upsert product data
+                await prisma.$transaction(async (tx) => {
+                    // 1. Upsert Product
+                    const product = await tx.product.upsert({
+                        where: { productCode: row['Product Code']! },
+                        update: {
+                            supplier: row.Supplier || null,
+                            description: (row.Description || row['Full Description'])!,
+                            discountCode: row['Discount Code'] || null,
+                            partType,
+                            isActive: true
+                        },
+                        create: {
+                            productCode: row['Product Code']!,
+                            supplier: row.Supplier || null,
+                            description: (row.Description || row['Full Description'])!,
+                            discountCode: row['Discount Code'] || null,
+                            partType,
+                            isActive: true
+                        }
+                    });
+
+                    // 2. Upsert ProductStock
+                    if (row['Free Stock'] !== undefined && row['Free Stock'] !== null) {
+                        await tx.productStock.upsert({
+                            where: { productId: product.id },
+                            update: {
+                                freeStock: row['Free Stock'],
+                                lastImportBatchId: batch.id
+                            },
+                            create: {
+                                productId: product.id,
+                                freeStock: row['Free Stock'],
+                                lastImportBatchId: batch.id
+                            }
+                        });
                     }
-                });
-            }
-        }
 
-        // 4. Upsert Valid Rows to Main Tables
-        if (validCount > 0) {
-            console.log(`Upserting ${validCount} valid products...`);
-
-            const validRows = await prisma.stgProductPriceRow.findMany({
-                where: { batchId: batch.id, isValid: true }
-            });
-
-            for (const row of validRows) {
-                if (!row.productCode || !row.description) continue; // Should be caught by validation
-
-                // Upsert Product
-                const product = await prisma.product.upsert({
-                    where: { productCode: row.productCode },
-                    update: {
-                        description: row.description,
-                        supplier: row.supplier,
-                        discountCode: row.discountCode,
-                        partType: row.partType,
-                        updatedAt: new Date()
-                    },
-                    create: {
-                        productCode: row.productCode,
-                        description: row.description,
-                        supplier: row.supplier,
-                        discountCode: row.discountCode,
-                        partType: row.partType,
-                    }
-                });
-
-                // Upsert PriceReference
-                if (row.listPrice !== null) {
-                    await prisma.productPriceReference.upsert({
+                    // 3. Upsert ProductPriceReference
+                    await tx.productPriceReference.upsert({
                         where: { productId: product.id },
                         update: {
-                            listPrice: row.listPrice,
-                            updatedAt: new Date(),
+                            costPrice: parseDecimal(row['Cost Price']),
+                            retailPrice: parseDecimal(row['Retail Price']),
+                            tradePrice: parseDecimal(row['Trade Price']),
+                            listPrice: parseDecimal(row['List Price']),
+                            minimumPrice: parseDecimal(row['Trade Price']) ? parseDecimal(row['Trade Price'])! * 0.9 : null,
                             lastImportBatchId: batch.id
                         },
                         create: {
                             productId: product.id,
-                            listPrice: row.listPrice,
+                            costPrice: parseDecimal(row['Cost Price']),
+                            retailPrice: parseDecimal(row['Retail Price']),
+                            tradePrice: parseDecimal(row['Trade Price']),
+                            listPrice: parseDecimal(row['List Price']),
+                            minimumPrice: parseDecimal(row['Trade Price']) ? parseDecimal(row['Trade Price'])! * 0.9 : null,
                             lastImportBatchId: batch.id
                         }
                     });
-                }
 
-                // Upsert Stock (Init if not exists)
-                await prisma.productStock.upsert({
-                    where: { productId: product.id },
-                    update: {}, // Don't overwrite stock on price import? Or maybe we should? Prompt didn't specify stock in excel.
-                    create: {
-                        productId: product.id,
-                        freeStock: 0,
-                        lastImportBatchId: batch.id
+                    // 4. Upsert ProductPriceBand (4 bands)
+                    const bands = [
+                        { code: '1', price: row['Band 1'] },
+                        { code: '2', price: row['Band 2'] },
+                        { code: '3', price: row['Band 3'] },
+                        { code: '4', price: row['Band 4'] }
+                    ];
+
+                    for (const band of bands) {
+                        if (band.price !== undefined && band.price !== null) {
+                            await tx.productPriceBand.upsert({
+                                where: {
+                                    productId_bandCode: {
+                                        productId: product.id,
+                                        bandCode: band.code
+                                    }
+                                },
+                                update: {
+                                    price: band.price
+                                },
+                                create: {
+                                    productId: product.id,
+                                    bandCode: band.code,
+                                    price: band.price
+                                }
+                            });
+                        }
                     }
                 });
+            } else {
+                invalidCount++;
 
-                // Upsert Band Prices (if provided)
-                // For this sample, we don't have explicit band columns, skipping loop logic for '1'..'4'
-                // If we did: check row.band1Price, row.band2Price...
+                // Log validation errors
+                await prisma.importError.create({
+                    data: {
+                        batchId: batch.id,
+                        rowNumber,
+                        errorMessage: validation.errors.join('; '),
+                        rawRowJson: row as any
+                    }
+                });
+            }
+
+            processedCount++;
+
+            // Log progress every 100 rows
+            if (processedCount % 100 === 0) {
+                console.log(`   Processed ${processedCount}/${rows.length} rows (${validCount} valid, ${invalidCount} invalid)`);
             }
         }
 
-        // 5. Update Batch Status
+        console.log(`\n✅ Processing complete!`);
+        console.log(`   Total: ${rows.length}`);
+        console.log(`   Valid: ${validCount}`);
+        console.log(`   Invalid: ${invalidCount}`);
+
+        // Determine final status
+        let finalStatus: ImportStatus;
+        if (invalidCount === 0) {
+            finalStatus = ImportStatus.SUCCEEDED;
+        } else if (validCount === 0) {
+            finalStatus = ImportStatus.FAILED;
+        } else {
+            finalStatus = ImportStatus.SUCCEEDED_WITH_ERRORS;
+        }
+
+        // Update batch with final counts and status
         await prisma.importBatch.update({
             where: { id: batch.id },
             data: {
-                status: invalidCount > 0 ? ImportStatus.SUCCEEDED_WITH_ERRORS : ImportStatus.SUCCEEDED,
                 validRows: validCount,
                 invalidRows: invalidCount,
+                status: finalStatus,
                 completedAt: new Date()
             }
         });
 
-        console.log(`Import finished. Valid: ${validCount}, Invalid: ${invalidCount}`);
+        console.log(`\n📊 Import batch ${batch.id} completed with status: ${finalStatus}`);
 
-    } catch (e: any) {
-        console.error('Import failed', e);
+    } catch (error) {
+        console.error('\n❌ Import failed:', error);
+
+        // Update batch status to FAILED
         await prisma.importBatch.update({
             where: { id: batch.id },
             data: {
@@ -224,12 +370,13 @@ async function main() {
                 completedAt: new Date()
             }
         });
-        process.exit(1);
+
+        throw error;
     }
 }
 
 main()
-    .catch(e => {
+    .catch((e) => {
         console.error(e);
         process.exit(1);
     })
