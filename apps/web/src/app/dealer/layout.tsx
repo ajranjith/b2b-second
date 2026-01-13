@@ -1,23 +1,63 @@
-export default function DealerLayout({ children }: { children: React.ReactNode }) {
+'use client';
+
+import { CartProvider } from '@/context/CartContext';
+import { useCartUI } from '@/context/CartContext';
+import { useCart } from '@/hooks/useCart';
+import MiniCartButton from '@/components/dealer/MiniCartButton';
+import MiniCart from '@/components/dealer/MiniCart';
+
+function DealerLayoutContent({ children }: { children: React.ReactNode }) {
+    const { isMiniCartOpen, toggleMiniCart, closeMiniCart } = useCartUI();
+    const { itemCount } = useCart();
+
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col">
-            <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm">
-                <div className="flex items-center gap-8">
-                    <div className="text-xl font-bold text-blue-900 tracking-tight">Hotbray Portal</div>
-                    <nav className="flex gap-6">
-                        {/* Links */}
-                    </nav>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600">D</div>
+        <div className="min-h-screen bg-slate-50">
+            {/* Header */}
+            <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
+                <div className="max-w-7xl mx-auto px-6 py-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-8">
+                            <h1 className="text-2xl font-bold text-slate-900">Hotbray Portal</h1>
+                            <nav className="hidden md:flex items-center gap-6">
+                                <a href="/dealer/search" className="text-slate-600 hover:text-blue-600 transition-colors">
+                                    Search Parts
+                                </a>
+                                <a href="/dealer/cart" className="text-slate-600 hover:text-blue-600 transition-colors">
+                                    Cart
+                                </a>
+                                <a href="/dealer/orders" className="text-slate-600 hover:text-blue-600 transition-colors">
+                                    Orders
+                                </a>
+                            </nav>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <span className="text-sm text-slate-600">Dealer Portal</span>
+                        </div>
+                    </div>
                 </div>
             </header>
-            <main className="flex-1">
+
+            {/* Main Content */}
+            <main className="relative">
                 {children}
             </main>
-            <footer className="h-16 bg-white border-t border-slate-200 flex items-center justify-center text-sm text-slate-500">
-                © 2024 Hotbray Ltd.
-            </footer>
+
+            {/* Mini Cart Components */}
+            <MiniCartButton
+                isOpen={isMiniCartOpen}
+                onToggle={toggleMiniCart}
+                itemCount={itemCount}
+            />
+
+            <MiniCart />
         </div>
+    );
+}
+
+export default function DealerLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <CartProvider>
+            <DealerLayoutContent>{children}</DealerLayoutContent>
+        </CartProvider>
     );
 }

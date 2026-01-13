@@ -82,16 +82,21 @@ describe('PricingService Entitlement Tests', () => {
         const genP = await prisma.product.findUnique({ where: { productCode: genuineProductCode } });
         const aftP = await prisma.product.findUnique({ where: { productCode: aftermarketProductCode } });
 
-        await prisma.productPriceBand.upsert({
-            where: { productId_bandCode: { productId: genP!.id, bandCode: '1' } },
-            update: { price: 10.00 },
-            create: { productId: genP!.id, bandCode: '1', price: 10.00 }
-        });
-        await prisma.productPriceBand.upsert({
-            where: { productId_bandCode: { productId: aftP!.id, bandCode: '1' } },
-            update: { price: 15.00 },
-            create: { productId: aftP!.id, bandCode: '1', price: 15.00 }
-        });
+        // Seed prices for all bands (1-4) to handle trigger-induced band changes
+        const bands = ['1', '2', '3', '4'];
+
+        for (const band of bands) {
+            await prisma.productPriceBand.upsert({
+                where: { productId_bandCode: { productId: genP!.id, bandCode: band } },
+                update: { price: 10.00 },
+                create: { productId: genP!.id, bandCode: band, price: 10.00 }
+            });
+            await prisma.productPriceBand.upsert({
+                where: { productId_bandCode: { productId: aftP!.id, bandCode: band } },
+                update: { price: 15.00 },
+                create: { productId: aftP!.id, bandCode: band, price: 15.00 }
+            });
+        }
     });
 
     afterAll(async () => {

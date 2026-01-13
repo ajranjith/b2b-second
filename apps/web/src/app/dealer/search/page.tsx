@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, Filter, ShoppingCart } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import { useCart } from '@/hooks/useCart';
+import { useCartUI } from '@/context/CartContext';
 
 type PartType = 'GENUINE' | 'AFTERMARKET' | 'BRANDED';
 type SortOption = 'relevance' | 'price_asc' | 'price_desc' | 'stock';
@@ -38,6 +40,10 @@ export default function DealerSearchPage() {
     const [inStockOnly, setInStockOnly] = useState(false);
     const [sortBy, setSortBy] = useState<SortOption>('relevance');
     const [quantities, setQuantities] = useState<Record<string, number>>({});
+    const [addingToCart, setAddingToCart] = useState<string | null>(null);
+
+    const { addItem } = useCart();
+    const { openMiniCart, closeMiniCart } = useCartUI();
 
     const { data: products, isLoading } = useQuery({
         queryKey: ['products', activeSearch, partTypeFilter, inStockOnly, sortBy],
@@ -61,10 +67,26 @@ export default function DealerSearchPage() {
         }
     };
 
-    const handleAddToCart = (product: Product) => {
+    const handleAddToCart = async (product: Product) => {
         const quantity = quantities[product.id] || 1;
-        toast.success(`Added ${quantity}x ${product.productCode} to cart`);
-        // Cart logic would go here
+        setAddingToCart(product.id);
+
+        try {
+            await addItem(product.id, quantity);
+            toast.success(`Added ${quantity}x ${product.productCode} to cart!`);
+
+            // Auto-open mini cart
+            openMiniCart();
+
+            // Auto-close after 3 seconds
+            setTimeout(() => {
+                closeMiniCart();
+            }, 3000);
+        } catch (error) {
+            toast.error('Failed to add item to cart');
+        } finally {
+            setAddingToCart(null);
+        }
     };
 
     const getStockBadge = (freeStock: number) => {
@@ -233,10 +255,19 @@ export default function DealerSearchPage() {
                                             <Button
                                                 className="flex-1 bg-blue-600 hover:bg-blue-700"
                                                 onClick={() => handleAddToCart(product)}
-                                                disabled={product.freeStock === 0}
+                                                disabled={product.freeStock === 0 || addingToCart === product.id}
                                             >
-                                                <ShoppingCart className="h-4 w-4 mr-2" />
-                                                Add to Cart
+                                                {addingToCart === product.id ? (
+                                                    <>
+                                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                        Adding...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <ShoppingCart className="h-4 w-4 mr-2" />
+                                                        Add to Cart
+                                                    </>
+                                                )}
                                             </Button>
                                         </div>
                                     </div>

@@ -77,6 +77,10 @@ model AppUser {
   dealerUser    DealerUser?
   importBatches ImportBatch[] @relation("ImportBatchesUploadedBy")
   auditLogs     AuditLog[]
+
+  // Indexes for performance
+  @@index([email])
+  @@index([role, isActive])
 }
 
 model DealerAccount {
@@ -100,6 +104,12 @@ model DealerAccount {
 
   dispatchDefault String?
 
+  // BUSINESS RULES (enforced at application level):
+  // 1. Every DealerAccount MUST have at least one DealerUser (mandatory user association)
+  // 2. Every DealerAccount MUST have exactly 3 DealerBandAssignments (GENUINE, AFTERMARKET, BRANDED)
+  // 3. User email must be unique system-wide (enforced via AppUser.email @unique)
+  // 4. One user can only be associated with one dealer account (enforced via DealerUser.userId @unique)
+
   users           DealerUser[]
   bandAssignments DealerBandAssignment[]
   carts           Cart[]
@@ -107,6 +117,11 @@ model DealerAccount {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Indexes for performance
+  @@index([accountNo])
+  @@index([status, entitlement])
+  @@index([mainEmail])
 }
 
 model DealerUser {
@@ -134,13 +149,11 @@ model DealerBandAssignment {
 
   dealerAccount DealerAccount @relation(fields: [dealerAccountId], references: [id], onDelete: Cascade)
 
-  // Note: Bands are now filtered by entitlement:
-  // - GENUINE_ONLY: only GENUINE band applies
-  // - AFTERMARKET_ONLY: only AFTERMARKET and BRANDED bands apply
-  // - SHOW_ALL: all three bands (GENUINE, AFTERMARKET, BRANDED) apply
+  // All dealers MUST have exactly 3 band assignments (GENUINE, AFTERMARKET, BRANDED)
+  // This is enforced at the application level in seed scripts and dealer creation logic
 
-  // @@unique([dealerAccountId, partType])
-  // @@index([dealerAccountId, partType])
+  @@unique([dealerAccountId, partType])
+  @@index([dealerAccountId, partType])
 }
 
 model Product {
@@ -163,9 +176,13 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // @@index([partType, isActive])
   cartItems  CartItem[]
   orderLines OrderLine[]
+
+  // Indexes for search performance
+  @@index([productCode])
+  @@index([partType, isActive])
+  @@index([description])
 }
 
 model ProductStock {
@@ -193,12 +210,13 @@ model ProductPriceReference {
 model ProductPriceBand {
   id        String   @id @default(uuid())
   productId String
-  bandCode  String
-  price     Decimal
+  bandCode  String   // Must be "1", "2", "3", or "4"
+  price     Decimal  @db.Decimal(10, 2)  // Max 99999999.99, 2 decimal places
   updatedAt DateTime @updatedAt
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
+  // Ensure one price per product per band
   @@unique([productId, bandCode])
   @@index([productId, bandCode])
 }

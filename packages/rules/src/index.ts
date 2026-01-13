@@ -1,6 +1,40 @@
+/**
+ * Rules Package - Main Exports
+ * 
+ * Comprehensive rule engine for business logic:
+ * - Validators: Input and data validation
+ * - Rules: Business logic implementation
+ * - Engine: Orchestration and context management
+ */
+
+// ============================================================================
+// Types and Errors
+// ============================================================================
+export * from './types';
+export * from './errors';
+
+// ============================================================================
+// Validators
+// ============================================================================
+export * from './validators';
+
+// ============================================================================
+// Rules
+// ============================================================================
+export * from './rules';
+
+// ============================================================================
+// Engine
+// ============================================================================
+export * from './engine';
+
+// ============================================================================
+// Legacy Exports (keep for backward compatibility)
+// ============================================================================
+export { PricingService, EntitlementError as LegacyEntitlementError, type PriceResult } from './PricingService';
+
+// CartRules and CheckoutRules - keep existing functionality
 import { PricingService } from './PricingService';
-export * from './PricingService';
-import { PrismaClient } from '@prisma/client';
 
 export class CartRules {
     constructor(private pricingService: PricingService) { }
@@ -24,9 +58,6 @@ export class CartRules {
 }
 
 export class CheckoutRules {
-    // Logic to prepare OrderHeader and OrderLine structures from a Cart
-    // This effectively snapshots the prices at the moment of checkout.
-
     constructor(private pricingService: PricingService) { }
 
     async createOrderSnapshot(dealerAccountId: string, dealerUserId: string, items: { productCode: string; qty: number }[]) {
@@ -45,9 +76,9 @@ export class CheckoutRules {
         return {
             dealerAccountId,
             dealerUserId,
-            status: 'PROCESSING', // Initial status
+            status: 'PROCESSING',
             subtotal: cartCalculation.subtotal,
-            total: cartCalculation.subtotal, // Tax logic would go here
+            total: cartCalculation.subtotal,
             currency: cartCalculation.currency,
             lines: orderLines
         };
