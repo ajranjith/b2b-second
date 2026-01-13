@@ -1,5 +1,5 @@
-import { PrismaClient } from '@prisma/client'
+import { prisma } from 'db'
 import { createRuleEngine } from 'rules'
 
-export const prisma = new PrismaClient()
+export { prisma }
 export const ruleEngine = createRuleEngine(prisma)
