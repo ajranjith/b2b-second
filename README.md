@@ -2,6 +2,9 @@
 
 B2B dealer and admin portal.
 
+> [!NOTE]
+> **Jan 13 Update**: Migrated to Tailwind CSS v4 and implemented a dynamic component architecture. See [Architecture Docs](./README_ARCH.md) for details.
+
 ## Quick Start
 
 ### Prerequisites

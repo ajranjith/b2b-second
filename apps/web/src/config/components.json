@@ -1,0 +1,50 @@
+{
+    "version": "1.0.0",
+    "components": {
+        "dealer": {
+            "product-card": {
+                "path": "./dealer/ProductCard",
+                "version": "1.0.0",
+                "alias": "dealer.product-card"
+            },
+            "cart-summary": {
+                "path": "./dealer/CartSummary",
+                "version": "1.0.0",
+                "alias": "dealer.cart-summary"
+            },
+            "mini-cart": {
+                "path": "./dealer/MiniCart",
+                "version": "2.0.0",
+                "alias": "dealer.mini-cart"
+            }
+        },
+        "admin": {
+            "dealer-table": {
+                "path": "./admin/DealerTable",
+                "version": "1.0.0",
+                "alias": "admin.dealer-table"
+            }
+        },
+        "ui": {
+            "button": {
+                "path": "./ui/button",
+                "export": "Button",
+                "version": "1.0.0",
+                "alias": "ui.button"
+            }
+        }
+    },
+    "routes": {
+        "/dealer/search": [
+            "dealer.product-card",
+            "dealer.mini-cart"
+        ],
+        "/dealer/cart": [
+            "dealer.cart-summary"
+        ],
+        "/admin/dealers": [
+            "admin.dealer-table",
+            "admin.dealer-form"
+        ]
+    }
+}
