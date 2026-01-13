@@ -1,123 +1,183 @@
-/**
- * Pricing Rules
- * Business logic for price calculation
- */
-
-import { PrismaClient, Prisma } from '@prisma/client';
-import { RuleResult, PriceCalculation } from '../types';
-import { PricingError, DealerError } from '../errors';
-
-export interface PricingContext {
-    dealerAccountId: string;
-    productCode: string;
-    qty: number;
-}
+// packages/rules/src/rules/PricingRules.ts
+import { PrismaClient, Prisma } from '@prisma/client'
+import { PricingContext, PricingResult } from '../types'
+import { PricingRuleError, EntitlementError } from '../errors'
 
 export class PricingRules {
     constructor(private prisma: PrismaClient) { }
 
     /**
-     * Calculate price for a dealer and product
+     * Calculate price for a dealer-product combination
+     * BUSINESS RULES:
+     * 1. Dealer must have ACTIVE or SUSPENDED status (INACTIVE cannot see prices)
+     * 2. Product must match dealer's entitlement
+     * 3. Dealer must have band assignment for product's part type
+     * 4. Product must have price for dealer's band
+     * 5. If minimum price set, use max(band price, minimum price)
      */
-    async calculateDealerPrice(ctx: PricingContext): Promise<RuleResult<PriceCalculation>> {
-        try {
-            // 1. Fetch Product
-            const product = await this.prisma.product.findUnique({
-                where: { productCode: ctx.productCode },
-                include: {
-                    refPrice: true,
-                    bandPrices: true,
-                    stock: true
-                }
-            });
+    async calculatePrice(context: PricingContext): Promise<PricingResult> {
+        // Rule 1: Check dealer status
+        if (context.dealerStatus === 'INACTIVE') {
+            throw new EntitlementError('Inactive dealers cannot view prices')
+        }
 
-            if (!product) {
-                throw PricingError.productNotFound(ctx.productCode);
-            }
-
-            if (!product.isActive) {
-                throw PricingError.productInactive(ctx.productCode);
-            }
-
-            // 2. Get dealer band assignment for this part type
-            const assignment = await this.prisma.dealerBandAssignment.findFirst({
-                where: {
-                    dealerAccountId: ctx.dealerAccountId,
-                    partType: product.partType
-                }
-            });
-
-            if (!assignment) {
-                throw DealerError.missingBandAssignment(ctx.dealerAccountId, product.partType);
-            }
-
-            // 3. Find price for dealer's band
-            const priceBand = product.bandPrices.find(pb => pb.bandCode === assignment.bandCode);
-
-            if (!priceBand) {
-                throw PricingError.noPriceAvailable(ctx.productCode, assignment.bandCode);
-            }
-
-            // 4. Apply minimum price logic
-            let finalPrice = Number(priceBand.price);
-            let minPriceApplied = false;
-
-            if (product.refPrice?.minimumPrice) {
-                const minPrice = Number(product.refPrice.minimumPrice);
-                if (finalPrice < minPrice) {
-                    finalPrice = minPrice;
-                    minPriceApplied = true;
-                }
-            }
-
-            const result: PriceCalculation = {
-                productId: product.id,
-                productCode: product.productCode,
-                description: product.description,
-                partType: product.partType,
-                qty: ctx.qty,
-                bandCode: assignment.bandCode,
-                unitPrice: finalPrice,
-                totalPrice: finalPrice * ctx.qty,
-                minPriceApplied,
-                currency: 'GBP',
-                available: true
-            };
-
-            return { success: true, data: result };
-
-        } catch (error) {
+        // Rule 2: Check entitlement
+        const entitlementCheck = this.checkEntitlement(
+            context.entitlement,
+            context.partType
+        )
+        if (!entitlementCheck.allowed) {
             return {
-                success: false,
-                error: error instanceof Error ? error.message : 'Unknown pricing error',
-                errorCode: error instanceof PricingError ? error.code : 'PRICING_ERROR'
-            };
+                price: new Prisma.Decimal(0),
+                bandCode: '',
+                minimumPriceApplied: false,
+                available: false,
+                reason: entitlementCheck.reason,
+            }
+        }
+
+        // Rule 3: Get dealer's band for this part type
+        const bandAssignment = await this.prisma.dealerBandAssignment.findUnique({
+            where: {
+                dealerAccountId_partType: {
+                    dealerAccountId: context.dealerAccountId,
+                    partType: context.partType,
+                },
+            },
+        })
+
+        if (!bandAssignment) {
+            throw new PricingRuleError(
+                `No band assignment found for dealer ${context.dealerAccountId} and part type ${context.partType}`
+            )
+        }
+
+        // Rule 4: Get price for dealer's band
+        const bandPrice = await this.prisma.productPriceBand.findUnique({
+            where: {
+                productId_bandCode: {
+                    productId: context.productId,
+                    bandCode: bandAssignment.bandCode,
+                },
+            },
+        })
+
+        if (!bandPrice) {
+            throw new PricingRuleError(
+                `No price found for product ${context.productCode} band ${bandAssignment.bandCode}`
+            )
+        }
+
+        // Rule 5: Apply minimum price if set
+        const refPrice = await this.prisma.productPriceReference.findUnique({
+            where: { productId: context.productId },
+        })
+
+        let finalPrice = bandPrice.price
+        let minPriceApplied = false
+
+        if (refPrice?.minimumPrice && bandPrice.price.lessThan(refPrice.minimumPrice)) {
+            finalPrice = refPrice.minimumPrice
+            minPriceApplied = true
+        }
+
+        return {
+            price: finalPrice,
+            bandCode: bandAssignment.bandCode,
+            minimumPriceApplied: minPriceApplied,
+            available: true,
         }
     }
 
     /**
-     * Apply minimum price rule
+     * Check if dealer's entitlement allows viewing this part type
      */
-    applyMinimumPrice(price: number, minPrice: number | null): { price: number; applied: boolean } {
-        if (minPrice && price < minPrice) {
-            return { price: minPrice, applied: true };
+    private checkEntitlement(
+        entitlement: string,
+        partType: string
+    ): { allowed: boolean; reason?: string } {
+        switch (entitlement) {
+            case 'SHOW_ALL':
+                return { allowed: true }
+
+            case 'GENUINE_ONLY':
+                if (partType === 'GENUINE') {
+                    return { allowed: true }
+                }
+                return {
+                    allowed: false,
+                    reason: 'Dealer can only view Genuine parts'
+                }
+
+            case 'AFTERMARKET_ONLY':
+                if (partType === 'AFTERMARKET' || partType === 'BRANDED') {
+                    return { allowed: true }
+                }
+                return {
+                    allowed: false,
+                    reason: 'Dealer can only view Aftermarket/Branded parts'
+                }
+
+            default:
+                return {
+                    allowed: false,
+                    reason: 'Invalid entitlement'
+                }
         }
-        return { price, applied: false };
     }
 
     /**
-     * Calculate volume discount (placeholder for future implementation)
+     * Batch price calculation for multiple products
+     * More efficient than calling calculatePrice multiple times
      */
-    applyVolumeDiscount(unitPrice: number, qty: number): { unitPrice: number; discountApplied: boolean } {
-        // Future: Implement quantity break pricing
-        // For now, no volume discounts
-        return { unitPrice, discountApplied: false };
-    }
+    async calculatePrices(
+        dealerAccountId: string,
+        productIds: string[]
+    ): Promise<Map<string, PricingResult>> {
+        // Get dealer info once
+        const dealer = await this.prisma.dealerAccount.findUniqueOrThrow({
+            where: { id: dealerAccountId },
+            include: {
+                bandAssignments: true,
+            },
+        })
 
-    /**
-     * Calculate line total
-     */
-    calculateLineTotal(unitPrice: number, qty: number): number {
-        return Math.round(unitPrice * qty * 100) / 100; // Round to 2 decimal places
+        // Get all products with their prices
+        const products = await this.prisma.product.findMany({
+            where: { id: { in: productIds } },
+            include: {
+                bandPrices: true,
+                refPrice: true,
+            },
+        })
+
+        const results = new Map<string, PricingResult>()
+
+        for (const product of products) {
+            try {
+                const context: PricingContext = {
+                    dealerAccountId: dealer.id,
+                    dealerStatus: dealer.status,
+                    entitlement: dealer.entitlement as any,
+                    productId: product.id,
+                    productCode: product.productCode,
+                    partType: product.partType,
+                    quantity: 1,
+                }
+
+                const result = await this.calculatePrice(context)
+                results.set(product.id, result)
+            } catch (error) {
+                results.set(product.id, {
+                    price: new Prisma.Decimal(0),
+                    bandCode: '',
+                    minimumPriceApplied: false,
+                    available: false,
+                    reason: error instanceof Error ? error.message : 'Unknown error',
+                })
+            }
+        }
+
+        return results
     }
 }

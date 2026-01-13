@@ -3,7 +3,7 @@ import { prisma, UserRole, DealerStatus, Entitlement, PartType, ActorType, Impor
 import { z } from 'zod';
 import * as bcrypt from 'bcrypt';
 import { requireRole, AuthenticatedRequest } from '../lib/auth';
-import { EmailService } from 'shared';
+import { EmailService, DealerCreateSchema } from 'shared';
 import * as fs from 'fs';
 import * as path from 'path';
 import { pipeline } from 'stream/promises';
@@ -25,20 +25,8 @@ function generateSecurePassword(): string {
 }
 
 // Zod Schemas for validation
-const CreateDealerSchema = z.object({
-    companyName: z.string(),
+const CreateDealerSchema = DealerCreateSchema.extend({
     erpAccountNo: z.string().optional(),
-    accountNo: z.string(),
-    firstName: z.string(),
-    lastName: z.string(),
-    email: z.string().email(),
-    entitlement: z.nativeEnum(Entitlement),
-    status: z.nativeEnum(DealerStatus),
-    bands: z.object({
-        genuine: z.string().optional(),
-        aftermarket: z.string().optional(),
-        branded: z.string().optional()
-    }).optional(),
     billingAddress: z.object({
         line1: z.string().optional(),
         line2: z.string().optional(),
@@ -844,7 +832,7 @@ export default async function adminRoutes(server: FastifyInstance) {
         try {
             await emailService.sendWelcomeEmail(email, 'Administrator', password);
         } catch (err) {
-            server.log.error(`Email failed for new admin ${email}:`, err);
+            server.log.error(err, `Email failed for new admin ${email}:`);
         }
 
         await prisma.auditLog.create({
@@ -915,9 +903,9 @@ export default async function adminRoutes(server: FastifyInstance) {
 
         // Send email
         try {
-            await emailService.sendPasswordResetEmail(user.email, newPassword);
+            await emailService.sendPasswordResetEmail(user.email, 'Administrator', newPassword);
         } catch (err) {
-            server.log.error(`Password reset email failed for ${user.email}:`, err);
+            server.log.error(err, `Password reset email failed for ${user.email}:`);
         }
 
         await prisma.auditLog.create({

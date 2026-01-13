@@ -4,7 +4,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { ValidationResult, FieldValidationError } from '../types';
+import { ValidationResult, RuleError } from '../types';
 
 export interface ProductInput {
     productCode: string;
@@ -16,42 +16,34 @@ export interface ProductInput {
 export class ProductValidator {
     constructor(private prisma: PrismaClient) { }
 
-    /**
-     * Validate product data for creation/update
-     */
     validateProduct(data: ProductInput): ValidationResult {
-        const errors: FieldValidationError[] = [];
+        const errors: RuleError[] = [];
 
-        // Product code required and non-empty
         if (!data.productCode || data.productCode.trim().length === 0) {
-            errors.push({ field: 'productCode', message: 'Product code is required', code: 'REQUIRED' });
+            errors.push({ field: 'productCode', message: 'Product code is required', code: 'REQUIRED', severity: 'error' });
         }
 
-        // Description required and non-empty
         if (!data.description || data.description.trim().length === 0) {
-            errors.push({ field: 'description', message: 'Description is required', code: 'REQUIRED' });
+            errors.push({ field: 'description', message: 'Description is required', code: 'REQUIRED', severity: 'error' });
         }
 
-        // Part type required and valid
         const validPartTypes = ['GENUINE', 'AFTERMARKET', 'BRANDED'];
         if (!data.partType) {
-            errors.push({ field: 'partType', message: 'Part type is required', code: 'REQUIRED' });
+            errors.push({ field: 'partType', message: 'Part type is required', code: 'REQUIRED', severity: 'error' });
         } else if (!validPartTypes.includes(data.partType)) {
             errors.push({
                 field: 'partType',
                 message: `Part type must be one of: ${validPartTypes.join(', ')}`,
-                code: 'INVALID_VALUE'
+                code: 'INVALID_VALUE',
+                severity: 'error'
             });
         }
 
         return { valid: errors.length === 0, errors };
     }
 
-    /**
-     * Validate that product has at least one price band
-     */
     async validatePriceBands(productId: string): Promise<ValidationResult> {
-        const errors: FieldValidationError[] = [];
+        const errors: RuleError[] = [];
 
         const bandCount = await this.prisma.productPriceBand.count({
             where: { productId }
@@ -61,11 +53,11 @@ export class ProductValidator {
             errors.push({
                 field: 'bandPrices',
                 message: 'Product must have at least one price band',
-                code: 'NO_PRICES'
+                code: 'NO_PRICES',
+                severity: 'critical'
             });
         }
 
-        // Validate band codes are 1-4
         const bands = await this.prisma.productPriceBand.findMany({
             where: { productId },
             select: { bandCode: true, price: true }
@@ -76,7 +68,8 @@ export class ProductValidator {
                 errors.push({
                     field: 'bandCode',
                     message: `Invalid band code: ${band.bandCode}`,
-                    code: 'INVALID_BAND_CODE'
+                    code: 'INVALID_BAND_CODE',
+                    severity: 'error'
                 });
             }
 
@@ -84,7 +77,8 @@ export class ProductValidator {
                 errors.push({
                     field: 'price',
                     message: `Price must be positive for band ${band.bandCode}`,
-                    code: 'INVALID_PRICE'
+                    code: 'INVALID_PRICE',
+                    severity: 'error'
                 });
             }
         }
@@ -92,11 +86,8 @@ export class ProductValidator {
         return { valid: errors.length === 0, errors };
     }
 
-    /**
-     * Validate product exists and is active
-     */
     async validateProductExists(productCode: string): Promise<ValidationResult> {
-        const errors: FieldValidationError[] = [];
+        const errors: RuleError[] = [];
 
         const product = await this.prisma.product.findUnique({
             where: { productCode },
@@ -107,13 +98,15 @@ export class ProductValidator {
             errors.push({
                 field: 'productCode',
                 message: `Product not found: ${productCode}`,
-                code: 'NOT_FOUND'
+                code: 'NOT_FOUND',
+                severity: 'critical'
             });
         } else if (!product.isActive) {
             errors.push({
                 field: 'productCode',
                 message: `Product is inactive: ${productCode}`,
-                code: 'INACTIVE'
+                code: 'INACTIVE',
+                severity: 'error'
             });
         }
 

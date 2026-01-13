@@ -5,7 +5,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { RuleResult, StockInfo, StockStatus } from '../types';
-import { InventoryError } from '../errors';
+import { InventoryRuleError, BusinessRuleError } from '../errors';
 
 const LOW_STOCK_THRESHOLD = 10;
 
@@ -25,21 +25,24 @@ export class InventoryRules {
             const available = stock?.freeStock ?? 0;
 
             if (available < requestedQty) {
-                return {
-                    success: false,
-                    data: false,
-                    error: `Insufficient stock: requested ${requestedQty}, available ${available}`,
-                    errorCode: 'INSUFFICIENT_STOCK'
-                };
+                throw new InventoryRuleError(`Insufficient stock: requested ${requestedQty}, available ${available}`, 'qty');
             }
 
             return { success: true, data: true };
 
         } catch (error) {
+            const code = error instanceof BusinessRuleError ? error.code : 'INVENTORY_ERROR';
+            const message = error instanceof Error ? error.message : 'Stock check failed';
+            const field = error instanceof BusinessRuleError ? error.field : undefined;
+
             return {
                 success: false,
-                error: error instanceof Error ? error.message : 'Stock check failed',
-                errorCode: 'INVENTORY_ERROR'
+                errors: [{
+                    code,
+                    message,
+                    field,
+                    severity: 'error'
+                }]
             };
         }
     }
@@ -70,8 +73,11 @@ export class InventoryRules {
         } catch (error) {
             return {
                 success: false,
-                error: error instanceof Error ? error.message : 'Failed to get stock status',
-                errorCode: 'INVENTORY_ERROR'
+                errors: [{
+                    code: 'INVENTORY_ERROR',
+                    message: error instanceof Error ? error.message : 'Failed to get stock status',
+                    severity: 'error'
+                }]
             };
         }
     }
@@ -116,8 +122,11 @@ export class InventoryRules {
         } catch (error) {
             return {
                 success: false,
-                error: error instanceof Error ? error.message : 'Batch stock check failed',
-                errorCode: 'INVENTORY_ERROR'
+                errors: [{
+                    code: 'INVENTORY_ERROR',
+                    message: error instanceof Error ? error.message : 'Batch stock check failed',
+                    severity: 'error'
+                }]
             };
         }
     }

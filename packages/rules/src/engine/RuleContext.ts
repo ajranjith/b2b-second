@@ -4,11 +4,20 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { DealerContext, BandAssignment } from '../types';
+
+// Define dealer shape locally since generic DealerContext was removed from types
+export interface RuleContextDealer {
+    dealerAccountId: string;
+    accountNo: string;
+    companyName: string;
+    status: string;
+    entitlement: string;
+    bandAssignments: Array<{ partType: string; bandCode: string }>;
+}
 
 export interface RuleContextData {
     prisma: PrismaClient;
-    dealer?: DealerContext;
+    dealer?: RuleContextDealer;
     userId?: string;
     requestId?: string;
     timestamp?: Date;
@@ -16,7 +25,7 @@ export interface RuleContextData {
 
 export class RuleContext {
     public readonly prisma: PrismaClient;
-    public readonly dealer?: DealerContext;
+    public readonly dealer?: RuleContextDealer;
     public readonly userId?: string;
     public readonly requestId: string;
     public readonly timestamp: Date;
@@ -41,7 +50,7 @@ export class RuleContext {
         dealerAccountId?: string,
         userId?: string
     ): Promise<RuleContext> {
-        let dealer: DealerContext | undefined;
+        let dealer: RuleContextDealer | undefined;
 
         if (dealerAccountId) {
             const dealerData = await prisma.dealerAccount.findUnique({

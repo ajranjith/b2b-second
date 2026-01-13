@@ -1,13 +1,10 @@
 import { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { prisma, PartType, Entitlement, DealerStatus } from 'db';
-import { PricingService, EntitlementError } from 'rules';
+import { EntitlementRules, EntitlementError } from 'rules';
+import { CheckoutSchema, CartItemSchema } from 'shared';
 import { requireAuth, AuthenticatedRequest } from '../lib/auth';
-
-// Initialize PricingService
-// Note: We use the global prisma client here. For transactions, we'll need to handle context carefully,
-// but for calculating prices (READ ONLY), the global instance is sufficient.
-const pricingService = new PricingService(prisma);
+import { ruleEngine } from '../lib/ruleEngine';
 
 const dealerRoutes: FastifyPluginAsync = async (server) => {
     // GET /dealer/search - Search products with dealer pricing & entitlement filtering
@@ -60,10 +57,9 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
             if (dealerAccount.status === DealerStatus.INACTIVE) {
                 return reply.status(403).send({ error: 'Forbidden', message: 'Account inactive' });
             }
-            // SUSPENDED or ACTIVE can proceed, but UI should show notice for SUSPENDED
 
             // 4. Build PRISMA Where Conditions
-            const where: any = {
+            let where: any = {
                 isActive: true
             };
 
@@ -76,14 +72,9 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
                 ];
             }
 
-            // Apply ENTITLEMENT FILTER
-            if (dealerAccount.entitlement === Entitlement.GENUINE_ONLY) {
-                where.partType = PartType.GENUINE;
-            } else if (dealerAccount.entitlement === Entitlement.AFTERMARKET_ONLY) {
-                // Anything EXCEPT Genuine
-                where.partType = { not: PartType.GENUINE };
-            }
-            // SHOW_ALL has no additional filter
+            // Apply ENTITLEMENT FILTER using Rule Engine
+            const entitlementFilter = EntitlementRules.getEntitlementFilter(dealerAccount.entitlement as any);
+            where = { ...where, ...entitlementFilter };
 
             // Apply Optional partType filter (narrowing down)
             if (partType) {
@@ -99,7 +90,6 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
             let orderBy: any = { productCode: 'asc' }; // Default
             if (sortBy === 'code') orderBy = { productCode: 'asc' };
             if (sortBy === 'stock') orderBy = { stock: { freeStock: 'desc' } };
-            // Note: global sortBy price is omitted due to architecture (per-dealer bands), but sorted in memory below for the page.
 
             // 6. Search Products
             const products = await prisma.product.findMany({
@@ -112,57 +102,39 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
                 orderBy
             });
 
-            // 7. Get pricing for each product
-            const results = await Promise.all(
-                products.map(async (product) => {
-                    try {
-                        const pricing = await pricingService.calculatePrice(
-                            dealerAccountId,
-                            product.productCode,
-                            1
-                        );
-
-                        return {
-                            id: product.id,
-                            productCode: product.productCode,
-                            description: product.description,
-                            partType: product.partType,
-                            freeStock: product.stock?.freeStock || 0,
-                            yourPrice: pricing.unitPrice,
-                            bandCode: pricing.bandCode,
-                            available: pricing.available,
-                            currency: pricing.currency
-                        };
-                    } catch (error) {
-                        if (error instanceof EntitlementError) return null; // Filter out if calculatePrice catches an edge case
-
-                        server.log.warn(`Pricing error for product ${product.productCode}:`, error);
-                        return {
-                            id: product.id,
-                            productCode: product.productCode,
-                            description: product.description,
-                            partType: product.partType,
-                            freeStock: product.stock?.freeStock || 0,
-                            yourPrice: null,
-                            bandCode: null,
-                            available: false,
-                            priceError: 'Price unavailable'
-                        };
-                    }
-                })
+            // 7. Calculate pricing for all products using rule engine
+            const priceMap = await ruleEngine.pricing.calculatePrices(
+                dealerAccountId,
+                products.map(p => p.id)
             );
 
-            // Filter out any nulls (from EntitlementError) and mask sensitive info
-            let filteredResults = results.filter(r => r !== null) as any[];
+            // Format response
+            const results = products.map(product => {
+                const pricing = priceMap.get(product.id);
+
+                return {
+                    id: product.id,
+                    productCode: product.productCode,
+                    description: product.description,
+                    partType: product.partType,
+                    freeStock: product.stock?.freeStock ?? 0,
+                    yourPrice: pricing?.available ? pricing.price : null,
+                    bandCode: pricing?.bandCode ?? null,
+                    available: pricing?.available ?? false,
+                    minPriceApplied: pricing?.minimumPriceApplied ?? false,
+                    reason: pricing?.reason,
+                    currency: 'GBP'
+                };
+            });
 
             // In-memory sort by price if requested (only for current page)
             if (sortBy === 'price') {
-                filteredResults.sort((a, b) => (a.yourPrice || 0) - (b.yourPrice || 0));
+                results.sort((a, b) => (Number(a.yourPrice) || 0) - (Number(b.yourPrice) || 0));
             }
 
             return reply.status(200).send({
-                results: filteredResults,
-                count: filteredResults.length,
+                results,
+                count: results.length,
                 query: q || null,
                 entitlement: dealerAccount.entitlement,
                 status: dealerAccount.status
@@ -220,12 +192,16 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
                 });
             }
 
-            // Get dealer pricing
-            const pricing = await pricingService.calculatePrice(
+            // Get dealer pricing using batch method for single item
+            const priceMap = await ruleEngine.pricing.calculatePrices(
                 request.user.dealerAccountId,
-                productCode,
-                1
+                [product.id]
             );
+            const pricing = priceMap.get(product.id);
+
+            if (!pricing) {
+                return reply.status(500).send({ error: 'Pricing fail', message: 'Could not calculate price' });
+            }
 
             return reply.status(200).send({
                 id: product.id,
@@ -235,23 +211,17 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
                 supplier: product.supplier,
                 discountCode: product.discountCode,
                 freeStock: product.stock?.freeStock || 0,
-                yourPrice: pricing.unitPrice,
+                yourPrice: pricing.price,
                 bandCode: pricing.bandCode,
-                minPriceApplied: pricing.minPriceApplied,
-                currency: pricing.currency,
-                aliases: product.aliases.map(a => a.aliasValue)
+                minPriceApplied: pricing.minimumPriceApplied,
+                currency: 'GBP',
+                aliases: product.aliases.map(a => a.aliasValue),
+                reason: pricing.reason,
+                available: pricing.available
             });
 
         } catch (error) {
             server.log.error(error);
-
-            if (error instanceof Error && error.message.includes('not found')) {
-                return reply.status(404).send({
-                    error: 'Not Found',
-                    message: error.message
-                });
-            }
-
             return reply.status(500).send({
                 error: 'Internal Server Error',
                 message: 'An error occurred while fetching product details'
@@ -265,116 +235,60 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
     server.get('/cart', {
         preHandler: requireAuth
     }, async (request: AuthenticatedRequest, reply) => {
-        if (!request.user?.userId) {
-            return reply.status(401).send({
-                error: 'Unauthorized',
-                message: 'User ID not found'
-            });
-        }
-
-        if (!request.user?.dealerAccountId) {
-            return reply.status(400).send({
-                error: 'Bad Request',
-                message: 'Dealer account ID not found'
-            });
+        if (!request.user?.userId || !request.user?.dealerAccountId) {
+            return reply.status(401).send({ error: 'Unauthorized', message: 'Auth info missing' });
         }
 
         try {
-            // Find dealer user
             const dealerUser = await prisma.dealerUser.findUnique({
                 where: { userId: request.user.userId }
             });
 
             if (!dealerUser) {
-                return reply.status(404).send({
-                    error: 'Not Found',
-                    message: 'Dealer user not found'
-                });
+                return reply.status(404).send({ error: 'Not Found', message: 'Dealer user not found' });
             }
 
-            // Get or create cart
             let cart = await prisma.cart.findFirst({
-                where: {
-                    dealerUserId: dealerUser.id
-                },
-                include: {
-                    items: {
-                        include: {
-                            product: {
-                                include: {
-                                    stock: true
-                                }
-                            }
-                        }
-                    }
-                }
+                where: { dealerUserId: dealerUser.id },
+                include: { items: { include: { product: { include: { stock: true } } } } }
             });
 
             if (!cart) {
-                // Create new cart
                 cart = await prisma.cart.create({
-                    data: {
-                        dealerUserId: dealerUser.id,
-                        dealerAccountId: dealerUser.dealerAccountId
-                    },
-                    include: {
-                        items: {
-                            include: {
-                                product: {
-                                    include: {
-                                        stock: true
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    data: { dealerUserId: dealerUser.id, dealerAccountId: dealerUser.dealerAccountId },
+                    include: { items: { include: { product: { include: { stock: true } } } } }
                 });
             }
 
-            // Calculate pricing for each item
-            const itemsWithPricing = await Promise.all(
-                cart.items.map(async (item) => {
-                    try {
-                        const pricing = await pricingService.calculatePrice(
-                            request.user!.dealerAccountId!,
-                            item.product.productCode,
-                            item.qty
-                        );
-
-                        return {
-                            id: item.id,
-                            productCode: item.product.productCode,
-                            description: item.product.description,
-                            partType: item.product.partType,
-                            qty: item.qty,
-                            unitPrice: pricing.unitPrice,
-                            lineTotal: pricing.totalPrice,
-                            bandCode: pricing.bandCode,
-                            minPriceApplied: pricing.minPriceApplied,
-                            freeStock: item.product.stock?.freeStock || 0
-                        };
-                    } catch (error) {
-                        server.log.warn(`Pricing error for cart item ${item.id}:`, error);
-                        return {
-                            id: item.id,
-                            productCode: item.product.productCode,
-                            description: item.product.description,
-                            partType: item.product.partType,
-                            qty: item.qty,
-                            unitPrice: null,
-                            lineTotal: null,
-                            bandCode: null,
-                            minPriceApplied: false,
-                            freeStock: item.product.stock?.freeStock || 0,
-                            priceError: 'Price unavailable'
-                        };
-                    }
-                })
+            // Batch Calculate pricing
+            const productIds = cart.items.map(i => i.product.id);
+            const priceMap = await ruleEngine.pricing.calculatePrices(
+                request.user.dealerAccountId,
+                productIds
             );
 
-            const cartTotal = itemsWithPricing.reduce((sum, item) => {
-                return sum + (item.lineTotal || 0);
-            }, 0);
+            const itemsWithPricing = cart.items.map((item) => {
+                const pricing = priceMap.get(item.product.id);
+                const unitPrice = pricing?.available ? Number(pricing.price) : 0;
+                const lineTotal = unitPrice * item.qty;
+
+                return {
+                    id: item.id,
+                    productCode: item.product.productCode,
+                    description: item.product.description,
+                    partType: item.product.partType,
+                    qty: item.qty,
+                    unitPrice: unitPrice,
+                    lineTotal: lineTotal,
+                    bandCode: pricing?.bandCode,
+                    minPriceApplied: pricing?.minimumPriceApplied,
+                    freeStock: item.product.stock?.freeStock || 0,
+                    available: pricing?.available,
+                    reason: pricing?.reason
+                };
+            });
+
+            const cartTotal = itemsWithPricing.reduce((sum, item) => sum + (item.lineTotal || 0), 0);
 
             return reply.status(200).send({
                 cartId: cart.id,
@@ -386,10 +300,7 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
 
         } catch (error) {
             server.log.error(error);
-            return reply.status(500).send({
-                error: 'Internal Server Error',
-                message: 'An error occurred while fetching cart'
-            });
+            return reply.status(500).send({ error: 'Internal Server Error', message: 'Cart fetch failed' });
         }
     });
 
@@ -397,453 +308,111 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
     server.post('/cart/items', {
         preHandler: requireAuth
     }, async (request: AuthenticatedRequest, reply) => {
-        const bodySchema = z.object({
-            productId: z.string().uuid(),
-            qty: z.number().int().min(1)
-        });
-
-        const validation = bodySchema.safeParse(request.body);
-
+        const validation = CartItemSchema.safeParse(request.body);
         if (!validation.success) {
-            return reply.status(400).send({
-                error: 'Validation Error',
-                message: 'Invalid request body',
-                details: validation.error.issues
-            });
+            return reply.status(400).send({ error: 'Validation Error', details: validation.error.issues });
         }
 
         const { productId, qty } = validation.data;
-
-        if (!request.user?.userId) {
-            return reply.status(401).send({
-                error: 'Unauthorized',
-                message: 'User ID not found'
-            });
-        }
+        if (!request.user?.userId) return reply.status(401).send({ error: 'Unauthorized' });
 
         try {
-            // Validate product exists
-            const product = await prisma.product.findUnique({
-                where: { id: productId }
-            });
+            const dealerUser = await prisma.dealerUser.findUnique({ where: { userId: request.user.userId } });
+            if (!dealerUser) return reply.status(404).send({ error: 'Not Found', message: 'Dealer user not found' });
 
-            if (!product) {
-                return reply.status(404).send({
-                    error: 'Not Found',
-                    message: 'Product not found'
-                });
-            }
-
-            // Find dealer user
-            const dealerUser = await prisma.dealerUser.findUnique({
-                where: { userId: request.user.userId }
-            });
-
-            if (!dealerUser) {
-                return reply.status(404).send({
-                    error: 'Not Found',
-                    message: 'Dealer user not found'
-                });
-            }
-
-            // Get or create cart
-            let cart = await prisma.cart.findFirst({
-                where: {
-                    dealerUserId: dealerUser.id
-                }
-            });
-
+            let cart = await prisma.cart.findFirst({ where: { dealerUserId: dealerUser.id } });
             if (!cart) {
                 cart = await prisma.cart.create({
-                    data: {
-                        dealerUserId: dealerUser.id,
-                        dealerAccountId: dealerUser.dealerAccountId
-                    }
+                    data: { dealerUserId: dealerUser.id, dealerAccountId: dealerUser.dealerAccountId }
                 });
             }
 
-            // Check if item already exists in cart
-            const existingItem = await prisma.cartItem.findFirst({
-                where: {
-                    cartId: cart.id,
-                    productId
-                }
-            });
-
+            const existingItem = await prisma.cartItem.findFirst({ where: { cartId: cart.id, productId } });
             if (existingItem) {
-                // Update quantity
-                await prisma.cartItem.update({
-                    where: { id: existingItem.id },
-                    data: { qty: existingItem.qty + qty }
-                });
+                await prisma.cartItem.update({ where: { id: existingItem.id }, data: { qty: existingItem.qty + qty } });
             } else {
-                // Add new item
-                await prisma.cartItem.create({
-                    data: {
-                        cartId: cart.id,
-                        productId,
-                        qty
-                    }
-                });
+                await prisma.cartItem.create({ data: { cartId: cart.id, productId, qty } });
             }
 
-            // Return updated cart (reuse GET cart logic)
-            const updatedCart = await prisma.cart.findUnique({
-                where: { id: cart.id },
-                include: {
-                    items: {
-                        include: {
-                            product: {
-                                include: {
-                                    stock: true
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-
-            if (!updatedCart) {
-                throw new Error('Cart not found after update');
-            }
-
-            const itemsWithPricing = await Promise.all(
-                updatedCart.items.map(async (item) => {
-                    try {
-                        const pricing = await pricingService.calculatePrice(
-                            request.user!.dealerAccountId!,
-                            item.product.productCode,
-                            item.qty
-                        );
-
-                        return {
-                            id: item.id,
-                            productCode: item.product.productCode,
-                            description: item.product.description,
-                            qty: item.qty,
-                            unitPrice: pricing.unitPrice,
-                            lineTotal: pricing.totalPrice,
-                            bandCode: pricing.bandCode
-                        };
-                    } catch (error) {
-                        return {
-                            id: item.id,
-                            productCode: item.product.productCode,
-                            description: item.product.description,
-                            qty: item.qty,
-                            unitPrice: null,
-                            lineTotal: null,
-                            bandCode: null,
-                            priceError: 'Price unavailable'
-                        };
-                    }
-                })
-            );
-
-            const cartTotal = itemsWithPricing.reduce((sum, item) => sum + (item.lineTotal || 0), 0);
-
-            return reply.status(200).send({
-                cartId: updatedCart.id,
-                items: itemsWithPricing,
-                itemCount: updatedCart.items.length,
-                total: cartTotal,
-                currency: 'GBP'
-            });
+            return reply.status(200).send({ success: true, message: 'Item added' });
 
         } catch (error) {
             server.log.error(error);
-            return reply.status(500).send({
-                error: 'Internal Server Error',
-                message: 'An error occurred while adding item to cart'
-            });
+            return reply.status(500).send({ error: 'Internal Server Error', message: 'Add item failed' });
         }
     });
 
-    // PATCH /dealer/cart/items/:id - Update cart item quantity
+    // PATCH /dealer/cart/items/:id 
     server.patch('/cart/items/:id', {
         preHandler: requireAuth
     }, async (request: AuthenticatedRequest, reply) => {
-        const paramsSchema = z.object({
-            id: z.string().uuid()
-        });
-
-        const bodySchema = z.object({
-            qty: z.number().int().min(0)
-        });
+        const paramsSchema = z.object({ id: z.string().uuid() });
+        const bodySchema = CartItemSchema.pick({ qty: true });
 
         const paramsValidation = paramsSchema.safeParse(request.params);
         const bodyValidation = bodySchema.safeParse(request.body);
 
-        if (!paramsValidation.success || !bodyValidation.success) {
-            return reply.status(400).send({
-                error: 'Validation Error',
-                message: 'Invalid request'
-            });
-        }
+        if (!paramsValidation.success || !bodyValidation.success) return reply.status(400).send({ error: 'Validation Error' });
 
         const { id } = paramsValidation.data;
         const { qty } = bodyValidation.data;
 
-        if (!request.user?.userId) {
-            return reply.status(401).send({
-                error: 'Unauthorized',
-                message: 'User ID not found'
-            });
-        }
-
         try {
             const cartItem = await prisma.cartItem.findUnique({
                 where: { id },
-                include: {
-                    cart: {
-                        include: {
-                            dealerUser: true
-                        }
-                    }
-                }
+                include: { cart: { include: { dealerUser: true } } }
             });
 
-            if (!cartItem) {
-                return reply.status(404).send({
-                    error: 'Not Found',
-                    message: 'Cart item not found'
-                });
-            }
+            if (!cartItem) return reply.status(404).send({ error: 'Not Found' });
+            if (cartItem.cart.dealerUser.userId !== request.user!.userId) return reply.status(403).send({ error: 'Forbidden' });
 
-            // Verify ownership
-            if (cartItem.cart.dealerUser.userId !== request.user.userId) {
-                return reply.status(403).send({
-                    error: 'Forbidden',
-                    message: 'Not authorized to modify this cart item'
-                });
-            }
-
-            // If qty is 0, delete the item
             if (qty === 0) {
-                await prisma.cartItem.delete({
-                    where: { id }
-                });
+                await prisma.cartItem.delete({ where: { id } });
             } else {
-                // Update quantity
-                await prisma.cartItem.update({
-                    where: { id },
-                    data: { qty }
-                });
+                await prisma.cartItem.update({ where: { id }, data: { qty } });
             }
 
-            // Return updated cart
-            const updatedCart = await prisma.cart.findUnique({
-                where: { id: cartItem.cartId },
-                include: {
-                    items: {
-                        include: {
-                            product: {
-                                include: {
-                                    stock: true
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-
-            if (!updatedCart) {
-                throw new Error('Cart not found');
-            }
-
-            const itemsWithPricing = await Promise.all(
-                updatedCart.items.map(async (item) => {
-                    try {
-                        const pricing = await pricingService.calculatePrice(
-                            request.user!.dealerAccountId!,
-                            item.product.productCode,
-                            item.qty
-                        );
-
-                        return {
-                            id: item.id,
-                            productCode: item.product.productCode,
-                            description: item.product.description,
-                            qty: item.qty,
-                            unitPrice: pricing.unitPrice,
-                            lineTotal: pricing.totalPrice,
-                            bandCode: pricing.bandCode
-                        };
-                    } catch (error) {
-                        return {
-                            id: item.id,
-                            productCode: item.product.productCode,
-                            description: item.product.description,
-                            qty: item.qty,
-                            unitPrice: null,
-                            lineTotal: null,
-                            bandCode: null,
-                            priceError: 'Price unavailable'
-                        };
-                    }
-                })
-            );
-
-            const cartTotal = itemsWithPricing.reduce((sum, item) => sum + (item.lineTotal || 0), 0);
-
-            return reply.status(200).send({
-                cartId: updatedCart.id,
-                items: itemsWithPricing,
-                itemCount: updatedCart.items.length,
-                total: cartTotal,
-                currency: 'GBP'
-            });
-
+            return reply.status(200).send({ success: true, message: 'Cart updated' });
         } catch (error) {
             server.log.error(error);
-            return reply.status(500).send({
-                error: 'Internal Server Error',
-                message: 'An error occurred while updating cart item'
-            });
+            return reply.status(500).send({ error: 'Internal Server Error' });
         }
     });
 
-    // DELETE /dealer/cart/items/:id - Remove cart item
+    // DELETE /dealer/cart/items/:id
     server.delete('/cart/items/:id', {
         preHandler: requireAuth
     }, async (request: AuthenticatedRequest, reply) => {
-        const paramsSchema = z.object({
-            id: z.string().uuid()
-        });
-
+        const paramsSchema = z.object({ id: z.string().uuid() });
         const validation = paramsSchema.safeParse(request.params);
 
-        if (!validation.success) {
-            return reply.status(400).send({
-                error: 'Validation Error',
-                message: 'Invalid cart item ID'
-            });
-        }
-
+        if (!validation.success) return reply.status(400).send({ error: 'Validation Error' });
         const { id } = validation.data;
-
-        if (!request.user?.userId) {
-            return reply.status(401).send({
-                error: 'Unauthorized',
-                message: 'User ID not found'
-            });
-        }
 
         try {
             const cartItem = await prisma.cartItem.findUnique({
                 where: { id },
-                include: {
-                    cart: {
-                        include: {
-                            dealerUser: true
-                        }
-                    }
-                }
+                include: { cart: { include: { dealerUser: true } } }
             });
 
-            if (!cartItem) {
-                return reply.status(404).send({
-                    error: 'Not Found',
-                    message: 'Cart item not found'
-                });
-            }
+            if (!cartItem) return reply.status(404).send({ error: 'Not Found' });
+            if (cartItem.cart.dealerUser.userId !== request.user!.userId) return reply.status(403).send({ error: 'Forbidden' });
 
-            // Verify ownership
-            if (cartItem.cart.dealerUser.userId !== request.user.userId) {
-                return reply.status(403).send({
-                    error: 'Forbidden',
-                    message: 'Not authorized to delete this cart item'
-                });
-            }
+            await prisma.cartItem.delete({ where: { id } });
 
-            // Delete the item
-            await prisma.cartItem.delete({
-                where: { id }
-            });
-
-            // Return updated cart
-            const updatedCart = await prisma.cart.findUnique({
-                where: { id: cartItem.cartId },
-                include: {
-                    items: {
-                        include: {
-                            product: {
-                                include: {
-                                    stock: true
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-
-            if (!updatedCart) {
-                throw new Error('Cart not found');
-            }
-
-            const itemsWithPricing = await Promise.all(
-                updatedCart.items.map(async (item) => {
-                    try {
-                        const pricing = await pricingService.calculatePrice(
-                            request.user!.dealerAccountId!,
-                            item.product.productCode,
-                            item.qty
-                        );
-
-                        return {
-                            id: item.id,
-                            productCode: item.product.productCode,
-                            description: item.product.description,
-                            qty: item.qty,
-                            unitPrice: pricing.unitPrice,
-                            lineTotal: pricing.totalPrice,
-                            bandCode: pricing.bandCode
-                        };
-                    } catch (error) {
-                        return {
-                            id: item.id,
-                            productCode: item.product.productCode,
-                            description: item.product.description,
-                            qty: item.qty,
-                            unitPrice: null,
-                            lineTotal: null,
-                            bandCode: null,
-                            priceError: 'Price unavailable'
-                        };
-                    }
-                })
-            );
-
-            const cartTotal = itemsWithPricing.reduce((sum, item) => sum + (item.lineTotal || 0), 0);
-
-            return reply.status(200).send({
-                cartId: updatedCart.id,
-                items: itemsWithPricing,
-                itemCount: updatedCart.items.length,
-                total: cartTotal,
-                currency: 'GBP'
-            });
+            return reply.status(200).send({ success: true, message: 'Item removed' });
 
         } catch (error) {
             server.log.error(error);
-            return reply.status(500).send({
-                error: 'Internal Server Error',
-                message: 'An error occurred while deleting cart item'
-            });
+            return reply.status(500).send({ error: 'Internal Server Error' });
         }
     });
 
-    // POST /dealer/checkout - Submit cart as order
+    // POST /dealer/checkout
     server.post('/checkout', {
         preHandler: requireAuth
     }, async (request: AuthenticatedRequest, reply) => {
-        const bodySchema = z.object({
-            dispatchMethod: z.string().optional(),
-            poRef: z.string().optional(),
-            notes: z.string().optional()
-        });
-
-        const validation = bodySchema.safeParse(request.body);
+        const validation = CheckoutSchema.safeParse(request.body);
 
         if (!validation.success) {
             return reply.status(400).send({
@@ -855,55 +424,29 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
 
         const { dispatchMethod, poRef, notes } = validation.data;
 
-        if (!request.user?.userId) {
-            return reply.status(401).send({
-                error: 'Unauthorized',
-                message: 'User ID not found'
-            });
-        }
-
-        if (!request.user?.dealerAccountId) {
-            return reply.status(400).send({
-                error: 'Bad Request',
-                message: 'Dealer account ID not found'
-            });
+        if (!request.user?.userId || !request.user?.dealerAccountId) {
+            return reply.status(400).send({ error: 'Bad Request', message: 'Dealer info missing' });
         }
 
         try {
-            // 0. CHECK DEALER STATUS
+            // 1. Get Dealer Info & User
+            const dealerUser = await prisma.dealerUser.findUnique({
+                where: { userId: request.user.userId }
+            });
+
+            if (!dealerUser) {
+                return reply.status(404).send({ error: 'Not Found', message: 'Dealer user not found' });
+            }
+
             const dealerAccount = await prisma.dealerAccount.findUnique({
-                where: { id: request.user.dealerAccountId },
-                select: { status: true }
+                where: { id: request.user.dealerAccountId }
             });
 
             if (!dealerAccount) {
                 return reply.status(404).send({ error: 'Not Found', message: 'Dealer account not found' });
             }
 
-            if (dealerAccount.status === DealerStatus.SUSPENDED) {
-                return reply.status(403).send({
-                    error: 'Forbidden',
-                    message: 'Account suspended. Cannot place order. Please contact customer service team.'
-                });
-            }
-
-            if (dealerAccount.status === DealerStatus.INACTIVE) {
-                return reply.status(403).send({ error: 'Forbidden', message: 'Account inactive' });
-            }
-
-            // Find dealer user
-            const dealerUser = await prisma.dealerUser.findUnique({
-                where: { userId: request.user.userId }
-            });
-
-            if (!dealerUser) {
-                return reply.status(404).send({
-                    error: 'Not Found',
-                    message: 'Dealer user not found'
-                });
-            }
-
-            // Get cart with items
+            // 2. Get cart with items
             const cart = await prisma.cart.findFirst({
                 where: { dealerUserId: dealerUser.id },
                 include: {
@@ -920,46 +463,67 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
             });
 
             if (!cart || cart.items.length === 0) {
-                return reply.status(400).send({
-                    error: 'Bad Request',
-                    message: 'Cart is empty'
+                return reply.status(400).send({ error: 'Bad Request', message: 'Cart is empty' });
+            }
+
+            // 3. VALIDATE ORDER via Rule Engine
+            const orderValidation = await ruleEngine.orders.validateOrderCreation({
+                dealerAccountId: dealerAccount.id,
+                dealerStatus: dealerAccount.status,
+                cartItems: cart.items.map(item => ({
+                    productId: item.productId,
+                    productCode: item.product.productCode,
+                    quantity: item.qty
+                })),
+                dispatchMethod,
+                poRef,
+                notes
+            });
+
+            if (!orderValidation.canProceed) {
+                return reply.status(403).send({
+                    error: 'Order validation failed',
+                    blockers: orderValidation.blockers,
+                    details: orderValidation.errors,
+                    warnings: orderValidation.warnings
                 });
             }
 
-            // Generate unique order number: ORD-timestamp-random
+            // 4. Fetch prices for all items in batch
+            const itemProductIds = cart.items.map(i => i.product.id);
+            const priceMap = await ruleEngine.pricing.calculatePrices(
+                request.user!.dealerAccountId!,
+                itemProductIds
+            );
+
+            // Generate unique order number
             const orderNo = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
 
             // Prepare order lines with current pricing
-            const orderLinesData = await Promise.all(
-                cart.items.map(async (item) => {
-                    // Recalculate price to ensure it's current
-                    let pricing;
-                    try {
-                        pricing = await pricingService.calculatePrice(
-                            request.user!.dealerAccountId!,
-                            item.product.productCode,
-                            item.qty
-                        );
-                    } catch (error) {
-                        server.log.error(`Pricing failed for ${item.product.productCode}`, error);
-                        throw new Error(`Pricing unavailable for product ${item.product.productCode}`);
-                    }
+            const orderLinesData = cart.items.map((item) => {
+                const pricing = priceMap.get(item.product.id);
 
-                    return {
-                        productId: item.productId,
-                        productCodeSnapshot: item.product.productCode,
-                        descriptionSnapshot: item.product.description,
-                        partTypeSnapshot: item.product.partType,
-                        qty: item.qty,
-                        unitPriceSnapshot: pricing.unitPrice,
-                        bandCodeSnapshot: pricing.bandCode,
-                        minPriceApplied: pricing.minPriceApplied,
-                        // Initialize optional status fields
-                        shippedQty: 0,
-                        backorderedQty: 0
-                    };
-                })
-            );
+                if (!pricing) {
+                    throw new Error(`Pricing unavailable for product ${item.product.productCode}`);
+                }
+
+                if (!pricing.available) {
+                    throw new Error(`Product ${item.product.productCode} is not available (${pricing.reason})`);
+                }
+
+                return {
+                    productId: item.productId,
+                    productCodeSnapshot: item.product.productCode,
+                    descriptionSnapshot: item.product.description,
+                    partTypeSnapshot: item.product.partType,
+                    qty: item.qty,
+                    unitPriceSnapshot: Number(pricing.price),
+                    bandCodeSnapshot: pricing.bandCode,
+                    minPriceApplied: pricing.minimumPriceApplied,
+                    shippedQty: 0,
+                    backorderedQty: 0
+                };
+            });
 
             // Calculate totals
             const subtotal = orderLinesData.reduce((sum, line) => {
@@ -968,7 +532,7 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
 
             // Use transaction to create order, clear cart, and log action
             const order = await prisma.$transaction(async (tx) => {
-                // 1. Create Order
+                // Create Order
                 const newOrder = await tx.orderHeader.create({
                     data: {
                         orderNo,
@@ -979,7 +543,7 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
                         poRef,
                         notes,
                         subtotal: subtotal,
-                        total: subtotal, // Assuming no tax/shipping logic for now
+                        total: subtotal,
                         currency: 'GBP',
                         lines: {
                             create: orderLinesData
@@ -990,12 +554,12 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
                     }
                 });
 
-                // 2. Clear Cart
+                // Clear Cart
                 await tx.cartItem.deleteMany({
                     where: { cartId: cart.id }
                 });
 
-                // 3. Create Audit Log
+                // Create Audit Log
                 await tx.auditLog.create({
                     data: {
                         actorType: 'DEALER',
@@ -1018,9 +582,15 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
         } catch (error: any) {
             server.log.error(error);
             // Handle specific pricing error
-            if (error.message && error.message.includes('Pricing unavailable')) {
+            if (error.message && error.message.includes('unavailable')) {
                 return reply.status(400).send({
                     error: 'Pricing Error',
+                    message: error.message
+                });
+            }
+            if (error.message && error.message.includes('not available')) {
+                return reply.status(400).send({
+                    error: 'Availability Error',
                     message: error.message
                 });
             }
@@ -1032,6 +602,7 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
         }
     });
 
+    // GET /dealer/orders
     server.get('/orders', {
         preHandler: requireAuth,
     }, async (request: AuthenticatedRequest, reply) => {

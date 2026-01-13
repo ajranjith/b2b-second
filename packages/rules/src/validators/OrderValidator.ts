@@ -4,33 +4,32 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { ValidationResult, FieldValidationError, OrderContext, OrderLineContext } from '../types';
+import { ValidationResult, RuleError } from '../types';
+
+export interface OrderInput {
+    dealerAccountId: string;
+    dealerUserId: string;
+    lines: Array<{ productCode: string; qty: number }>;
+}
 
 export class OrderValidator {
     constructor(private prisma: PrismaClient) { }
 
-    /**
-     * Validate order creation input
-     */
-    validateOrderCreate(order: OrderContext): ValidationResult {
-        const errors: FieldValidationError[] = [];
+    validateOrderCreate(order: OrderInput): ValidationResult {
+        const errors: RuleError[] = [];
 
-        // Dealer account required
         if (!order.dealerAccountId) {
-            errors.push({ field: 'dealerAccountId', message: 'Dealer account ID is required', code: 'REQUIRED' });
+            errors.push({ field: 'dealerAccountId', message: 'Dealer account ID is required', code: 'REQUIRED', severity: 'error' });
         }
 
-        // Dealer user required
         if (!order.dealerUserId) {
-            errors.push({ field: 'dealerUserId', message: 'Dealer user ID is required', code: 'REQUIRED' });
+            errors.push({ field: 'dealerUserId', message: 'Dealer user ID is required', code: 'REQUIRED', severity: 'error' });
         }
 
-        // Must have at least one line
         if (!order.lines || order.lines.length === 0) {
-            errors.push({ field: 'lines', message: 'Order must have at least one line', code: 'REQUIRED' });
+            errors.push({ field: 'lines', message: 'Order must have at least one line', code: 'REQUIRED', severity: 'error' });
         }
 
-        // Validate each line
         if (order.lines) {
             order.lines.forEach((line, index) => {
                 const lineErrors = this.validateOrderLine(line, index);
@@ -41,33 +40,27 @@ export class OrderValidator {
         return { valid: errors.length === 0, errors };
     }
 
-    /**
-     * Validate a single order line
-     */
-    private validateOrderLine(line: OrderLineContext, index: number): FieldValidationError[] {
-        const errors: FieldValidationError[] = [];
+    private validateOrderLine(line: { productCode: string; qty: number }, index: number): RuleError[] {
+        const errors: RuleError[] = [];
         const prefix = `lines[${index}]`;
 
         if (!line.productCode) {
-            errors.push({ field: `${prefix}.productCode`, message: 'Product code is required', code: 'REQUIRED' });
+            errors.push({ field: `${prefix}.productCode`, message: 'Product code is required', code: 'REQUIRED', severity: 'error' });
         }
 
         if (!line.qty || line.qty <= 0) {
-            errors.push({ field: `${prefix}.qty`, message: 'Quantity must be greater than 0', code: 'INVALID_VALUE' });
+            errors.push({ field: `${prefix}.qty`, message: 'Quantity must be greater than 0', code: 'INVALID_VALUE', severity: 'error' });
         }
 
         if (!Number.isInteger(line.qty)) {
-            errors.push({ field: `${prefix}.qty`, message: 'Quantity must be a whole number', code: 'INVALID_VALUE' });
+            errors.push({ field: `${prefix}.qty`, message: 'Quantity must be a whole number', code: 'INVALID_VALUE', severity: 'error' });
         }
 
         return errors;
     }
 
-    /**
-     * Validate order can be modified (status-based)
-     */
     async validateOrderUpdate(orderId: string): Promise<ValidationResult> {
-        const errors: FieldValidationError[] = [];
+        const errors: RuleError[] = [];
 
         const order = await this.prisma.orderHeader.findUnique({
             where: { id: orderId },
@@ -78,35 +71,33 @@ export class OrderValidator {
             errors.push({
                 field: 'orderId',
                 message: `Order not found: ${orderId}`,
-                code: 'NOT_FOUND'
+                code: 'NOT_FOUND',
+                severity: 'critical'
             });
             return { valid: false, errors };
         }
 
-        // Cannot modify shipped or cancelled orders
         const immutableStatuses = ['SHIPPED', 'CANCELLED'];
         if (immutableStatuses.includes(order.status)) {
             errors.push({
                 field: 'status',
                 message: `Cannot modify order in ${order.status} status`,
-                code: 'IMMUTABLE'
+                code: 'IMMUTABLE',
+                severity: 'error'
             });
         }
 
         return { valid: errors.length === 0, errors };
     }
 
-    /**
-     * Validate order status transition
-     */
     validateStatusTransition(currentStatus: string, newStatus: string): ValidationResult {
-        const errors: FieldValidationError[] = [];
+        const errors: RuleError[] = [];
 
         const validTransitions: Record<string, string[]> = {
             'SUSPENDED': ['PROCESSING', 'CANCELLED'],
             'PROCESSING': ['SHIPPED', 'CANCELLED'],
-            'SHIPPED': [], // Cannot transition from shipped
-            'CANCELLED': [] // Cannot transition from cancelled
+            'SHIPPED': [],
+            'CANCELLED': []
         };
 
         const allowed = validTransitions[currentStatus] || [];
@@ -114,7 +105,8 @@ export class OrderValidator {
             errors.push({
                 field: 'status',
                 message: `Cannot transition from ${currentStatus} to ${newStatus}`,
-                code: 'INVALID_TRANSITION'
+                code: 'INVALID_TRANSITION',
+                severity: 'error'
             });
         }
 

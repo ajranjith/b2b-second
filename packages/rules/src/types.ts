@@ -1,105 +1,91 @@
 /**
  * Rule Engine Types
- * Shared types for validators, rules, and engine
+ * Defined by user requirements
  */
 
-import { Prisma } from '@prisma/client';
+import { Prisma, PartType, DealerStatus, Entitlement } from '@prisma/client'
 
-// Re-export Prisma enums for convenience
-export { PartType, Entitlement, DealerStatus, OrderStatus } from '@prisma/client';
+// Re-export for convenience
+export { PartType, DealerStatus, Entitlement, Prisma }
 
-// ============================================================================
-// Result Types
-// ============================================================================
-
-export interface RuleResult<T> {
-    success: boolean;
-    data?: T;
-    error?: string;
-    errorCode?: string;
+// Rule result types
+export interface RuleResult<T = any> {
+    success: boolean
+    data?: T
+    errors?: RuleError[]
+    warnings?: RuleWarning[]
 }
 
-export interface ValidationResult {
-    valid: boolean;
-    errors: FieldValidationError[];
+export interface RuleError {
+    code: string
+    message: string
+    field?: string
+    severity: 'error' | 'critical'
 }
 
-export interface FieldValidationError {
-    field: string;
-    message: string;
-    code?: string;
+export interface RuleWarning {
+    code: string
+    message: string
+    field?: string
 }
 
-// ============================================================================
-// Context Types
-// ============================================================================
-
-export interface DealerContext {
-    dealerAccountId: string;
-    accountNo: string;
-    companyName: string;
-    status: string;
-    entitlement: string;
-    bandAssignments: BandAssignment[];
+// Pricing types
+export interface PricingContext {
+    dealerAccountId: string
+    dealerStatus: DealerStatus
+    entitlement: Entitlement
+    productId: string
+    productCode: string
+    partType: PartType
+    quantity: number
 }
 
-export interface BandAssignment {
-    partType: string;
-    bandCode: string;
+export interface PricingResult {
+    price: Prisma.Decimal
+    bandCode: string
+    minimumPriceApplied: boolean
+    available: boolean
+    reason?: string
+    // Additional fields useful for UI
+    unitPrice?: number
+    totalPrice?: number
+    currency?: string
+    description?: string
 }
 
-export interface ProductContext {
-    productId: string;
-    productCode: string;
-    description: string;
-    partType: string;
-    isActive: boolean;
-    freeStock?: number;
+// Order types
+export interface OrderCreationContext {
+    dealerAccountId: string
+    dealerStatus: DealerStatus
+    cartItems: Array<{
+        productId: string
+        productCode: string
+        quantity: number
+        unitPrice?: number // Helpful for validation
+    }>
+    dispatchMethod?: string
+    poRef?: string
+    notes?: string
 }
 
-export interface OrderContext {
-    orderId?: string;
-    dealerAccountId: string;
-    dealerUserId: string;
-    status?: string;
-    lines: OrderLineContext[];
+export interface OrderValidationResult extends RuleResult {
+    canProceed: boolean
+    blockers?: string[]
 }
 
-export interface OrderLineContext {
-    productCode: string;
-    qty: number;
-    unitPrice?: number;
-    bandCode?: string;
+// Entitlement types
+export interface EntitlementCheck {
+    dealerId: string
+    partType: PartType
+    action: 'view' | 'purchase' | 'quote'
 }
 
-// ============================================================================
-// Pricing Types
-// ============================================================================
-
-export interface PriceCalculation {
-    productId: string;
-    productCode: string;
-    description: string;
-    partType: string;
-    qty: number;
-    bandCode: string;
-    unitPrice: number;
-    totalPrice: number;
-    minPriceApplied: boolean;
-    currency: string;
-    available: boolean;
+export interface EntitlementResult {
+    allowed: boolean
+    reason?: string
 }
 
-export interface PricingInput {
-    dealerAccountId: string;
-    productCode: string;
-    qty: number;
-}
-
-// ============================================================================
-// Stock Types
-// ============================================================================
-
+// Inventory types
 export type StockStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
 
 export interface StockInfo {
@@ -110,30 +96,15 @@ export interface StockInfo {
 }
 
 // ============================================================================
-// Rule Definitions
+// Legacy / Helper Types (maintained for compatibility during refactor)
 // ============================================================================
 
-export interface Rule<TInput, TOutput> {
-    name: string;
-    description?: string;
-    execute(input: TInput): Promise<RuleResult<TOutput>>;
+export interface ValidationResult {
+    valid: boolean;
+    errors: RuleError[];
 }
 
-export interface Validator<T> {
-    validate(data: T): ValidationResult;
-}
-
-// ============================================================================
-// Engine Types
-// ============================================================================
-
-// Note: RuleEngineConfig is defined in engine/RuleEngine.ts
-
-export interface ExecutionResult<T> {
-    success: boolean;
-    data?: T;
-    validationErrors?: FieldValidationError[];
+export interface ExecutionResult<T> extends RuleResult<T> {
     executionError?: string;
     duration?: number;
 }
-

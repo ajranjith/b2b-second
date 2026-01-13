@@ -19,7 +19,7 @@ const authRoutes: FastifyPluginAsync = async (server) => {
             return reply.status(400).send({
                 error: 'Validation Error',
                 message: 'Invalid email or password format',
-                details: validation.error.errors
+                details: validation.error.issues
             });
         }
 

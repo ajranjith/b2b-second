@@ -1,108 +1,81 @@
-/**
- * Entitlement Rules
- * Access control based on dealer entitlements
- */
-
-import { Entitlement, PartType } from '@prisma/client';
-import { RuleResult } from '../types';
-import { EntitlementError } from '../errors';
-
-export interface ProductForEntitlement {
-    id: string;
-    productCode: string;
-    partType: PartType | string;
-}
+// packages/rules/src/rules/EntitlementRules.ts
+import { Entitlement, PartType, PrismaClient } from '@prisma/client'
+import { EntitlementCheck, EntitlementResult } from '../types'
 
 export class EntitlementRules {
     /**
-     * Check if dealer can view a product based on entitlement and part type
+     * Check if dealer can access a product based on entitlement
      */
-    canViewProduct(dealerEntitlement: Entitlement | string, productPartType: PartType | string): boolean {
-        // SHOW_ALL: can see everything
-        if (dealerEntitlement === 'SHOW_ALL') {
-            return true;
-        }
-
-        // GENUINE_ONLY: can only see GENUINE parts
-        if (dealerEntitlement === 'GENUINE_ONLY') {
-            return productPartType === 'GENUINE';
-        }
-
-        // AFTERMARKET_ONLY: can see AFTERMARKET and BRANDED, but not GENUINE
-        if (dealerEntitlement === 'AFTERMARKET_ONLY') {
-            return productPartType !== 'GENUINE';
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if dealer can view product and throw if not
-     */
-    assertCanViewProduct(dealerEntitlement: Entitlement | string, productPartType: PartType | string): void {
-        if (!this.canViewProduct(dealerEntitlement, productPartType)) {
-            throw new EntitlementError(
-                'Product not available for your account type',
-                dealerEntitlement as string,
-                productPartType as string
-            );
-        }
-    }
-
-    /**
-     * Filter products by dealer entitlement
-     */
-    filterProductsByEntitlement<T extends ProductForEntitlement>(
-        products: T[],
-        dealerEntitlement: Entitlement | string
-    ): T[] {
-        return products.filter(product =>
-            this.canViewProduct(dealerEntitlement, product.partType)
-        );
-    }
-
-    /**
-     * Get visible part types for an entitlement
-     */
-    getVisiblePartTypes(dealerEntitlement: Entitlement | string): PartType[] {
-        switch (dealerEntitlement) {
-            case 'GENUINE_ONLY':
-                return ['GENUINE'] as PartType[];
-            case 'AFTERMARKET_ONLY':
-                return ['AFTERMARKET', 'BRANDED'] as PartType[];
+    static canAccessProduct(
+        entitlement: Entitlement,
+        partType: PartType
+    ): EntitlementResult {
+        switch (entitlement) {
             case 'SHOW_ALL':
+                return { allowed: true }
+
+            case 'GENUINE_ONLY':
+                return {
+                    allowed: partType === 'GENUINE',
+                    reason: partType !== 'GENUINE'
+                        ? 'Your account only has access to Genuine parts'
+                        : undefined,
+                }
+
+            case 'AFTERMARKET_ONLY':
+                return {
+                    allowed: partType === 'AFTERMARKET' || partType === 'BRANDED',
+                    reason: partType === 'GENUINE'
+                        ? 'Your account only has access to Aftermarket and Branded parts'
+                        : undefined,
+                }
+
             default:
-                return ['GENUINE', 'AFTERMARKET', 'BRANDED'] as PartType[];
+                return {
+                    allowed: false,
+                    reason: 'Invalid entitlement configuration',
+                }
         }
     }
 
     /**
-     * Check entitlement with RuleResult wrapper
+     * Filter product IDs based on entitlement
      */
-    checkEntitlement(
-        dealerEntitlement: Entitlement | string,
-        productPartType: PartType | string
-    ): RuleResult<boolean> {
-        const canView = this.canViewProduct(dealerEntitlement, productPartType);
-
-        if (canView) {
-            return { success: true, data: true };
+    static async filterProductsByEntitlement(
+        prisma: PrismaClient,
+        entitlement: Entitlement,
+        productIds: string[]
+    ): Promise<string[]> {
+        if (entitlement === 'SHOW_ALL') {
+            return productIds
         }
 
-        return {
-            success: false,
-            data: false,
-            error: 'Product not available for your account type',
-            errorCode: 'ENTITLEMENT_ERROR'
-        };
+        const products = await prisma.product.findMany({
+            where: { id: { in: productIds } },
+            select: { id: true, partType: true },
+        })
+
+        return products
+            .filter(p => this.canAccessProduct(entitlement, p.partType).allowed)
+            .map(p => p.id)
     }
 
     /**
-     * Get required band types for an entitlement
-     * (Used when creating/updating band assignments)
+     * Get SQL filter for entitlement (for efficient queries)
      */
-    getRequiredBandTypes(entitlement: Entitlement | string): PartType[] {
-        // All dealers should have assignments for their visible part types
-        return this.getVisiblePartTypes(entitlement);
+    static getEntitlementFilter(entitlement: Entitlement): any {
+        switch (entitlement) {
+            case 'SHOW_ALL':
+                return {} // No filter
+
+            case 'GENUINE_ONLY':
+                return { partType: 'GENUINE' }
+
+            case 'AFTERMARKET_ONLY':
+                return { partType: { in: ['AFTERMARKET', 'BRANDED'] } }
+
+            default:
+                return { id: 'impossible' } // Block all
+        }
     }
 }

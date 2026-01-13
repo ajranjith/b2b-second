@@ -1,145 +1,113 @@
-/**
- * Order Rules
- * Order creation and modification business rules
- */
-
-import { PrismaClient } from '@prisma/client';
-import { RuleResult, OrderContext, OrderLineContext } from '../types';
-import { OrderError, DealerError } from '../errors';
-
-export interface OrderTotals {
-    subtotal: number;
-    total: number;
-    currency: string;
-    lineCount: number;
-}
+// packages/rules/src/rules/OrderRules.ts
+import { PrismaClient } from '@prisma/client'
+import { OrderCreationContext, OrderValidationResult } from '../types'
+import { OrderValidationError } from '../errors'
 
 export class OrderRules {
     constructor(private prisma: PrismaClient) { }
 
     /**
-     * Check if dealer can create orders
+     * Validate order creation
+     * BUSINESS RULES:
+     * 1. Dealer must be ACTIVE (not SUSPENDED or INACTIVE)
+     * 2. Cart must not be empty
+     * 3. All products must be active
+     * 4. All products must be in stock (or allow backorder)
+     * 5. All products must have valid pricing
      */
-    async canCreateOrder(dealerAccountId: string): Promise<RuleResult<boolean>> {
-        try {
-            const dealer = await this.prisma.dealerAccount.findUnique({
-                where: { id: dealerAccountId },
-                select: { status: true }
-            });
+    async validateOrderCreation(
+        context: OrderCreationContext
+    ): Promise<OrderValidationResult> {
+        const errors: string[] = []
+        const warnings: string[] = []
 
-            if (!dealer) {
-                throw DealerError.notFound(dealerAccountId);
-            }
-
-            if (dealer.status !== 'ACTIVE') {
-                return {
-                    success: false,
-                    data: false,
-                    error: `Dealer account is ${dealer.status}`,
-                    errorCode: 'DEALER_INACTIVE'
-                };
-            }
-
-            return { success: true, data: true };
-
-        } catch (error) {
-            return {
-                success: false,
-                error: error instanceof Error ? error.message : 'Order creation check failed',
-                errorCode: 'ORDER_ERROR'
-            };
+        // Rule 1: Check dealer status
+        if (context.dealerStatus === 'INACTIVE') {
+            errors.push('Inactive dealers cannot place orders')
         }
-    }
 
-    /**
-     * Check if order can be modified
-     */
-    async canModifyOrder(orderId: string): Promise<RuleResult<boolean>> {
-        try {
-            const order = await this.prisma.orderHeader.findUnique({
-                where: { id: orderId },
-                select: { status: true }
-            });
-
-            if (!order) {
-                throw OrderError.notFound(orderId);
-            }
-
-            const immutableStatuses = ['SHIPPED', 'CANCELLED'];
-            if (immutableStatuses.includes(order.status)) {
-                return {
-                    success: false,
-                    data: false,
-                    error: `Cannot modify order in ${order.status} status`,
-                    errorCode: 'ORDER_IMMUTABLE'
-                };
-            }
-
-            return { success: true, data: true };
-
-        } catch (error) {
-            return {
-                success: false,
-                error: error instanceof Error ? error.message : 'Order modification check failed',
-                errorCode: 'ORDER_ERROR'
-            };
+        if (context.dealerStatus === 'SUSPENDED') {
+            errors.push('Account suspended. Cannot place order. Please contact customer service team.')
         }
-    }
 
-    /**
-     * Calculate order totals from line prices
-     */
-    calculateOrderTotal(lines: Array<{ unitPrice: number; qty: number }>): OrderTotals {
-        const subtotal = lines.reduce((sum, line) => {
-            return sum + (line.unitPrice * line.qty);
-        }, 0);
+        // Rule 2: Check cart not empty
+        if (context.cartItems.length === 0) {
+            errors.push('Cart is empty')
+        }
 
-        // Round to 2 decimal places
-        const roundedSubtotal = Math.round(subtotal * 100) / 100;
+        // Rule 3 & 4: Check products
+        const productIds = context.cartItems.map(item => item.productId)
+
+        const products = await this.prisma.product.findMany({
+            where: { id: { in: productIds } },
+            include: {
+                stock: true,
+            },
+        })
+
+        const productMap = new Map(products.map(p => [p.id, p]))
+
+        for (const item of context.cartItems) {
+            const product = productMap.get(item.productId)
+
+            if (!product) {
+                errors.push(`Product ${item.productCode} not found`)
+                continue
+            }
+
+            if (!product.isActive) {
+                errors.push(`Product ${item.productCode} is no longer available`)
+            }
+
+            if (product.stock && product.stock.freeStock < item.quantity) {
+                warnings.push(
+                    `Product ${item.productCode}: Only ${product.stock.freeStock} in stock, ordered ${item.quantity}`
+                )
+            }
+        }
+
+        // Rule 5: Validate quantities
+        for (const item of context.cartItems) {
+            if (item.quantity <= 0) {
+                errors.push(`Invalid quantity for product ${item.productCode}`)
+            }
+        }
 
         return {
-            subtotal: roundedSubtotal,
-            total: roundedSubtotal, // Future: add tax calculation
-            currency: 'GBP',
-            lineCount: lines.length
-        };
+            success: errors.length === 0,
+            canProceed: errors.length === 0,
+            errors: errors.map(msg => ({
+                code: 'ORDER_VALIDATION',
+                message: msg,
+                severity: 'error' as const,
+            })),
+            warnings: warnings.map(msg => ({
+                code: 'ORDER_WARNING',
+                message: msg,
+            })),
+            blockers: errors.length > 0 ? errors : undefined,
+        }
     }
 
     /**
-     * Validate status transition is allowed
+     * Validate order status transition
      */
-    isValidStatusTransition(currentStatus: string, newStatus: string): boolean {
-        const validTransitions: Record<string, string[]> = {
-            'SUSPENDED': ['PROCESSING', 'CANCELLED'],
-            'PROCESSING': ['SHIPPED', 'CANCELLED'],
-            'SHIPPED': [],
-            'CANCELLED': []
-        };
+    validateStatusTransition(
+        currentStatus: string,
+        newStatus: string
+    ): { allowed: boolean; reason?: string } {
+        const allowedTransitions: Record<string, string[]> = {
+            SUSPENDED: ['PROCESSING', 'CANCELLED'],
+            PROCESSING: ['SHIPPED', 'CANCELLED'],
+            SHIPPED: [], // Cannot transition from shipped
+            CANCELLED: [], // Cannot transition from cancelled
+        }
 
-        return validTransitions[currentStatus]?.includes(newStatus) ?? false;
-    }
+        const allowed = allowedTransitions[currentStatus]?.includes(newStatus) ?? false
 
-    /**
-     * Generate next order number
-     */
-    async generateOrderNumber(): Promise<string> {
-        const today = new Date();
-        const datePrefix = today.toISOString().slice(0, 10).replace(/-/g, '');
-
-        // Get count of orders created today
-        const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-        const endOfDay = new Date(today.setHours(23, 59, 59, 999));
-
-        const count = await this.prisma.orderHeader.count({
-            where: {
-                createdAt: {
-                    gte: startOfDay,
-                    lte: endOfDay
-                }
-            }
-        });
-
-        const sequence = String(count + 1).padStart(4, '0');
-        return `ORD-${datePrefix}-${sequence}`;
+        return {
+            allowed,
+            reason: allowed ? undefined : `Cannot transition from ${currentStatus} to ${newStatus}`,
+        }
     }
 }

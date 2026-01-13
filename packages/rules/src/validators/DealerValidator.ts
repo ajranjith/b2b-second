@@ -4,8 +4,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { ValidationResult, FieldValidationError } from '../types';
-import { ValidationError, DealerError } from '../errors';
+import { ValidationResult, RuleError } from '../types';
 
 const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 
@@ -20,55 +19,46 @@ export interface DealerAccountInput {
 export class DealerValidator {
     constructor(private prisma: PrismaClient) { }
 
-    /**
-     * Validate dealer account data for creation/update
-     */
     validateDealerAccount(data: DealerAccountInput): ValidationResult {
-        const errors: FieldValidationError[] = [];
+        const errors: RuleError[] = [];
 
-        // Account number required and non-empty
         if (!data.accountNo || data.accountNo.trim().length === 0) {
-            errors.push({ field: 'accountNo', message: 'Account number is required', code: 'REQUIRED' });
+            errors.push({ field: 'accountNo', message: 'Account number is required', code: 'REQUIRED', severity: 'error' });
         }
 
-        // Company name required and non-empty
         if (!data.companyName || data.companyName.trim().length === 0) {
-            errors.push({ field: 'companyName', message: 'Company name is required', code: 'REQUIRED' });
+            errors.push({ field: 'companyName', message: 'Company name is required', code: 'REQUIRED', severity: 'error' });
         }
 
-        // Email format if provided
         if (data.mainEmail && !EMAIL_REGEX.test(data.mainEmail)) {
-            errors.push({ field: 'mainEmail', message: 'Invalid email format', code: 'INVALID_FORMAT' });
+            errors.push({ field: 'mainEmail', message: 'Invalid email format', code: 'INVALID_FORMAT', severity: 'error' });
         }
 
-        // Valid status if provided
         const validStatuses = ['ACTIVE', 'INACTIVE', 'SUSPENDED'];
         if (data.status && !validStatuses.includes(data.status)) {
             errors.push({
                 field: 'status',
                 message: `Status must be one of: ${validStatuses.join(', ')}`,
-                code: 'INVALID_VALUE'
+                code: 'INVALID_VALUE',
+                severity: 'error'
             });
         }
 
-        // Valid entitlement if provided
         const validEntitlements = ['GENUINE_ONLY', 'AFTERMARKET_ONLY', 'SHOW_ALL'];
         if (data.entitlement && !validEntitlements.includes(data.entitlement)) {
             errors.push({
                 field: 'entitlement',
                 message: `Entitlement must be one of: ${validEntitlements.join(', ')}`,
-                code: 'INVALID_VALUE'
+                code: 'INVALID_VALUE',
+                severity: 'error'
             });
         }
 
         return { valid: errors.length === 0, errors };
     }
 
-    /**
-     * Validate that dealer has all 3 required band assignments
-     */
     async validateBandAssignments(dealerAccountId: string): Promise<ValidationResult> {
-        const errors: FieldValidationError[] = [];
+        const errors: RuleError[] = [];
         const requiredPartTypes = ['GENUINE', 'AFTERMARKET', 'BRANDED'];
 
         const assignments = await this.prisma.dealerBandAssignment.findMany({
@@ -83,18 +73,19 @@ export class DealerValidator {
                 errors.push({
                     field: 'bandAssignments',
                     message: `Missing band assignment for ${partType}`,
-                    code: 'MISSING_BAND'
+                    code: 'MISSING_BAND',
+                    severity: 'critical'
                 });
             }
         }
 
-        // Validate band codes are 1-4
         for (const assignment of assignments) {
             if (!['1', '2', '3', '4'].includes(assignment.bandCode)) {
                 errors.push({
                     field: 'bandCode',
                     message: `Invalid band code ${assignment.bandCode} for ${assignment.partType}`,
-                    code: 'INVALID_BAND_CODE'
+                    code: 'INVALID_BAND_CODE',
+                    severity: 'error'
                 });
             }
         }
@@ -102,11 +93,8 @@ export class DealerValidator {
         return { valid: errors.length === 0, errors };
     }
 
-    /**
-     * Validate that dealer has at least one associated user
-     */
     async validateUserAssociation(dealerAccountId: string): Promise<ValidationResult> {
-        const errors: FieldValidationError[] = [];
+        const errors: RuleError[] = [];
 
         const userCount = await this.prisma.dealerUser.count({
             where: { dealerAccountId }
@@ -116,20 +104,17 @@ export class DealerValidator {
             errors.push({
                 field: 'users',
                 message: 'Dealer account must have at least one associated user',
-                code: 'NO_USER'
+                code: 'NO_USER',
+                severity: 'critical'
             });
         }
 
         return { valid: errors.length === 0, errors };
     }
 
-    /**
-     * Full dealer validation including all business rules
-     */
     async validateDealer(dealerAccountId: string): Promise<ValidationResult> {
-        const allErrors: FieldValidationError[] = [];
+        const allErrors: RuleError[] = [];
 
-        // Check dealer exists
         const dealer = await this.prisma.dealerAccount.findUnique({
             where: { id: dealerAccountId },
             select: { accountNo: true, companyName: true, status: true, entitlement: true, mainEmail: true }
@@ -138,15 +123,13 @@ export class DealerValidator {
         if (!dealer) {
             return {
                 valid: false,
-                errors: [{ field: 'dealerAccountId', message: 'Dealer account not found', code: 'NOT_FOUND' }]
+                errors: [{ field: 'dealerAccountId', message: 'Dealer account not found', code: 'NOT_FOUND', severity: 'critical' }]
             };
         }
 
-        // Validate band assignments
         const bandResult = await this.validateBandAssignments(dealerAccountId);
         allErrors.push(...bandResult.errors);
 
-        // Validate user association
         const userResult = await this.validateUserAssociation(dealerAccountId);
         allErrors.push(...userResult.errors);
 
