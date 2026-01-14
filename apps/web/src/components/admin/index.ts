@@ -3,7 +3,7 @@
 // Dealer Management
 export { DealerTable } from './DealerTable'
 export { DealerForm } from './DealerForm'
-export { DealerDialog } from './DealerDialog'
+export { default as DealerDialog } from './DealerDialog'
 
 // User Management
 export { UserTable } from './UserTable'

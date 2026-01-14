@@ -12,11 +12,11 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+    Button,
+    Input,
+    Label,
+    Select,
+} from '@/ui';
 import api from '@/lib/api';
 
 const dealerSchema = z.object({

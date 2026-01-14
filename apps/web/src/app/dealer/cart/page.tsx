@@ -3,18 +3,21 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
+    Button,
+    Input,
+    Label,
+    Badge,
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/ui';
 import { ShoppingCart, Trash2, Plus, Minus, CheckCircle, AlertCircle } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';

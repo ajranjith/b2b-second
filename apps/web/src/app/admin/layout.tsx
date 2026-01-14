@@ -16,17 +16,18 @@ import {
     Search
 } from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
+    Button,
+    Input,
+    Avatar,
+    AvatarFallback,
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@/ui';
 
 const navigation = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },

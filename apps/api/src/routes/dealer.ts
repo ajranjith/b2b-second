@@ -626,6 +626,61 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
             return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to fetch orders' });
         }
     });
+
+    // GET /dealer/backorders
+    server.get('/backorders', {
+        preHandler: requireAuth,
+    }, async (request: AuthenticatedRequest, reply) => {
+        const user = request.user;
+        if (!user || !user.dealerAccountId) {
+            return reply.status(401).send({ error: 'Unauthorized', message: 'Not a dealer' });
+        }
+
+        try {
+            // 1. Get Dealer Account Number
+            const dealerAccount = await prisma.dealerAccount.findUnique({
+                where: { id: user.dealerAccountId },
+                select: { accountNo: true }
+            });
+
+            if (!dealerAccount) {
+                return reply.status(404).send({ error: 'Not Found', message: 'Dealer account not found' });
+            }
+
+            // 2. Get active backorder dataset
+            const activeDataset = await prisma.backorderDataset.findFirst({
+                where: { isActive: true },
+                orderBy: { uploadedAt: 'desc' }
+            });
+
+            if (!activeDataset) {
+                return reply.status(200).send({
+                    message: 'No active backorder data available',
+                    results: [],
+                    lastUpdated: null
+                });
+            }
+
+            // 3. Fetch backorders for this dealer
+            const backorders = await prisma.backorderLine.findMany({
+                where: {
+                    datasetId: activeDataset.id,
+                    accountNo: dealerAccount.accountNo
+                },
+                orderBy: { itemNo: 'asc' }
+            });
+
+            return reply.status(200).send({
+                results: backorders,
+                lastUpdated: activeDataset.uploadedAt,
+                count: backorders.length
+            });
+
+        } catch (error) {
+            server.log.error(error);
+            return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to fetch backorders' });
+        }
+    });
 };
 
 export default dealerRoutes;

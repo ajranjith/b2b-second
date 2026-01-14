@@ -8,7 +8,7 @@ export { ProductSearch } from './ProductSearch'
 // Cart Components
 export { CartSummary } from './CartSummary'
 export { CartItem } from './CartItem'
-export { MiniCart } from './MiniCart'
+export { default as MiniCart } from './MiniCart'
 
 // Order Components
 export { OrderCard } from './OrderCard'

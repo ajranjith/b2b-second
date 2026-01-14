@@ -2,10 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Button, Input, Badge, Card, CardContent } from '@/ui';
 import { Search, Filter, ShoppingCart, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
@@ -72,7 +69,7 @@ export default function DealerSearchPage() {
         setAddingToCart(product.id);
 
         try {
-            await addItem(product.id, quantity);
+            await addItem({ productId: product.id, qty: quantity });
             toast.success(`Added ${quantity}x ${product.productCode} to cart!`);
 
             // Auto-open mini cart

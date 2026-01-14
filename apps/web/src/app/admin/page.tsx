@@ -1,8 +1,7 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, Package, ShoppingCart, TrendingUp, TrendingDown } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/ui';
+import { Users, Package, ShoppingCart, TrendingUp, TrendingDown } from 'lucide-react';
 
 export default function AdminDashboard() {
     // Mock data - replace with real API calls

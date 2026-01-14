@@ -12,29 +12,30 @@ import {
     flexRender,
     SortingState,
 } from '@tanstack/react-table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+    Button,
+    Input,
+    Badge,
+    Card,
+    CardContent,
+    Tabs,
+    TabsList,
+    TabsTrigger,
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
     Table,
     TableBody,
     TableCell,
     TableHead,
     TableHeader,
     TableRow,
-} from '@/components/ui/table';
+} from '@/ui';
 import { MoreHorizontal, Plus, Search } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import DealerDialog from './_components/DealerDialog';
+import { DealerDialog } from '@/admin';
 
 type DealerStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 type Entitlement = 'GENUINE_ONLY' | 'AFTERMARKET_ONLY' | 'SHOW_ALL';
