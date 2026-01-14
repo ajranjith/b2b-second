@@ -210,7 +210,8 @@ model ProductPriceReference {
 model ProductPriceBand {
   id        String   @id @default(uuid())
   productId String
-  bandCode  String   // Must be "1", "2", "3", or "4"
+  // Must be "1", "2", "3", "4" or "A"-"F"
+  bandCode  String
   price     Decimal  @db.Decimal(10, 2)  // Max 99999999.99, 2 decimal places
   updatedAt DateTime @updatedAt
 
@@ -523,6 +524,15 @@ model UploadTemplate {
   blobPath     String
   description  String?
   isActive     Boolean  @default(true)
+  
+  importType   String   // e.g., "PRODUCTS", "BACKORDERS"
+  fileType     String   // "CSV", "XLSX"
+  delimiter    String?  // For CSV
+  hasHeader    Boolean  @default(true)
+  
+  mappingJson    Json?  // Field mappings
+  validationJson Json?  // Validation rules
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
