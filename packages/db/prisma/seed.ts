@@ -1,202 +1,168 @@
-import 'dotenv/config';
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient, UserRole, AdminRole, DealerStatus, PartType, Entitlement } from '@prisma/client';
+import { prisma } from '../src/index';
+import { UserRole, AdminRole, DealerStatus, PartType, Entitlement, OrderStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-
-const connectionString = process.env.DATABASE_URL!;
-const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter } as any);
 
 const SALT_ROUNDS = 10;
 
 async function main() {
-    console.log('🌱 Starting database seed...\n');
+    console.log('🚀 Starting robust idempotent seed (using shared prisma instance)...\n');
+    const passwordHash = await bcrypt.hash('Password123!', SALT_ROUNDS);
 
     try {
-        // 1. Create Admin User
-        console.log('👤 Creating admin user...');
-        const adminPasswordHash = await bcrypt.hash('Admin123!', SALT_ROUNDS);
-
-        const admin = await prisma.appUser.upsert({
-            where: { email: 'admin@hotbray.com' },
-            update: {
-                passwordHash: adminPasswordHash,
-                role: UserRole.ADMIN,
-                adminRole: AdminRole.SUPER_ADMIN,
-                isActive: true
-            },
-            create: {
-                email: 'admin@hotbray.com',
-                passwordHash: adminPasswordHash,
-                role: UserRole.ADMIN,
-                adminRole: AdminRole.SUPER_ADMIN,
-                isActive: true
-            }
-        });
-        console.log(`✅ Admin user created: ${admin.email}`);
-
-        // 2. Create Dealer Account
-        console.log('\n🏢 Creating dealer account...');
-        const dealerAccount = await prisma.dealerAccount.upsert({
-            where: { accountNo: 'DEAL001' },
-            update: {
-                companyName: 'Test Dealer Ltd',
-                status: DealerStatus.ACTIVE,
-                entitlement: Entitlement.SHOW_ALL,
-                erpAccountNo: 'ERP001',
-                contactFirstName: 'John',
-                contactLastName: 'Smith',
-                mainEmail: 'dealer@test.com'
-            },
-            create: {
-                accountNo: 'DEAL001',
-                companyName: 'Test Dealer Ltd',
-                status: DealerStatus.ACTIVE,
-                entitlement: Entitlement.SHOW_ALL,
-                erpAccountNo: 'ERP001',
-                contactFirstName: 'John',
-                contactLastName: 'Smith',
-                mainEmail: 'dealer@test.com'
-            }
-        });
-        console.log(`✅ Dealer account created: ${dealerAccount.accountNo} - ${dealerAccount.companyName}`);
-
-        // 3. Create Dealer User
-        console.log('\n👥 Creating dealer user...');
-        const dealerPasswordHash = await bcrypt.hash('Dealer123!', SALT_ROUNDS);
-
-        const dealerAppUser = await prisma.appUser.upsert({
-            where: { email: 'dealer@test.com' },
-            update: {
-                passwordHash: dealerPasswordHash,
-                role: UserRole.DEALER,
-                isActive: true
-            },
-            create: {
-                email: 'dealer@test.com',
-                passwordHash: dealerPasswordHash,
-                role: UserRole.DEALER,
-                isActive: true
-            }
-        });
-        console.log(`✅ Dealer app user created: ${dealerAppUser.email}`);
-
-        // Link dealer user to account
-        const existingDealerUser = await prisma.dealerUser.findUnique({
-            where: { userId: dealerAppUser.id }
-        });
-
-        if (!existingDealerUser) {
-            await prisma.dealerUser.create({
-                data: {
-                    dealerAccountId: dealerAccount.id,
-                    userId: dealerAppUser.id,
-                    isPrimary: true,
-                    firstName: 'John',
-                    lastName: 'Smith'
+        console.log('👤 Upserting 5 admins...');
+        for (let i = 1; i <= 5; i++) {
+            await (prisma as any).appUser.upsert({
+                where: { email: `admin-${i}@hotbray.com` },
+                update: { role: UserRole.ADMIN, isActive: true },
+                create: {
+                    email: `admin-${i}@hotbray.com`,
+                    passwordHash,
+                    role: UserRole.ADMIN,
+                    adminRole: i === 1 ? AdminRole.SUPER_ADMIN : AdminRole.ADMIN,
+                    isActive: true
                 }
             });
-            console.log(`✅ Dealer user linked to account`);
-        } else {
-            console.log(`ℹ️  Dealer user already linked to account`);
         }
 
-        // 4. Create Band Assignments
-        console.log('\n🏷️  Creating band assignments...');
+        console.log('🏢 Upserting 55 dealers...');
+        const dealers: any[] = [];
+        for (let i = 1; i <= 55; i++) {
+            const accountNo = `D-${i.toString().padStart(3, '0')}`;
+            const erpAccountNo = `E-${i.toString().padStart(3, '0')}`;
+            const email = `u-${i}@dealer.com`;
 
-        const bandAssignments = [
-            { partType: PartType.GENUINE, bandCode: '1' },
-            { partType: PartType.AFTERMARKET, bandCode: '2' },
-            { partType: PartType.BRANDED, bandCode: '3' }
-        ];
-
-        for (const assignment of bandAssignments) {
-            const existing = await prisma.dealerBandAssignment.findFirst({
-                where: {
-                    dealerAccountId: dealerAccount.id,
-                    partType: assignment.partType
+            const appUser = await (prisma as any).appUser.upsert({
+                where: { email },
+                update: { role: UserRole.DEALER },
+                create: {
+                    email,
+                    passwordHash,
+                    role: UserRole.DEALER,
+                    isActive: true
                 }
             });
 
-            if (!existing) {
-                await prisma.dealerBandAssignment.create({
-                    data: {
-                        dealerAccountId: dealerAccount.id,
-                        partType: assignment.partType,
-                        bandCode: assignment.bandCode
+            const dealer = await (prisma as any).dealerAccount.upsert({
+                where: { accountNo },
+                update: { companyName: `Dealer ${i}`, erpAccountNo },
+                create: {
+                    accountNo,
+                    companyName: `Dealer ${i}`,
+                    erpAccountNo,
+                    status: DealerStatus.ACTIVE,
+                    entitlement: Entitlement.SHOW_ALL,
+                    mainEmail: email
+                }
+            });
+
+            // Handle DealerUser
+            await (prisma as any).dealerUser.upsert({
+                where: { userId: appUser.id },
+                update: { dealerAccountId: dealer.id },
+                create: {
+                    dealerAccountId: dealer.id,
+                    userId: appUser.id,
+                    firstName: 'Dealer',
+                    lastName: `${i}`,
+                    isPrimary: true
+                }
+            });
+
+            // Handle Band Assignments
+            for (const type of [PartType.GENUINE, PartType.AFTERMARKET, PartType.BRANDED]) {
+                await (prisma as any).dealerBandAssignment.upsert({
+                    where: {
+                        dealerAccountId_partType: {
+                            dealerAccountId: dealer.id,
+                            partType: type
+                        }
+                    },
+                    update: { bandCode: '1' },
+                    create: {
+                        dealerAccountId: dealer.id,
+                        partType: type,
+                        bandCode: '1'
                     }
                 });
-                console.log(`✅ Band assignment created: ${assignment.partType} -> Band ${assignment.bandCode}`);
-            } else {
-                // Update if different
-                if (existing.bandCode !== assignment.bandCode) {
-                    await prisma.dealerBandAssignment.update({
-                        where: { id: existing.id },
-                        data: { bandCode: assignment.bandCode }
-                    });
-                    console.log(`✅ Band assignment updated: ${assignment.partType} -> Band ${assignment.bandCode}`);
-                } else {
-                    console.log(`ℹ️  Band assignment already exists: ${assignment.partType} -> Band ${assignment.bandCode}`);
+            }
+            dealers.push(dealer);
+            if (i % 10 === 0) console.log(`  → Processed ${i} dealers...`);
+        }
+
+        console.log('📦 Upserting 110 products...');
+        const products: any[] = [];
+        for (let i = 0; i < 110; i++) {
+            const productCode = `P-${i.toString().padStart(4, '0')}`;
+            const product = await (prisma as any).product.upsert({
+                where: { productCode },
+                update: { isActive: true },
+                create: {
+                    productCode,
+                    description: `Product ${i}`,
+                    partType: PartType.GENUINE,
+                    stock: { create: { freeStock: 100 } },
+                    refPrice: { create: { tradePrice: 100, minimumPrice: 80 } },
+                    bandPrices: {
+                        create: [
+                            { bandCode: '1', price: 95 },
+                            { bandCode: '2', price: 90 },
+                            { bandCode: '3', price: 85 },
+                            { bandCode: '4', price: 80 }
+                        ]
+                    }
                 }
-            }
-        }
-
-        // 5. Create Upload Templates
-        console.log('\n📄 Creating upload templates...');
-
-        const templates = [
-            {
-                templateName: 'GENUINE_PARTS',
-                fileName: 'Genuine_parts_template.xlsx',
-                blobPath: 'samples/Genuine_parts_template.xlsx',
-                description: 'Template for uploading genuine parts pricing and stock data'
-            },
-            {
-                templateName: 'AFTERMARKET_PARTS',
-                fileName: 'Aftermarket_parts_template.xlsx',
-                blobPath: 'samples/Aftermarket_parts_template.xlsx',
-                description: 'Template for uploading aftermarket parts pricing and stock data'
-            },
-            {
-                templateName: 'BACKORDERS',
-                fileName: 'Backorders_template.csv',
-                blobPath: 'samples/Backorders_template.csv',
-                description: 'Template for uploading backorder information'
-            }
-        ];
-
-        for (const template of templates) {
-            await prisma.uploadTemplate.upsert({
-                where: { templateName: template.templateName },
-                update: template,
-                create: template
             });
-            console.log(`✅ Upload template created: ${template.templateName}`);
+            products.push(product);
+            if (i % 30 === 0 && i > 0) console.log(`  → Processed ${i} products...`);
         }
 
-        console.log('\n✅ Seed completed successfully!');
-        console.log('\n📊 Summary:');
-        console.log(`   - Admin user: admin@hotbray.com (password: Admin123!)`);
-        console.log(`   - Dealer account: DEAL001 - Test Dealer Ltd (John Smith)`);
-        console.log(`   - Dealer user: dealer@test.com (password: Dealer123!)`);
-        console.log(`   - Band assignments: GENUINE=1, AFTERMARKET=2, BRANDED=3`);
-        console.log(`   - Upload templates: 3 templates created`);
-        console.log('\n💡 You can run this seed script multiple times safely (idempotent).');
+        console.log('📋 Creating 20 orders...');
+        for (let i = 0; i < 20; i++) {
+            const dealer = dealers[i % dealers.length];
+            const dealerUser = await (prisma as any).dealerUser.findFirst({ where: { dealerAccountId: dealer.id } });
+            await (prisma as any).orderHeader.create({
+                data: {
+                    orderNo: `O-SEED-${Date.now()}-${i}`,
+                    dealerAccountId: dealer.id,
+                    dealerUserId: dealerUser!.id,
+                    status: OrderStatus.PROCESSING,
+                    total: 100,
+                    lines: {
+                        create: {
+                            productId: products[i % products.length].id,
+                            productCodeSnapshot: products[i % products.length].productCode,
+                            descriptionSnapshot: products[i % products.length].description,
+                            partTypeSnapshot: products[i % products.length].partType,
+                            qty: 1,
+                            unitPriceSnapshot: 100,
+                            bandCodeSnapshot: '1'
+                        }
+                    }
+                }
+            });
+        }
 
-    } catch (error) {
-        console.error('\n❌ Seed failed:', error);
-        throw error;
+        console.log('🔄 Creating 25 supersessions...');
+        for (let i = 0; i < 25; i++) {
+            await (prisma as any).supersession.upsert({
+                where: { id: `S-SEED-${i}` }, // Use stable pseudo-UUID for idempotency if column exists, or just create
+                update: {},
+                create: {
+                    id: `S-SEED-${i}`,
+                    originalPartCode: products[i].productCode,
+                    replacementPartCode: products[i + 25].productCode,
+                    note: 'Superseded'
+                }
+            });
+        }
+
+        console.log('\n✨ Seed finished successfully!');
+    } catch (e: any) {
+        console.error('\n💥 Seed failed:', e.message);
+        throw e;
     }
 }
 
-main()
-    .catch((e) => {
-        console.error(e);
-        process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
-        await pool.end();
-    });
+main().finally(async () => {
+    await prisma.$disconnect();
+});

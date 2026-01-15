@@ -1,75 +1,47 @@
-import Fastify from 'fastify'
-import cors from '@fastify/cors'
-import helmet from '@fastify/helmet'
-import rateLimit from '@fastify/rate-limit'
-import redis from '@fastify/redis'
-import dotenv from 'dotenv'
-import loggerPlugin from './plugins/logger'
-// import metricsPlugin from './plugins/metrics' // Replaced by middleware
-import { metricsRequest, metricsResponse, getMetrics } from './middleware/metrics'
-import dealerRoutes from './routes/dealer'
-import adminRoutes from './routes/admin'
+import express from 'express';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import { verifyToken } from '@hotbray/domain-auth';
 
-// Load environment
-dotenv.config()
+const app = express();
+const port = process.env.PORT || 3000;
 
-const fastify = Fastify({
-    logger: {
-        level: 'info',
-        transport: {
-            target: 'pino-pretty',
-            options: {
-                translateTime: 'HH:MM:ss Z',
-                ignore: 'pid,hostname',
-            },
-        },
-    },
-})
+// Auth Middleware
+const authMiddleware = (req: any, res: any, next: any) => {
+    const publicPaths = ['/auth/login'];
+    if (publicPaths.includes(req.path)) return next();
 
-// Security headers
-fastify.register(helmet)
-
-// CORS
-fastify.register(cors, {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
-    credentials: true,
-})
-
-// Redis for caching and rate limiting
-fastify.register(redis, {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-})
-
-// Rate limiting
-fastify.register(rateLimit, {
-    max: 100, // 100 requests
-    timeWindow: '1 minute',
-    redis: fastify.redis,
-    keyGenerator: (request) => {
-        // Rate limit per user
-        return (request.headers['authorization'] as string) || request.ip
-    },
-})
-
-// Health check
-fastify.get('/health', async () => {
-    return { status: 'ok', timestamp: new Date().toISOString() }
-})
-
-fastify.register(dealerRoutes, { prefix: '/api/dealer' })
-fastify.register(adminRoutes, { prefix: '/api/admin' })
-
-// Start server
-const start = async () => {
-    try {
-        const port = parseInt(process.env.GATEWAY_PORT || '8080')
-        await fastify.listen({ port, host: '0.0.0.0' })
-        console.log(`🚀 API Gateway running on http://localhost:${port}`)
-    } catch (err) {
-        fastify.log.error(err)
-        process.exit(1)
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Unauthorized' });
     }
-}
 
-start()
+    try {
+        const token = authHeader.substring(7);
+        const decoded = verifyToken(token);
+        req.user = decoded;
+        next();
+    } catch (e) {
+        res.status(401).json({ error: 'Invalid token' });
+    }
+};
+
+app.use(authMiddleware);
+
+// Proxy to Experience API
+app.use('/', createProxyMiddleware({
+    target: 'http://localhost:3001',
+    changeOrigin: true,
+    onProxyReq: (proxyReq: any, req: any) => {
+        if (req.user) {
+            proxyReq.setHeader('x-user-id', req.user.userId);
+            proxyReq.setHeader('x-user-role', req.user.role);
+            if (req.user.dealerAccountId) {
+                proxyReq.setHeader('x-dealer-account-id', req.user.dealerAccountId);
+            }
+        }
+    }
+}));
+
+app.listen(port, () => {
+    console.log(`🛡️ API Gateway running at http://localhost:${port}`);
+});

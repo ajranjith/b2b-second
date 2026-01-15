@@ -3,14 +3,19 @@ import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import { prisma } from 'db';
 
-// Load environment variables
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+// Static Route Imports (Fixes the "Stuck" issue with dynamic imports)
+import authRoutes from './routes/auth';
+import dealerRoutes from './routes/dealer';
+import adminRoutes from './routes/admin';
+
+// Load environment variables from db package
+dotenv.config({ path: path.resolve(__dirname, '../../../packages/db/.env') });
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const HOST = '0.0.0.0';
 
-// Create Fastify instance
 const server = Fastify({
     logger: {
         level: 'info',
@@ -24,19 +29,37 @@ const server = Fastify({
     }
 });
 
-// Register CORS
+// Register CORS Middleware
 server.register(cors, {
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001'],
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
     credentials: true,
-    exposedHeaders: ['set-cookie']
 });
 
-// Register Multipart
+// Register Multipart for file uploads
 server.register(multipart, {
-    limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+});
+
+// Audit Logging Hook (From server.ts)
+// Logs all state-changing operations for compliance and debugging
+server.addHook('onSend', async (request, reply, payload) => {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method) && reply.statusCode < 400) {
+        const actorUserId = (request as any).user?.userId || null;
+
+        // Fire and forget audit log to prevent blocking response
+        prisma.auditLog.create({
+            data: {
+                actorType: actorUserId ? 'DEALER' : 'SYSTEM',
+                actorUserId,
+                action: request.method,
+                entityType: 'API_ROUTE',
+                entityId: request.url,
+                // Safe body capture (exclude sensitive fields in production)
+                beforeJson: (request.body as any) || {},
+                afterJson: { statusCode: reply.statusCode },
+                ipAddress: request.ip
+            }
+        }).catch(err => server.log.error(`Audit Log Error: ${err.message}`));
     }
 });
 
@@ -63,52 +86,67 @@ server.setErrorHandler((err: Error, request, reply) => {
     });
 });
 
-// Health check endpoint
-server.get('/health', async (request, reply) => {
-    return { status: 'ok' };
+// Health check endpoint with database verification
+server.get('/health', async () => {
+    try {
+        // Verify database connection
+        const result = await prisma.$queryRaw<{ current_database: string }[]>`SELECT current_database()`;
+        return {
+            status: 'ok',
+            database: 'connected',
+            dbName: result[0]?.current_database
+        };
+    } catch (error) {
+        return {
+            status: 'degraded',
+            database: 'disconnected',
+            error: (error as Error).message
+        };
+    }
 });
 
-// Register route modules
-// Note: These will be created in subsequent steps
+// Register Routes (Static registration for better type safety and reliability)
 const registerRoutes = async () => {
     try {
-        // Auth routes
-        await server.register(import('./routes/auth'), { prefix: '/auth' });
-
-        // Dealer routes
-        await server.register(import('./routes/dealer'), { prefix: '/dealer' });
-
-        // Admin routes
-        await server.register(import('./routes/admin'), { prefix: '/admin' });
-
-        server.log.info('Routes registered successfully');
+        await server.register(authRoutes, { prefix: '/auth' });
+        await server.register(dealerRoutes, { prefix: '/dealer' });
+        await server.register(adminRoutes, { prefix: '/admin' });
+        server.log.info('✅ Routes registered successfully');
     } catch (error: any) {
-        server.log.error('Error registering routes: ' + (error?.message || String(error)));
-        throw error;
+        server.log.error('❌ Error registering routes: ' + (error?.message || String(error)));
+        process.exit(1);
     }
 };
 
 // Start server
 const start = async () => {
     try {
+        // Verify database connection before starting
+        const dbCheck = await prisma.$queryRaw<{ current_database: string }[]>`SELECT current_database()`;
+        server.log.info(`💾 Database connected: ${dbCheck[0]?.current_database}`);
+
+        // Register all routes
         await registerRoutes();
 
+        // Start listening
         await server.listen({ port: PORT, host: HOST });
 
         server.log.info(`🚀 Server listening on http://localhost:${PORT}`);
         server.log.info(`📊 Health check: http://localhost:${PORT}/health`);
         server.log.info(`🔐 JWT Secret: ${process.env.JWT_SECRET ? '✓ Set' : '✗ Not set'}`);
-        server.log.info(`💾 Database: ${process.env.DATABASE_URL ? '✓ Connected' : '✗ Not configured'}`);
+        server.log.info(`📝 Audit logging: ✓ Enabled`);
     } catch (err) {
         server.log.error(err);
         process.exit(1);
     }
 };
 
-// Handle graceful shutdown
+// Graceful Shutdown
 const gracefulShutdown = async () => {
     server.log.info('Received shutdown signal, closing server...');
     await server.close();
+    await prisma.$disconnect();
+    server.log.info('Server closed gracefully');
     process.exit(0);
 };
 

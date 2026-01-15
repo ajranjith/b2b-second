@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: hotbray-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: hotbray_hub
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    shm_size: '1gb' # Optimized for high-throughput orchestration
+
+  order-hub:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: hotbray-order-hub
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/hotbray_hub?schema=public
+      - NODE_ENV=production
+    depends_on:
+      - db
+
+volumes:
+  pgdata:

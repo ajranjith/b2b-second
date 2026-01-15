@@ -1,42 +1,39 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
 
 export default function DealerDashboard() {
     const router = useRouter();
-    const [userEmail, setUserEmail] = useState('');
-
-    useEffect(() => {
-        const role = localStorage.getItem('userRole');
-        const email = localStorage.getItem('userEmail');
-
-        if (role !== 'dealer') {
-            router.push('/dealer/login');
-        } else {
-            setUserEmail(email || '');
+    const { data: layout, isLoading, error } = useQuery({
+        queryKey: ['dealer-dashboard-layout'],
+        queryFn: async () => {
+            const response = await api.get('/api/layout/dashboard');
+            return response.data;
         }
-    }, [router]);
+    });
 
-    const handleLogout = () => {
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userEmail');
-        router.push('/dealer/login');
-    };
+    if (isLoading) return <div className="p-8">Loading dashboard...</div>;
 
-    const stats = [
-        { label: 'Active Orders', value: '12', change: '+3', trend: 'up' },
-        { label: 'Pending Items', value: '48', change: '-5', trend: 'down' },
-        { label: 'Backorders', value: '6', change: '0', trend: 'neutral' },
-        { label: 'This Month', value: '£12,450', change: '+12%', trend: 'up' },
-    ];
+    if (error) {
+        router.push('/login');
+        return null;
+    }
+
+    const stats = layout?.widgets?.filter((w: any) => w.type === 'stats') || [];
 
     const recentOrders = [
         { id: 'ORD-1001', date: '2024-01-10', items: 5, total: '£1,245.00', status: 'Processing' },
         { id: 'ORD-1002', date: '2024-01-09', items: 3, total: '£890.50', status: 'Shipped' },
         { id: 'ORD-1003', date: '2024-01-08', items: 8, total: '£2,100.00', status: 'Processing' },
     ];
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        router.push('/login');
+    };
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -55,7 +52,7 @@ export default function DealerDashboard() {
                             </nav>
                         </div>
                         <div className="flex items-center space-x-4">
-                            <span className="text-sm text-slate-600">{userEmail}</span>
+                            <span className="text-sm text-slate-600">Dealer Portal</span>
                             <button
                                 onClick={handleLogout}
                                 className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 border border-slate-300 rounded-lg hover:bg-slate-50 transition"
@@ -72,24 +69,26 @@ export default function DealerDashboard() {
                 {/* Welcome Section */}
                 <div className="mb-8">
                     <h2 className="text-3xl font-bold text-slate-900">Welcome back!</h2>
-                    <p className="text-slate-600 mt-1">Here's what's happening with your account today.</p>
+                    <p className="text-slate-600 mt-1">Here's what's happening with your account today (SDUI Active).</p>
                 </div>
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    {stats.map((stat, index) => (
+                    {stats.map((stat: any, index: number) => (
                         <div key={index} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm font-medium text-slate-600">{stat.label}</p>
+                                    <p className="text-sm font-medium text-slate-600">{stat.title}</p>
                                     <p className="text-2xl font-bold text-slate-900 mt-2">{stat.value}</p>
                                 </div>
-                                <div className={`px-2 py-1 rounded-full text-xs font-medium ${stat.trend === 'up' ? 'bg-green-100 text-green-700' :
+                                {stat.change && (
+                                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${stat.trend === 'up' ? 'bg-green-100 text-green-700' :
                                         stat.trend === 'down' ? 'bg-red-100 text-red-700' :
                                             'bg-slate-100 text-slate-700'
-                                    }`}>
-                                    {stat.change}
-                                </div>
+                                        }`}>
+                                        {stat.change}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))}

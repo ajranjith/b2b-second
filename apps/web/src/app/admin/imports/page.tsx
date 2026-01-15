@@ -65,6 +65,9 @@ export default function ImportsPage() {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 20 });
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [uploadType, setUploadType] = useState<ImportType>('PRODUCTS_GENUINE');
+    const [isUploading, setIsUploading] = useState(false);
 
     const { data, isLoading } = useQuery({
         queryKey: ['imports', statusFilter, typeFilter],
@@ -76,8 +79,25 @@ export default function ImportsPage() {
             const response = await api.get('/admin/imports', { params });
             return response.data.batches as ImportBatch[];
         },
-        refetchInterval: 5000, // Auto-refresh every 5 seconds
+        refetchInterval: 5000,
     });
+
+    const handleUpload = async () => {
+        setIsUploading(true);
+        try {
+            const mockFilePath = `C:/uploads/mock_${Date.now()}.xlsx`;
+            await api.post('/admin/import', {
+                type: uploadType.startsWith('PRODUCTS') ? uploadType.split('_')[1] : uploadType,
+                filePath: mockFilePath
+            });
+            setIsUploadModalOpen(false);
+            alert('Import started successfully!');
+        } catch (e: any) {
+            alert('Upload failed: ' + e.message);
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     const toggleRow = (id: string) => {
         const newExpanded = new Set(expandedRows);
@@ -160,13 +180,6 @@ export default function ImportsPage() {
             ),
         },
         {
-            id: 'uploadedBy',
-            header: 'Uploaded By',
-            cell: ({ row }) => (
-                <div className="text-sm">{row.original.uploadedBy.email}</div>
-            ),
-        },
-        {
             accessorKey: 'totalRows',
             header: 'Total Rows',
             cell: ({ row }) => (
@@ -205,18 +218,6 @@ export default function ImportsPage() {
                 );
             },
         },
-        {
-            id: 'actions',
-            cell: ({ row }) => {
-                const hasErrors = row.original.invalidRows && row.original.invalidRows > 0;
-                return hasErrors ? (
-                    <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
-                        <Download className="h-4 w-4 mr-1" />
-                        Errors
-                    </Button>
-                ) : null;
-            },
-        },
     ];
 
     const table = useReactTable({
@@ -235,22 +236,58 @@ export default function ImportsPage() {
 
     return (
         <div className="p-8 space-y-6">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight">Import Management</h2>
                     <p className="text-slate-500">Monitor and manage data import processes</p>
                 </div>
-                <Button className="bg-blue-600 hover:bg-blue-700">
+                <Button
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={() => setIsUploadModalOpen(true)}
+                >
                     <Upload className="h-4 w-4 mr-2" />
                     Upload File
                 </Button>
             </div>
 
-            {/* Filters */}
+            {isUploadModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                    <Card className="w-[400px] shadow-2xl">
+                        <CardContent className="pt-6 space-y-4">
+                            <h3 className="text-xl font-bold">Import Data</h3>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Import Type</label>
+                                <select
+                                    className="w-full p-2 border rounded-md"
+                                    value={uploadType}
+                                    onChange={(e) => setUploadType(e.target.value as any)}
+                                >
+                                    <option value="PRODUCTS_GENUINE">Genuine Products</option>
+                                    <option value="PRODUCTS_AFTERMARKET">Aftermarket Products</option>
+                                    <option value="BACKORDERS">Backorders</option>
+                                </select>
+                            </div>
+                            <div className="border-2 border-dashed border-slate-200 rounded-lg p-8 text-center bg-slate-50">
+                                <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
+                                <p className="text-sm text-slate-500">Click to select or drag and drop XLSX file</p>
+                            </div>
+                            <div className="flex justify-end gap-2">
+                                <Button variant="ghost" onClick={() => setIsUploadModalOpen(false)}>Cancel</Button>
+                                <Button
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                    onClick={handleUpload}
+                                    disabled={isUploading}
+                                >
+                                    {isUploading ? 'Uploading...' : 'Start Import'}
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
             <Card className="shadow-sm border-slate-200">
                 <CardContent className="pt-6 space-y-4">
-                    {/* Status Tabs */}
                     <div>
                         <label className="text-sm font-medium mb-2 block">Status Filter</label>
                         <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
@@ -263,7 +300,6 @@ export default function ImportsPage() {
                         </Tabs>
                     </div>
 
-                    {/* Type Filter */}
                     <div>
                         <label className="text-sm font-medium mb-2 block">Type Filter</label>
                         <Tabs value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
@@ -278,7 +314,6 @@ export default function ImportsPage() {
                 </CardContent>
             </Card>
 
-            {/* Table */}
             <Card className="shadow-sm border-slate-200">
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
@@ -302,7 +337,7 @@ export default function ImportsPage() {
                                             Loading imports...
                                         </TableCell>
                                     </TableRow>
-                                ) : table.getRowModel().rows.length === 0 ? (
+                                ) : (table.getRowModel().rows.length === 0) ? (
                                     <TableRow>
                                         <TableCell colSpan={columns.length} className="h-24 text-center">
                                             No imports found
@@ -325,11 +360,8 @@ export default function ImportsPage() {
                                                             <h4 className="font-semibold text-sm">Import Errors</h4>
                                                             <div className="bg-white rounded-lg border border-slate-200 p-4">
                                                                 <p className="text-sm text-slate-500">
-                                                                    Error details would be displayed here. Click "View All Errors" to see the full log.
+                                                                    Error details would be displayed here.
                                                                 </p>
-                                                                <Button variant="outline" size="sm" className="mt-4">
-                                                                    View All Errors →
-                                                                </Button>
                                                             </div>
                                                         </div>
                                                     </TableCell>
@@ -341,38 +373,6 @@ export default function ImportsPage() {
                             </TableBody>
                         </Table>
                     </div>
-
-                    {/* Pagination */}
-                    {!isLoading && data && data.length > 0 && (
-                        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200">
-                            <div className="text-sm text-slate-500">
-                                Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
-                                {Math.min(
-                                    (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-                                    data.length
-                                )}{' '}
-                                of {data.length} imports
-                            </div>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => table.previousPage()}
-                                    disabled={!table.getCanPreviousPage()}
-                                >
-                                    Previous
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => table.nextPage()}
-                                    disabled={!table.getCanNextPage()}
-                                >
-                                    Next
-                                </Button>
-                            </div>
-                        </div>
-                    )}
                 </CardContent>
             </Card>
         </div>

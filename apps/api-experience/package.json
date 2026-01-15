@@ -1,0 +1,26 @@
+{
+    "name": "@hotbray/api-experience",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "ts-node-dev src/index.ts",
+        "build": "tsc"
+    },
+    "dependencies": {
+        "express": "^4.18.0",
+        "cors": "^2.8.5",
+        "@prisma/client": "^7.2.0",
+        "db": "workspace:*",
+        "@hotbray/domain-auth": "workspace:*",
+        "@hotbray/domain-partners": "workspace:*",
+        "@hotbray/domain-orders": "workspace:*",
+        "@hotbray/domain-pricing": "workspace:*",
+        "@hotbray/domain-admin": "workspace:*"
+    },
+    "devDependencies": {
+        "@types/express": "^4.17.0",
+        "@types/cors": "^2.8.12",
+        "ts-node-dev": "^2.0.0",
+        "typescript": "^5.0.0"
+    }
+}
