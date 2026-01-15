@@ -52,8 +52,8 @@ export default function DealerSearchPage() {
             if (inStockOnly) params.inStockOnly = 'true';
             if (sortBy !== 'relevance') params.sortBy = sortBy;
 
-            const response = await api.get('/dealer/search', { params });
-            return response.data.products as Product[];
+            const response = await api.get('/api/dealer/search', { params });
+            return response.data as Product[];
         },
         enabled: !!activeSearch,
     });

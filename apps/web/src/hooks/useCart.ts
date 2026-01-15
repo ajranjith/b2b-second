@@ -26,14 +26,14 @@ export function useCart() {
     const { data: cart, isLoading, refetch } = useQuery<Cart>({
         queryKey: ['cart'],
         queryFn: async () => {
-            const response = await api.get('/dealer/cart');
+            const response = await api.get('/api/dealer/cart');
             return response.data;
         },
     });
 
     const addItemMutation = useMutation({
         mutationFn: async ({ productId, qty }: { productId: string; qty: number }) => {
-            const response = await api.post('/dealer/cart/items', { productId, qty });
+            const response = await api.post('/api/dealer/cart', { productId, qty });
             return response.data;
         },
         onSuccess: () => {

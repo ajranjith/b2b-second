@@ -1,20 +1,12 @@
 import { PrismaClient } from '@prisma/client';
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
 
 export * from '@prisma/client';
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/hotbray?schema=public';
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
-const pool = new Pool({
-    connectionString,
-    // Explicit configuration to avoid parsing issues
-    host: 'localhost',
-    port: 5432,
-    user: 'postgres',
-    password: 'postgres',
-    database: 'hotbray',
+// Initialize standard Prisma Client (No adapter needed for Node.js/Docker)
+export const prisma = globalForPrisma.prisma || new PrismaClient({
+  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
 });
 
-const adapter = new PrismaPg(pool);
-export const prisma = new PrismaClient({ adapter } as any);
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;

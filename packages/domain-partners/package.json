@@ -1,0 +1,19 @@
+{
+    "name": "@hotbray/domain-partners",
+    "version": "0.0.0",
+    "private": true,
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc -w"
+    },
+    "dependencies": {
+        "db": "workspace:*",
+        "@prisma/client": "7.2.0",
+        "@hotbray/domain-pricing": "workspace:*"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0"
+    }
+}
