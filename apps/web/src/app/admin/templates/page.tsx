@@ -24,6 +24,8 @@ import {
 import { Download, FileSpreadsheet, FileText, Eye } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import { DensityToggle } from '@/components/portal/DensityToggle';
+import { useLoadingCursor } from '@/hooks/useLoadingCursor';
 
 interface Template {
     id: string;
@@ -96,6 +98,7 @@ const sampleData: Record<string, { headers: string[]; rows: string[][]; notes: s
 
 export default function TemplatesPage() {
     const [previewTemplate, setPreviewTemplate] = useState<string | null>(null);
+    const [density, setDensity] = useState<'comfortable' | 'dense'>('comfortable');
 
     const { data: templates, isLoading } = useQuery({
         queryKey: ['templates'],
@@ -104,6 +107,8 @@ export default function TemplatesPage() {
             return response.data as Template[];
         },
     });
+
+    useLoadingCursor(isLoading);
 
     const handleDownload = async (template: Template) => {
         try {
@@ -135,8 +140,11 @@ export default function TemplatesPage() {
 
     if (isLoading) {
         return (
-            <div className="p-8">
-                <h2 className="text-3xl font-bold tracking-tight mb-6">Upload Templates</h2>
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-3xl font-bold tracking-tight">Upload Templates</h2>
+                    <DensityToggle value={density} onChange={setDensity} />
+                </div>
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {[1, 2, 3, 4].map((i) => (
                         <Card key={i} className="animate-pulse">
@@ -155,11 +163,14 @@ export default function TemplatesPage() {
     }
 
     return (
-        <div className="p-8 space-y-6">
+        <div className="space-y-6">
             {/* Header */}
-            <div>
-                <h2 className="text-3xl font-bold tracking-tight">Upload Templates</h2>
-                <p className="text-slate-500">Download templates for bulk data uploads</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight">Upload Templates</h2>
+                    <p className="text-slate-500">Download templates for bulk data uploads</p>
+                </div>
+                <DensityToggle value={density} onChange={setDensity} />
             </div>
 
             {/* Template Grid */}
@@ -227,22 +238,28 @@ export default function TemplatesPage() {
                                     <TableHeader>
                                         <TableRow className="bg-blue-50">
                                             {getPreviewData(previewTemplate).headers.map((header) => (
-                                                <TableHead key={header} className="font-semibold text-blue-900">
+                                                <TableHead
+                                                    key={header}
+                                                    className={`font-semibold text-blue-900 ${density === 'dense' ? 'py-2' : 'py-4'}`}
+                                                >
                                                     {header}
                                                 </TableHead>
                                             ))}
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {getPreviewData(previewTemplate).rows.map((row, idx) => (
-                                            <TableRow key={idx}>
-                                                {row.map((cell, cellIdx) => (
-                                                    <TableCell key={cellIdx} className="font-mono text-sm">
-                                                        {cell}
-                                                    </TableCell>
-                                                ))}
-                                            </TableRow>
-                                        ))}
+                                            {getPreviewData(previewTemplate).rows.map((row, idx) => (
+                                                <TableRow key={idx}>
+                                                    {row.map((cell, cellIdx) => (
+                                                        <TableCell
+                                                            key={cellIdx}
+                                                            className={`font-mono text-sm ${density === 'dense' ? 'py-2' : 'py-4'}`}
+                                                        >
+                                                            {cell}
+                                                        </TableCell>
+                                                    ))}
+                                                </TableRow>
+                                            ))}
                                     </TableBody>
                                 </Table>
                             </div>

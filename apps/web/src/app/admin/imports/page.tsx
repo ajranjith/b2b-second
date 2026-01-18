@@ -28,6 +28,8 @@ import {
 } from '@/ui';
 import { Upload, Package, Clock, Truck, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import api from '@/lib/api';
+import { DensityToggle } from '@/components/portal/DensityToggle';
+import { useLoadingCursor } from '@/hooks/useLoadingCursor';
 
 type ImportStatus = 'PROCESSING' | 'SUCCEEDED' | 'FAILED' | 'SUCCEEDED_WITH_ERRORS';
 type ImportType = 'PRODUCTS_GENUINE' | 'PRODUCTS_AFTERMARKET' | 'BACKORDERS' | 'FULFILLMENT';
@@ -64,6 +66,7 @@ export default function ImportsPage() {
     const [typeFilter, setTypeFilter] = useState<ImportType | 'ALL'>('ALL');
     const [sorting, setSorting] = useState<SortingState>([]);
     const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 20 });
+    const [density, setDensity] = useState<'comfortable' | 'dense'>('comfortable');
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [uploadType, setUploadType] = useState<ImportType>('PRODUCTS_GENUINE');
@@ -81,6 +84,8 @@ export default function ImportsPage() {
         },
         refetchInterval: 5000,
     });
+
+    useLoadingCursor(isLoading);
 
     const handleUpload = async () => {
         setIsUploading(true);
@@ -235,19 +240,22 @@ export default function ImportsPage() {
     });
 
     return (
-        <div className="p-8 space-y-6">
+        <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight">Import Management</h2>
                     <p className="text-slate-500">Monitor and manage data import processes</p>
                 </div>
-                <Button
-                    className="bg-blue-600 hover:bg-blue-700"
-                    onClick={() => setIsUploadModalOpen(true)}
-                >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload File
-                </Button>
+                <div className="flex items-center gap-3">
+                    <DensityToggle value={density} onChange={setDensity} />
+                    <Button
+                        className="bg-blue-600 hover:bg-blue-700"
+                        onClick={() => setIsUploadModalOpen(true)}
+                    >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload File
+                    </Button>
+                </div>
             </div>
 
             {isUploadModalOpen && (
@@ -322,7 +330,10 @@ export default function ImportsPage() {
                                 {table.getHeaderGroups().map((headerGroup) => (
                                     <TableRow key={headerGroup.id}>
                                         {headerGroup.headers.map((header) => (
-                                            <TableHead key={header.id}>
+                                            <TableHead
+                                                key={header.id}
+                                                className={density === 'dense' ? 'py-2' : 'py-4'}
+                                            >
                                                 {!header.isPlaceholder &&
                                                     flexRender(header.column.columnDef.header, header.getContext())}
                                             </TableHead>
@@ -348,7 +359,10 @@ export default function ImportsPage() {
                                         <>
                                             <TableRow key={row.id}>
                                                 {row.getVisibleCells().map((cell) => (
-                                                    <TableCell key={cell.id}>
+                                                    <TableCell
+                                                        key={cell.id}
+                                                        className={density === 'dense' ? 'py-2' : 'py-4'}
+                                                    >
                                                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                                     </TableCell>
                                                 ))}

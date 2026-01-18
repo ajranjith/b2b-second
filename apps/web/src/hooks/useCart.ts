@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -11,13 +11,13 @@ interface CartItem {
         description: string;
         partType: string;
     };
-    price: number;
+    yourPrice: number | null;
+    lineTotal: number | null;
 }
 
 interface Cart {
     items: CartItem[];
     subtotal: number;
-    itemCount: number;
 }
 
 export function useCart() {
@@ -26,14 +26,14 @@ export function useCart() {
     const { data: cart, isLoading, refetch } = useQuery<Cart>({
         queryKey: ['cart'],
         queryFn: async () => {
-            const response = await api.get('/api/dealer/cart');
+            const response = await api.get('/dealer/cart');
             return response.data;
         },
     });
 
     const addItemMutation = useMutation({
         mutationFn: async ({ productId, qty }: { productId: string; qty: number }) => {
-            const response = await api.post('/api/dealer/cart', { productId, qty });
+            const response = await api.post('/dealer/cart/items', { productId, qty });
             return response.data;
         },
         onSuccess: () => {
@@ -64,9 +64,11 @@ export function useCart() {
                     items: old.items.map((item) =>
                         item.id === itemId ? { ...item, qty } : item
                     ),
-                    subtotal: old.items.reduce((sum, item) =>
-                        sum + (item.id === itemId ? item.price * qty : item.price * item.qty), 0
-                    ),
+                    subtotal: old.items.reduce((sum, item) => {
+                        const unitPrice = Number(item.yourPrice ?? 0);
+                        const lineQty = item.id === itemId ? qty : item.qty;
+                        return sum + unitPrice * lineQty;
+                    }, 0),
                 };
             });
 
@@ -98,8 +100,7 @@ export function useCart() {
                 return {
                     ...old,
                     items: newItems,
-                    itemCount: newItems.length,
-                    subtotal: newItems.reduce((sum, item) => sum + item.price * item.qty, 0),
+                    subtotal: newItems.reduce((sum, item) => sum + Number(item.yourPrice ?? 0) * item.qty, 0),
                 };
             });
 
@@ -122,7 +123,7 @@ export function useCart() {
     return {
         cart,
         items: cart?.items || [],
-        itemCount: cart?.itemCount || 0,
+        itemCount: cart?.items?.reduce((sum, item) => sum + item.qty, 0) || 0,
         subtotal: cart?.subtotal || 0,
         addItem: addItemMutation.mutate,
         updateItem: updateItemMutation.mutate,
@@ -132,3 +133,4 @@ export function useCart() {
         refetch,
     };
 }
+

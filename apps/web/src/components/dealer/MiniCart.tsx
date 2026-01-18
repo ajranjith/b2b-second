@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -171,7 +171,7 @@ export default function MiniCart() {
 
                                     <div className="flex items-center justify-between">
                                         <div className="text-xs text-slate-600">
-                                            £{item.price.toFixed(2)} each
+                                            GBP {Number(item.yourPrice ?? 0).toFixed(2)} each
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <div className="flex items-center border border-slate-200 rounded">
@@ -195,7 +195,7 @@ export default function MiniCart() {
                                                 </Button>
                                             </div>
                                             <span className="text-sm font-bold text-blue-600 min-w-[60px] text-right">
-                                                £{(item.price * item.qty).toFixed(2)}
+                                                GBP {(Number(item.lineTotal ?? Number(item.yourPrice ?? 0) * item.qty)).toFixed(2)}
                                             </span>
                                         </div>
                                     </div>
@@ -208,7 +208,7 @@ export default function MiniCart() {
                         <div className="border-t flex-shrink-0 p-4 space-y-3 bg-slate-50">
                             <div className="flex items-center justify-between text-lg font-bold">
                                 <span>Subtotal</span>
-                                <span className="text-blue-600">£{subtotal.toFixed(2)}</span>
+                                <span className="text-blue-600">GBP {Number(subtotal || 0).toFixed(2)}</span>
                             </div>
                             <div className="space-y-2">
                                 <Button

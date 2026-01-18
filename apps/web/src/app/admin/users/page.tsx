@@ -34,6 +34,8 @@ import {
 import { MoreHorizontal, Plus, Search } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import { DensityToggle } from '@/components/portal/DensityToggle';
+import { useLoadingCursor } from '@/hooks/useLoadingCursor';
 
 type UserRole = 'ADMIN' | 'DEALER';
 
@@ -59,6 +61,7 @@ export default function UsersPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [sorting, setSorting] = useState<SortingState>([]);
     const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 20 });
+    const [density, setDensity] = useState<'comfortable' | 'dense'>('comfortable');
 
     const { data, isLoading, refetch } = useQuery({
         queryKey: ['users', roleFilter, searchQuery],
@@ -71,6 +74,8 @@ export default function UsersPage() {
             return response.data.users as User[];
         },
     });
+
+    useLoadingCursor(isLoading);
 
     const handleResetPassword = async (userId: string, email: string) => {
         if (!confirm(`Reset password for ${email}?`)) return;
@@ -240,22 +245,25 @@ export default function UsersPage() {
     });
 
     return (
-        <div className="p-8 space-y-6">
+        <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
                     <p className="text-slate-500">Manage admin and dealer user accounts</p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Admin User
-                    </Button>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Dealer User
-                    </Button>
+                <div className="flex items-center gap-3">
+                    <DensityToggle value={density} onChange={setDensity} />
+                    <div className="flex gap-2">
+                        <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create Admin User
+                        </Button>
+                        <Button className="bg-blue-600 hover:bg-blue-700">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create Dealer User
+                        </Button>
+                    </div>
                 </div>
             </div>
 
@@ -293,7 +301,10 @@ export default function UsersPage() {
                                 {table.getHeaderGroups().map((headerGroup) => (
                                     <TableRow key={headerGroup.id}>
                                         {headerGroup.headers.map((header) => (
-                                            <TableHead key={header.id}>
+                                            <TableHead
+                                                key={header.id}
+                                                className={density === 'dense' ? 'py-2' : 'py-4'}
+                                            >
                                                 {!header.isPlaceholder &&
                                                     flexRender(header.column.columnDef.header, header.getContext())}
                                             </TableHead>
@@ -318,7 +329,10 @@ export default function UsersPage() {
                                     table.getRowModel().rows.map((row) => (
                                         <TableRow key={row.id}>
                                             {row.getVisibleCells().map((cell) => (
-                                                <TableCell key={cell.id}>
+                                                <TableCell
+                                                    key={cell.id}
+                                                    className={density === 'dense' ? 'py-2' : 'py-4'}
+                                                >
                                                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                                 </TableCell>
                                             ))}

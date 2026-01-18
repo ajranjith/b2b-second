@@ -1,165 +1,195 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
-import api from '@/lib/api';
+import { useEffect, useMemo, useState } from 'react';
+import { Download, FileText, Package, UserCircle } from 'lucide-react';
+import { getOrders } from '@/lib/services/dealerApi';
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@/ui';
+import { StatusChip } from '@/components/portal/StatusChip';
+
+const statusTone: Record<string, 'blue' | 'green' | 'amber' | 'red' | 'slate'> = {
+  Processing: 'blue',
+  Ready: 'amber',
+  Shipped: 'green',
+  Backorder: 'red',
+};
+
+const newsItems = [
+  {
+    id: 'news-1',
+    title: 'Jaguar V6 stock uplift this week',
+    summary: 'Priority pick waves start 13:00. Confirm any hotlines with support.',
+  },
+  {
+    id: 'news-2',
+    title: 'Aftermarket band refresh',
+    summary: 'Pricing refresh runs overnight with minimal downtime.',
+  },
+  {
+    id: 'news-3',
+    title: 'Dispatch SLA reminder',
+    summary: 'Express cutoff is 14:00. Standard dispatch runs at 16:30.',
+  },
+];
 
 export default function DealerDashboard() {
-    const router = useRouter();
-    const { data: layout, isLoading, error } = useQuery({
-        queryKey: ['dealer-dashboard-layout'],
-        queryFn: async () => {
-            const response = await api.get('/api/layout/dashboard');
-            return response.data;
-        }
-    });
+  const [orders, setOrders] = useState<Awaited<ReturnType<typeof getOrders>>>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    if (isLoading) return <div className="p-8">Loading dashboard...</div>;
+  useEffect(() => {
+    getOrders()
+      .then((data) => setOrders(data))
+      .catch(() => setError('Unable to load dashboard data.'))
+      .finally(() => setIsLoading(false));
+  }, []);
 
-    if (error) {
-        router.push('/login');
-        return null;
-    }
-
-    const stats = layout?.widgets?.filter((w: any) => w.type === 'stats') || [];
-
-    const recentOrders = [
-        { id: 'ORD-1001', date: '2024-01-10', items: 5, total: '£1,245.00', status: 'Processing' },
-        { id: 'ORD-1002', date: '2024-01-09', items: 3, total: '£890.50', status: 'Shipped' },
-        { id: 'ORD-1003', date: '2024-01-08', items: 8, total: '£2,100.00', status: 'Processing' },
-    ];
-
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        router.push('/login');
+  const stats = useMemo(() => {
+    const backorders = orders.filter((order) => order.status === 'Backorder').length;
+    const inProgress = orders.filter((order) => order.status === 'Processing' || order.status === 'Ready').length;
+    return {
+      backorders,
+      inProgress,
+      accountSummary: 'Band 1 • Net 30 • Warehouse West',
     };
+  }, [orders]);
 
+  const recentOrders = useMemo(() => {
+    if (orders.length === 0) return [];
+    return Array.from({ length: 10 }, (_, index) => orders[index % orders.length]).map((order, idx) => ({
+      ...order,
+      rowId: `${order.id}-${idx}`,
+      total: order.lines.reduce((sum, line) => sum + line.qty * line.unitPrice, 0),
+    }));
+  }, [orders]);
+
+  if (isLoading) {
     return (
-        <div className="min-h-screen bg-slate-50">
-            {/* Header */}
-            <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center space-x-8">
-                            <h1 className="text-2xl font-bold text-slate-900">Hotbray Portal</h1>
-                            <nav className="hidden md:flex space-x-6">
-                                <Link href="/dealer/dashboard" className="text-blue-600 font-medium">Dashboard</Link>
-                                <Link href="/dealer/search" className="text-slate-600 hover:text-slate-900">Search Parts</Link>
-                                <Link href="/dealer/cart" className="text-slate-600 hover:text-slate-900">Cart</Link>
-                                <Link href="/dealer/orders" className="text-slate-600 hover:text-slate-900">Orders</Link>
-                                <Link href="/dealer/backorders" className="text-slate-600 hover:text-slate-900">Backorders</Link>
-                            </nav>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            <span className="text-sm text-slate-600">Dealer Portal</span>
-                            <button
-                                onClick={handleLogout}
-                                className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 border border-slate-300 rounded-lg hover:bg-slate-50 transition"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Welcome Section */}
-                <div className="mb-8">
-                    <h2 className="text-3xl font-bold text-slate-900">Welcome back!</h2>
-                    <p className="text-slate-600 mt-1">Here's what's happening with your account today (SDUI Active).</p>
-                </div>
-
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    {stats.map((stat: any, index: number) => (
-                        <div key={index} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-slate-600">{stat.title}</p>
-                                    <p className="text-2xl font-bold text-slate-900 mt-2">{stat.value}</p>
-                                </div>
-                                {stat.change && (
-                                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${stat.trend === 'up' ? 'bg-green-100 text-green-700' :
-                                        stat.trend === 'down' ? 'bg-red-100 text-red-700' :
-                                            'bg-slate-100 text-slate-700'
-                                        }`}>
-                                        {stat.change}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <Link href="/dealer/search" className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 text-white hover:shadow-xl transition transform hover:scale-[1.02]">
-                        <div className="text-3xl mb-3">🔍</div>
-                        <h3 className="text-xl font-bold mb-2">Search Parts</h3>
-                        <p className="text-blue-100">Find the parts you need</p>
-                    </Link>
-
-                    <Link href="/dealer/cart" className="bg-gradient-to-br from-green-600 to-green-700 rounded-xl shadow-lg p-6 text-white hover:shadow-xl transition transform hover:scale-[1.02]">
-                        <div className="text-3xl mb-3">🛒</div>
-                        <h3 className="text-xl font-bold mb-2">View Cart</h3>
-                        <p className="text-green-100">Review your items</p>
-                    </Link>
-
-                    <Link href="/dealer/backorders" className="bg-gradient-to-br from-orange-600 to-orange-700 rounded-xl shadow-lg p-6 text-white hover:shadow-xl transition transform hover:scale-[1.02]">
-                        <div className="text-3xl mb-3">📋</div>
-                        <h3 className="text-xl font-bold mb-2">Backorders</h3>
-                        <p className="text-orange-100">Check pending items</p>
-                    </Link>
-                </div>
-
-                {/* Recent Orders Table */}
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-                    <div className="px-6 py-4 border-b border-slate-200">
-                        <h3 className="text-lg font-bold text-slate-900">Recent Orders</h3>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-slate-50 border-b border-slate-200">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Order ID</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Date</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Items</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Total</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-200">
-                                {recentOrders.map((order) => (
-                                    <tr key={order.id} className="hover:bg-slate-50 transition">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{order.id}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{order.date}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{order.items}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{order.total}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${order.status === 'Shipped' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                                                }`}>
-                                                {order.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            <button className="text-blue-600 hover:text-blue-800 font-medium">View</button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div className="px-6 py-4 border-t border-slate-200">
-                        <Link href="/dealer/orders" className="text-blue-600 hover:text-blue-800 font-medium text-sm">
-                            View all orders →
-                        </Link>
-                    </div>
-                </div>
-            </main>
-        </div>
+      <Card>
+        <CardContent className="py-16 text-center text-slate-500">Loading dashboard...</CardContent>
+      </Card>
     );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="py-16 text-center text-slate-500">{error}</CardContent>
+      </Card>
+    );
+  }
+
+  if (!orders.length) {
+    return (
+      <Card>
+        <CardContent className="py-16 text-center text-slate-500">
+          No dashboard data yet. Start by placing an order.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-3xl font-bold text-slate-900">Dashboard</h2>
+        <p className="text-slate-600 mt-1">Welcome back, here&apos;s what needs your attention today.</p>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm text-slate-500">Backorders</CardTitle>
+            <Button size="sm" variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              Download
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold text-slate-900">{stats.backorders}</div>
+            <p className="text-sm text-slate-500 mt-1">Outstanding lines awaiting stock</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm text-slate-500">Orders in Progress</CardTitle>
+            <Package className="h-5 w-5 text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold text-slate-900">{stats.inProgress}</div>
+            <p className="text-sm text-slate-500 mt-1">Processing & ready to dispatch</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm text-slate-500">Account Summary</CardTitle>
+            <UserCircle className="h-5 w-5 text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-semibold text-slate-900">Premium Dealer</div>
+            <p className="text-sm text-slate-500 mt-1">{stats.accountSummary}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Orders</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                  <tr>
+                    <th className="px-6 py-3 text-left">Order</th>
+                    <th className="px-6 py-3 text-left">Date</th>
+                    <th className="px-6 py-3 text-right">Total</th>
+                    <th className="px-6 py-3 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {recentOrders.map((order) => (
+                    <tr key={order.rowId} className="hover:bg-slate-50">
+                      <td className="px-6 py-3 font-semibold text-slate-900">{order.orderNo}</td>
+                      <td className="px-6 py-3 text-slate-600">{order.createdAt}</td>
+                      <td className="px-6 py-3 text-right text-slate-900 font-semibold">
+                        GBP {order.total.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-3 text-right">
+                        <StatusChip label={order.status} tone={statusTone[order.status]} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="px-6 py-4 border-t border-slate-200 text-right">
+              <Link href="/dealer/orders" className="text-sm font-semibold text-blue-600 hover:text-blue-700">
+                View all orders
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>News Feed</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {newsItems.map((item) => (
+              <div key={item.id} className="border border-slate-200 rounded-xl p-4">
+                <div className="text-sm font-semibold text-slate-900">{item.title}</div>
+                <p className="text-xs text-slate-500 mt-2">{item.summary}</p>
+                <button className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-blue-600 hover:text-blue-700">
+                  <FileText className="h-3 w-3" />
+                  Attachments
+                </button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
 }

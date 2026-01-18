@@ -42,7 +42,7 @@ export default async function CustomerOrdersPage() {
                                     <span className="font-semibold">{order.dealerAccount.companyName}</span>
                                 </div>
                                 <div className="text-lg font-bold">
-                                    £{order.total.toFixed(2)}
+                                    GBP {order.total.toFixed(2)}
                                 </div>
                             </div>
                             {order.comments && (

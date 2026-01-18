@@ -73,6 +73,7 @@ const authRoutes: FastifyPluginAsync = async (server) => {
             // If user is a dealer, include dealerAccountId
             if (user.role === 'DEALER' && user.dealerUser) {
                 payload.dealerAccountId = user.dealerUser.dealerAccountId;
+                payload.dealerUserId = user.dealerUser.id;
             }
 
             // Generate token
@@ -86,6 +87,7 @@ const authRoutes: FastifyPluginAsync = async (server) => {
                     email: user.email,
                     role: user.role,
                     dealerAccountId: payload.dealerAccountId,
+                    dealerUserId: payload.dealerUserId,
                     companyName: user.dealerUser?.dealerAccount?.companyName
                 }
             });
