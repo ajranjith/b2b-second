@@ -16,6 +16,7 @@ import {
     Badge,
     Card,
     CardContent,
+    Input,
     Tabs,
     TabsList,
     TabsTrigger,
@@ -32,7 +33,15 @@ import { DensityToggle } from '@/components/portal/DensityToggle';
 import { useLoadingCursor } from '@/hooks/useLoadingCursor';
 
 type ImportStatus = 'PROCESSING' | 'SUCCEEDED' | 'FAILED' | 'SUCCEEDED_WITH_ERRORS';
-type ImportType = 'PRODUCTS_GENUINE' | 'PRODUCTS_AFTERMARKET' | 'BACKORDERS' | 'FULFILLMENT';
+type ImportType =
+    | 'PRODUCTS_MIXED'
+    | 'PRODUCTS_GENUINE'
+    | 'PRODUCTS_AFTERMARKET'
+    | 'BACKORDERS'
+    | 'BACKORDER_UPDATE'
+    | 'SUPERSESSION'
+    | 'SPECIAL_PRICES'
+    | 'FULFILLMENT_STATUS';
 
 interface ImportBatch {
     id: string;
@@ -58,7 +67,10 @@ const statusColors: Record<ImportStatus, string> = {
 const typeIcons: Record<string, any> = {
     PRODUCTS: Package,
     BACKORDERS: Clock,
-    FULFILLMENT: Truck,
+    BACKORDER_UPDATE: Clock,
+    SUPERSESSION: Package,
+    SPECIAL_PRICES: Package,
+    FULFILLMENT_STATUS: Truck,
 };
 
 export default function ImportsPage() {
@@ -69,8 +81,11 @@ export default function ImportsPage() {
     const [density, setDensity] = useState<'comfortable' | 'dense'>('comfortable');
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-    const [uploadType, setUploadType] = useState<ImportType>('PRODUCTS_GENUINE');
+    const [uploadType, setUploadType] = useState<ImportType>('PRODUCTS_MIXED');
     const [isUploading, setIsUploading] = useState(false);
+    const [uploadFile, setUploadFile] = useState<File | null>(null);
+    const [specialStartDate, setSpecialStartDate] = useState('');
+    const [specialEndDate, setSpecialEndDate] = useState('');
 
     const { data, isLoading } = useQuery({
         queryKey: ['imports', statusFilter, typeFilter],
@@ -90,12 +105,30 @@ export default function ImportsPage() {
     const handleUpload = async () => {
         setIsUploading(true);
         try {
-            const mockFilePath = `C:/uploads/mock_${Date.now()}.xlsx`;
-            await api.post('/admin/import', {
-                type: uploadType.startsWith('PRODUCTS') ? uploadType.split('_')[1] : uploadType,
-                filePath: mockFilePath
+            if (!uploadFile) {
+                alert('Please select a file to upload.');
+                return;
+            }
+            if (uploadType === 'SPECIAL_PRICES' && (!specialStartDate || !specialEndDate)) {
+                alert('Start Date and End Date are required for special price imports.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', uploadFile);
+            formData.append('importType', uploadType);
+            if (uploadType === 'SPECIAL_PRICES') {
+                formData.append('startsAt', specialStartDate);
+                formData.append('endsAt', specialEndDate);
+            }
+
+            await api.post('/admin/imports/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
             });
             setIsUploadModalOpen(false);
+            setUploadFile(null);
+            setSpecialStartDate('');
+            setSpecialEndDate('');
             alert('Import started successfully!');
         } catch (e: any) {
             alert('Upload failed: ' + e.message);
@@ -270,15 +303,42 @@ export default function ImportsPage() {
                                     value={uploadType}
                                     onChange={(e) => setUploadType(e.target.value as any)}
                                 >
-                                    <option value="PRODUCTS_GENUINE">Genuine Products</option>
-                                    <option value="PRODUCTS_AFTERMARKET">Aftermarket Products</option>
-                                    <option value="BACKORDERS">Backorders</option>
+                                    <option value="PRODUCTS_MIXED">Product Catalog (Net 1-7)</option>
+                                    <option value="SUPERSESSION">Supersessions</option>
+                                    <option value="SPECIAL_PRICES">Special Prices</option>
+                                    <option value="BACKORDER_UPDATE">Backorder Updates</option>
                                 </select>
                             </div>
-                            <div className="border-2 border-dashed border-slate-200 rounded-lg p-8 text-center bg-slate-50">
+                            <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center bg-slate-50 space-y-3">
                                 <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
                                 <p className="text-sm text-slate-500">Click to select or drag and drop XLSX file</p>
+                                <input
+                                    type="file"
+                                    accept=".xlsx"
+                                    onChange={(event) => setUploadFile(event.target.files?.[0] || null)}
+                                    className="block w-full text-sm text-slate-500 file:mr-4 file:rounded-full file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-600 hover:file:bg-blue-100"
+                                />
                             </div>
+                            {uploadType === 'SPECIAL_PRICES' && (
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Start Date</label>
+                                        <Input
+                                            type="date"
+                                            value={specialStartDate}
+                                            onChange={(event) => setSpecialStartDate(event.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">End Date</label>
+                                        <Input
+                                            type="date"
+                                            value={specialEndDate}
+                                            onChange={(event) => setSpecialEndDate(event.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            )}
                             <div className="flex justify-end gap-2">
                                 <Button variant="ghost" onClick={() => setIsUploadModalOpen(false)}>Cancel</Button>
                                 <Button
@@ -313,9 +373,10 @@ export default function ImportsPage() {
                         <Tabs value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
                             <TabsList>
                                 <TabsTrigger value="ALL">All</TabsTrigger>
-                                <TabsTrigger value="PRODUCTS_GENUINE">Products</TabsTrigger>
-                                <TabsTrigger value="BACKORDERS">Backorders</TabsTrigger>
-                                <TabsTrigger value="FULFILLMENT">Fulfillment</TabsTrigger>
+                                <TabsTrigger value="PRODUCTS_MIXED">Products</TabsTrigger>
+                                <TabsTrigger value="SUPERSESSION">Supersessions</TabsTrigger>
+                                <TabsTrigger value="SPECIAL_PRICES">Special Prices</TabsTrigger>
+                                <TabsTrigger value="BACKORDER_UPDATE">Backorder Updates</TabsTrigger>
                             </TabsList>
                         </Tabs>
                     </div>

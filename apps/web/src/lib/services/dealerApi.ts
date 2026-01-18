@@ -111,3 +111,8 @@ export async function getOrderTimeline(id: string) {
   await delay(120);
   return orderTimeline[id] || [];
 }
+
+export function getPartBySku(sku: string): Part | null {
+  const normalized = sku.trim().toLowerCase();
+  return partsCatalog.find((part) => part.sku.toLowerCase() === normalized) || null;
+}

@@ -21,6 +21,9 @@ export interface PricedProduct {
     minPriceApplied: boolean;
     reason?: string;
     currency: string;
+    supersessionOriginal?: string | null;
+    supersededBy?: string | null;
+    supersessionDepth?: number | null;
 }
 
 export class DealerService {
@@ -85,6 +88,25 @@ export class DealerService {
             orderBy
         });
 
+        // 4b. Supersession metadata for results
+        const productCodes = products.map((product) => product.productCode.toUpperCase());
+        const supersessions = await this.prisma.supersessionResolved.findMany({
+            where: { originalPartNo: { in: productCodes } }
+        });
+        const supersessionMap = new Map(
+            supersessions.map((row) => [row.originalPartNo.toUpperCase(), row])
+        );
+        const replacementCodes = Array.from(
+            new Set(supersessions.map((row) => row.latestPartNo.toUpperCase()))
+        );
+        const replacements = replacementCodes.length
+            ? await this.prisma.product.findMany({
+                where: { productCode: { in: replacementCodes } },
+                select: { productCode: true }
+            })
+            : [];
+        const replacementSet = new Set(replacements.map((row) => row.productCode.toUpperCase()));
+
         // 5. Calculate pricing for all products
         const priceMap = await this.pricingRules.calculatePrices(
             dealerAccountId,
@@ -94,6 +116,11 @@ export class DealerService {
         // 6. Format results
         let results = products.map(product => {
             const pricing = priceMap.get(product.id);
+            const supersession = supersessionMap.get(product.productCode.toUpperCase());
+            const supersededBy = supersession?.latestPartNo ?? null;
+            const replacementExists = supersededBy
+                ? replacementSet.has(supersededBy.toUpperCase())
+                : false;
 
             return {
                 id: product.id,
@@ -106,7 +133,11 @@ export class DealerService {
                 available: pricing?.available ?? false,
                 minPriceApplied: pricing?.minimumPriceApplied ?? false,
                 reason: pricing?.reason,
-                currency: 'GBP'
+                currency: 'GBP',
+                supersessionOriginal: supersession?.originalPartNo ?? null,
+                supersededBy,
+                supersessionDepth: supersession?.depth ?? null,
+                replacementExists
             };
         });
 
@@ -148,6 +179,15 @@ export class DealerService {
         );
         const pricing = priceMap.get(product.id);
 
+        const supersession = await this.prisma.supersessionResolved.findFirst({
+            where: { originalPartNo: product.productCode.toUpperCase() }
+        });
+        const replacementExists = supersession
+            ? !!(await this.prisma.product.findUnique({
+                where: { productCode: supersession.latestPartNo }
+            }))
+            : false;
+
         return {
             id: product.id,
             productCode: product.productCode,
@@ -160,6 +200,10 @@ export class DealerService {
             minPriceApplied: pricing?.minimumPriceApplied ?? false,
             reason: pricing?.reason,
             currency: 'GBP',
+            supersessionOriginal: supersession?.originalPartNo ?? null,
+            supersededBy: supersession?.latestPartNo ?? null,
+            supersessionDepth: supersession?.depth ?? null,
+            replacementExists,
             aliases: product.aliases,
             refPrice: product.refPrice
         };

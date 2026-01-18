@@ -99,6 +99,16 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
         } catch (error: any) {
             server.log.error(error);
 
+            if (error.code === 'ITEM_SUPERSEDED') {
+                return reply.status(409).send({
+                    error: 'Conflict',
+                    code: 'ITEM_SUPERSEDED',
+                    productCode: error.productCode,
+                    supersededBy: error.supersededBy,
+                    replacementExists: error.replacementExists
+                });
+            }
+
             if (error.message === 'Product not found') {
                 return reply.status(404).send({ error: 'Not Found', message: error.message });
             }
@@ -249,6 +259,16 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
         } catch (error: any) {
             server.log.error(error);
 
+            if (error.code === 'ITEM_SUPERSEDED') {
+                return reply.status(409).send({
+                    error: 'Conflict',
+                    code: 'ITEM_SUPERSEDED',
+                    productCode: error.productCode,
+                    supersededBy: error.supersededBy,
+                    replacementExists: error.replacementExists
+                });
+            }
+
             if (error.message === 'Cart item not found') {
                 return reply.status(404).send({ error: 'Not Found', message: error.message });
             }
@@ -367,6 +387,16 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
 
             if (error.message === 'Cart is empty') {
                 return reply.status(400).send({ error: 'Bad Request', message: error.message });
+            }
+
+            if (error.code === 'ITEM_SUPERSEDED') {
+                return reply.status(409).send({
+                    error: 'Conflict',
+                    code: 'ITEM_SUPERSEDED',
+                    productCode: error.productCode,
+                    supersededBy: error.supersededBy,
+                    replacementExists: error.replacementExists
+                });
             }
 
             if (error.message.includes('not available') || error.message.includes('no price')) {

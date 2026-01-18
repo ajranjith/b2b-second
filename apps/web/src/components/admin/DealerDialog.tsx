@@ -15,28 +15,41 @@ import {
     Button,
     Input,
     Label,
-    Select,
 } from '@/ui';
 import api from '@/lib/api';
 
 const dealerSchema = z.object({
-    companyName: z.string().min(1, 'Company name is required'),
+    companyName: z.string().optional(),
     erpAccountNo: z.string().optional(),
     accountNo: z.string().min(1, 'Account number is required'),
     firstName: z.string().min(1, 'First name is required'),
     lastName: z.string().min(1, 'Last name is required'),
     email: z.string().email('Invalid email address'),
+    tempPassword: z.string().min(8, 'Temp password must be at least 8 characters').optional(),
     phone: z.string().optional(),
     entitlement: z.enum(['GENUINE_ONLY', 'AFTERMARKET_ONLY', 'SHOW_ALL']),
     genuineBand: z.string().optional(),
     aftermarketBand: z.string().optional(),
     brandedBand: z.string().optional(),
+    genuineTier: z.enum(['NET1', 'NET2', 'NET3', 'NET4', 'NET5', 'NET6', 'NET7']),
+    aftermarketEsTier: z.enum(['NET1', 'NET2', 'NET3', 'NET4', 'NET5', 'NET6', 'NET7']),
+    aftermarketBrTier: z.enum(['NET1', 'NET2', 'NET3', 'NET4', 'NET5', 'NET6', 'NET7']),
     status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']),
+    defaultShippingMethod: z.enum(['Air', 'Sea', 'FedEx', 'DHL', 'Others']).optional(),
+    shippingNotes: z.string().optional(),
     billingLine1: z.string().optional(),
     billingLine2: z.string().optional(),
     billingCity: z.string().optional(),
     billingPostcode: z.string().optional(),
     billingCountry: z.string().optional(),
+}).refine((data) => {
+    if (data.defaultShippingMethod === 'Others') {
+        return !!data.shippingNotes && data.shippingNotes.trim().length > 0;
+    }
+    return true;
+}, {
+    message: 'Notes are required when shipping method is Others',
+    path: ['shippingNotes']
 });
 
 type DealerFormData = z.infer<typeof dealerSchema>;
@@ -55,7 +68,6 @@ export default function DealerDialog({ open, onClose, onSuccess, dealer }: Deale
         register,
         handleSubmit,
         watch,
-        setValue,
         reset,
         formState: { errors, isSubmitting },
     } = useForm<DealerFormData>({
@@ -63,6 +75,9 @@ export default function DealerDialog({ open, onClose, onSuccess, dealer }: Deale
         defaultValues: {
             entitlement: 'SHOW_ALL',
             status: 'ACTIVE',
+            genuineTier: 'NET1',
+            aftermarketEsTier: 'NET1',
+            aftermarketBrTier: 'NET1',
             billingCountry: 'United Kingdom',
         },
     });
@@ -71,8 +86,12 @@ export default function DealerDialog({ open, onClose, onSuccess, dealer }: Deale
 
     useEffect(() => {
         if (dealer) {
+            const tierMap = (dealer.discountTiers || []).reduce((acc: any, tier: any) => {
+                acc[tier.discountCode] = tier.tierCode;
+                return acc;
+            }, {});
             reset({
-                companyName: dealer.companyName,
+                companyName: dealer.companyName || '',
                 erpAccountNo: dealer.erpAccountNo || '',
                 accountNo: dealer.accountNo,
                 firstName: dealer.users[0]?.firstName || '',
@@ -83,7 +102,12 @@ export default function DealerDialog({ open, onClose, onSuccess, dealer }: Deale
                 genuineBand: dealer.genuineBand || '',
                 aftermarketBand: dealer.aftermarketBand || '',
                 brandedBand: dealer.brandedBand || '',
+                genuineTier: tierMap.gn || 'NET1',
+                aftermarketEsTier: tierMap.es || 'NET1',
+                aftermarketBrTier: tierMap.br || 'NET1',
                 status: dealer.status,
+                defaultShippingMethod: dealer.defaultShippingMethod || undefined,
+                shippingNotes: dealer.shippingNotes || '',
                 billingLine1: dealer.billingLine1 || '',
                 billingLine2: dealer.billingLine2 || '',
                 billingCity: dealer.billingCity || '',
@@ -94,6 +118,9 @@ export default function DealerDialog({ open, onClose, onSuccess, dealer }: Deale
             reset({
                 entitlement: 'SHOW_ALL',
                 status: 'ACTIVE',
+                genuineTier: 'NET1',
+                aftermarketEsTier: 'NET1',
+                aftermarketBrTier: 'NET1',
                 billingCountry: 'United Kingdom',
             });
         }
@@ -101,6 +128,10 @@ export default function DealerDialog({ open, onClose, onSuccess, dealer }: Deale
 
     const onSubmit = async (data: DealerFormData) => {
         try {
+            if (!isEdit && !data.tempPassword) {
+                toast.error('Temp password is required for new dealers');
+                return;
+            }
             const payload = {
                 companyName: data.companyName,
                 erpAccountNo: data.erpAccountNo,
@@ -108,13 +139,21 @@ export default function DealerDialog({ open, onClose, onSuccess, dealer }: Deale
                 firstName: data.firstName,
                 lastName: data.lastName,
                 email: data.email,
+                tempPassword: data.tempPassword,
                 phone: data.phone,
                 entitlement: data.entitlement,
                 status: data.status,
+                defaultShippingMethod: data.defaultShippingMethod,
+                shippingNotes: data.shippingNotes,
                 bands: {
                     genuine: data.genuineBand,
                     aftermarket: data.aftermarketBand,
                     branded: data.brandedBand,
+                },
+                tiers: {
+                    genuine: data.genuineTier,
+                    aftermarketEs: data.aftermarketEsTier,
+                    aftermarketBr: data.aftermarketBrTier,
                 },
                 billingAddress: {
                     line1: data.billingLine1,
@@ -160,7 +199,7 @@ export default function DealerDialog({ open, onClose, onSuccess, dealer }: Deale
                         <div className="grid gap-4 md:grid-cols-2">
                             <div className="space-y-2">
                                 <Label htmlFor="companyName">
-                                    Company Name <span className="text-red-500">*</span>
+                                    Company Name
                                 </Label>
                                 <Input id="companyName" {...register('companyName')} />
                                 {errors.companyName && (
@@ -212,6 +251,17 @@ export default function DealerDialog({ open, onClose, onSuccess, dealer }: Deale
                                 <Input id="email" type="email" {...register('email')} />
                                 {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
                             </div>
+                            {!isEdit && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="tempPassword">
+                                        Temp Password <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input id="tempPassword" type="password" {...register('tempPassword')} />
+                                    {errors.tempPassword && (
+                                        <p className="text-sm text-red-500">{errors.tempPassword.message}</p>
+                                    )}
+                                </div>
+                            )}
                             <div className="space-y-2">
                                 <Label htmlFor="phone">Phone</Label>
                                 <Input id="phone" {...register('phone')} />
@@ -219,7 +269,79 @@ export default function DealerDialog({ open, onClose, onSuccess, dealer }: Deale
                         </div>
                     </div>
 
-                    {/* Section 3: Entitlement */}
+                    {/* Section 3: Shipping Defaults */}
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold border-b pb-2">Default Shipping</h3>
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="defaultShippingMethod">Default Shipping Method</Label>
+                                <select
+                                    id="defaultShippingMethod"
+                                    {...register('defaultShippingMethod')}
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-md"
+                                >
+                                    <option value="">Select method</option>
+                                    <option value="Air">Air</option>
+                                    <option value="Sea">Sea</option>
+                                    <option value="FedEx">FedEx</option>
+                                    <option value="DHL">DHL</option>
+                                    <option value="Others">Others</option>
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="shippingNotes">Notes (required if Others)</Label>
+                                <Input id="shippingNotes" {...register('shippingNotes')} />
+                                {errors.shippingNotes && (
+                                    <p className="text-sm text-red-500">{errors.shippingNotes.message}</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Section 4: Tier Assignments */}
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold border-b pb-2">Tier Assignments</h3>
+                        <div className="grid gap-4 md:grid-cols-3">
+                            <div className="space-y-2">
+                                <Label htmlFor="genuineTier">Genuine Tier (gn)</Label>
+                                <select
+                                    id="genuineTier"
+                                    {...register('genuineTier')}
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-md"
+                                >
+                                    {['NET1', 'NET2', 'NET3', 'NET4', 'NET5', 'NET6', 'NET7'].map((tier) => (
+                                        <option key={tier} value={tier}>{tier}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="aftermarketEsTier">Aftermarket ES Tier (es)</Label>
+                                <select
+                                    id="aftermarketEsTier"
+                                    {...register('aftermarketEsTier')}
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-md"
+                                >
+                                    {['NET1', 'NET2', 'NET3', 'NET4', 'NET5', 'NET6', 'NET7'].map((tier) => (
+                                        <option key={tier} value={tier}>{tier}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="aftermarketBrTier">Aftermarket BR Tier (br)</Label>
+                                <select
+                                    id="aftermarketBrTier"
+                                    {...register('aftermarketBrTier')}
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-md"
+                                >
+                                    {['NET1', 'NET2', 'NET3', 'NET4', 'NET5', 'NET6', 'NET7'].map((tier) => (
+                                        <option key={tier} value={tier}>{tier}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Section 5: Entitlement */}
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold border-b pb-2">Entitlement</h3>
                         <div className="space-y-3">
@@ -253,7 +375,7 @@ export default function DealerDialog({ open, onClose, onSuccess, dealer }: Deale
                         </div>
                     </div>
 
-                    {/* Section 4: Pricing Bands (Conditional) */}
+                    {/* Section 6: Pricing Bands (Conditional) */}
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold border-b pb-2">Pricing Bands</h3>
                         <div className="grid gap-4 md:grid-cols-3">
@@ -308,7 +430,7 @@ export default function DealerDialog({ open, onClose, onSuccess, dealer }: Deale
                         </div>
                     </div>
 
-                    {/* Section 5: Status */}
+                    {/* Section 7: Status */}
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold border-b pb-2">Status</h3>
                         <div className="space-y-3">
@@ -342,7 +464,7 @@ export default function DealerDialog({ open, onClose, onSuccess, dealer }: Deale
                         </div>
                     </div>
 
-                    {/* Section 6: Billing Address */}
+                    {/* Section 8: Billing Address */}
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold border-b pb-2">Billing Address (Optional)</h3>
                         <div className="grid gap-4 md:grid-cols-2">

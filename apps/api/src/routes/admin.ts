@@ -4,6 +4,7 @@ import { z } from 'zod';
 import * as bcrypt from 'bcrypt';
 import { requireRole, AuthenticatedRequest } from '../lib/auth';
 import { EmailService, DealerCreateSchema } from 'shared';
+import { ImportService } from '../services/ImportService';
 import * as fs from 'fs';
 import * as path from 'path';
 import { pipeline } from 'stream/promises';
@@ -38,7 +39,21 @@ const CreateDealerSchema = DealerCreateSchema.extend({
     phone: z.string().optional()
 });
 
-const UpdateDealerSchema = CreateDealerSchema.partial();
+const UpdateDealerSchema = z.object({
+    tradingName: z.string().optional(),
+    legalName: z.string().optional(),
+    erpAccountNo: z.string().optional(),
+    billingAddress: z.object({
+        line1: z.string().optional(),
+        line2: z.string().optional(),
+        city: z.string().optional(),
+        postcode: z.string().optional(),
+        country: z.string().optional()
+    }).optional(),
+    mainEmail: z.string().email().optional(),
+    phone: z.string().optional(),
+    status: z.nativeEnum(DealerStatus).optional()
+});
 
 const ListDealersSchema = z.object({
     status: z.nativeEnum(DealerStatus).optional(),
@@ -67,14 +82,30 @@ const ListUsersSchema = z.object({
     limit: z.coerce.number().optional().default(10)
 });
 
+const RunImportSchema = z.object({
+    importType: z.nativeEnum(ImportType),
+    filePath: z.string().min(1),
+    startsAt: z.string().optional(),
+    endsAt: z.string().optional()
+});
+
 export default async function adminRoutes(server: FastifyInstance) {
     const emailService = new EmailService(prisma);
+    const importService = new ImportService(prisma);
+    const supportedImports = new Set<ImportType>([
+        ImportType.PRODUCTS_MIXED,
+        ImportType.DEALERS,
+        ImportType.SUPERSESSION,
+        ImportType.SPECIAL_PRICES,
+        ImportType.BACKORDER_UPDATE
+    ]);
 
     /**
      * POST /admin/dealers - Create a new dealer
      */
     server.post('/dealers', { preHandler: requireRole('ADMIN') }, async (request: AuthenticatedRequest, reply) => {
         const data = CreateDealerSchema.parse(request.body);
+        const entitlement = data.entitlement ?? Entitlement.SHOW_ALL;
 
         // 1. Check uniqueness
         const existingUser = await prisma.appUser.findUnique({ where: { email: data.email } });
@@ -87,9 +118,8 @@ export default async function adminRoutes(server: FastifyInstance) {
             return reply.status(400).send({ error: 'Conflict', message: 'Account number already exists' });
         }
 
-        // 2. Generate and hash password
-        const password = generateSecurePassword();
-        const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+        // 2. Hash provided temp password (force change)
+        const passwordHash = await bcrypt.hash(data.tempPassword, SALT_ROUNDS);
 
         // 3. Create records in transaction
         const result = await prisma.$transaction(async (tx) => {
@@ -103,6 +133,8 @@ export default async function adminRoutes(server: FastifyInstance) {
                     entitlement: data.entitlement,
                     mainEmail: data.mainEmail || data.email,
                     phone: data.phone,
+                    defaultShippingMethod: data.defaultShippingMethod,
+                    shippingNotes: data.shippingNotes,
                     billingLine1: data.billingAddress?.line1,
                     billingLine2: data.billingAddress?.line2,
                     billingCity: data.billingAddress?.city,
@@ -119,7 +151,8 @@ export default async function adminRoutes(server: FastifyInstance) {
                     email: data.email,
                     passwordHash,
                     role: UserRole.DEALER,
-                    isActive: data.status === DealerStatus.ACTIVE
+                    isActive: data.status === DealerStatus.ACTIVE,
+                    mustChangePassword: true
                 }
             });
 
@@ -134,9 +167,9 @@ export default async function adminRoutes(server: FastifyInstance) {
                 }
             });
 
-            // Create Band Assignments based on Entitlement
+            // Create Band Assignments based on Entitlement (legacy bands)
             const assignments = [];
-            if (data.entitlement === Entitlement.SHOW_ALL || data.entitlement === Entitlement.GENUINE_ONLY) {
+            if (entitlement === Entitlement.SHOW_ALL || entitlement === Entitlement.GENUINE_ONLY) {
                 if (data.bands?.genuine) {
                     assignments.push({
                         dealerAccountId: dealerAccount.id,
@@ -145,7 +178,7 @@ export default async function adminRoutes(server: FastifyInstance) {
                     });
                 }
             }
-            if (data.entitlement === Entitlement.SHOW_ALL || data.entitlement === Entitlement.AFTERMARKET_ONLY) {
+            if (entitlement === Entitlement.SHOW_ALL || entitlement === Entitlement.AFTERMARKET_ONLY) {
                 if (data.bands?.aftermarket) {
                     assignments.push({
                         dealerAccountId: dealerAccount.id,
@@ -166,6 +199,15 @@ export default async function adminRoutes(server: FastifyInstance) {
                 await tx.dealerBandAssignment.createMany({ data: assignments });
             }
 
+            // Create Discount Tiers (gn/es/br)
+            await tx.dealerDiscountTier.createMany({
+                data: [
+                    { dealerAccountId: dealerAccount.id, discountCode: 'gn', tierCode: data.tiers.genuine },
+                    { dealerAccountId: dealerAccount.id, discountCode: 'es', tierCode: data.tiers.aftermarketEs },
+                    { dealerAccountId: dealerAccount.id, discountCode: 'br', tierCode: data.tiers.aftermarketBr }
+                ]
+            });
+
             // Audit Log
             await tx.auditLog.create({
                 data: {
@@ -182,7 +224,7 @@ export default async function adminRoutes(server: FastifyInstance) {
         });
 
         // 4. Send Welcome Email (out of transaction but async)
-        await emailService.sendWelcomeEmail(data.email, data.firstName, password);
+        await emailService.sendWelcomeEmail(data.email, data.firstName, data.tempPassword);
 
         return reply.status(201).send({
             message: 'Dealer created successfully',
@@ -218,7 +260,8 @@ export default async function adminRoutes(server: FastifyInstance) {
                 include: {
                     users: {
                         include: { user: { select: { email: true, lastLoginAt: true, isActive: true } } }
-                    }
+                    },
+                    discountTiers: true
                 },
                 skip,
                 take: query.limit,
@@ -251,6 +294,7 @@ export default async function adminRoutes(server: FastifyInstance) {
                     include: { user: { select: { email: true, lastLoginAt: true, isActive: true, createdAt: true } } }
                 },
                 bandAssignments: true,
+                discountTiers: true,
                 orders: {
                     take: 5,
                     orderBy: { createdAt: 'desc' }
@@ -272,6 +316,10 @@ export default async function adminRoutes(server: FastifyInstance) {
         const { id } = request.params as any;
         const data = UpdateDealerSchema.parse(request.body);
 
+        if (data.defaultShippingMethod === 'Others' && (!data.shippingNotes || data.shippingNotes.trim().length === 0)) {
+            return reply.status(400).send({ error: 'Validation Error', message: 'Notes are required when shipping method is Others' });
+        }
+
         const currentDealer = await prisma.dealerAccount.findUnique({
             where: { id },
             include: {
@@ -288,12 +336,14 @@ export default async function adminRoutes(server: FastifyInstance) {
             const updatedAccount = await tx.dealerAccount.update({
                 where: { id },
                 data: {
-                    companyName: data.companyName,
+                    companyName: data.companyName ?? '',
                     erpAccountNo: data.erpAccountNo,
                     status: data.status,
-                    entitlement: data.entitlement,
+                    entitlement,
                     mainEmail: data.mainEmail,
                     phone: data.phone,
+                    defaultShippingMethod: data.defaultShippingMethod,
+                    shippingNotes: data.shippingNotes,
                     billingLine1: data.billingAddress?.line1,
                     billingLine2: data.billingAddress?.line2,
                     billingCity: data.billingAddress?.city,
@@ -309,6 +359,14 @@ export default async function adminRoutes(server: FastifyInstance) {
                 await tx.appUser.update({
                     where: { id: currentDealer.users[0].userId },
                     data: { isActive: data.status === DealerStatus.ACTIVE }
+                });
+            }
+
+            if (data.tempPassword && currentDealer.users[0]?.user) {
+                const newHash = await bcrypt.hash(data.tempPassword, SALT_ROUNDS);
+                await tx.appUser.update({
+                    where: { id: currentDealer.users[0].userId },
+                    data: { passwordHash: newHash, mustChangePassword: true }
                 });
             }
 
@@ -352,6 +410,18 @@ export default async function adminRoutes(server: FastifyInstance) {
                 if (assignments.length > 0) {
                     await tx.dealerBandAssignment.createMany({ data: assignments });
                 }
+            }
+
+            // Update Discount Tiers if provided
+            if (data.tiers) {
+                await tx.dealerDiscountTier.deleteMany({ where: { dealerAccountId: id } });
+                await tx.dealerDiscountTier.createMany({
+                    data: [
+                        { dealerAccountId: id, discountCode: 'gn', tierCode: data.tiers.genuine },
+                        { dealerAccountId: id, discountCode: 'es', tierCode: data.tiers.aftermarketEs },
+                        { dealerAccountId: id, discountCode: 'br', tierCode: data.tiers.aftermarketBr }
+                    ]
+                });
             }
 
             // Notification for Suspension
@@ -400,7 +470,7 @@ export default async function adminRoutes(server: FastifyInstance) {
         await prisma.$transaction(async (tx) => {
             await tx.appUser.update({
                 where: { id: primaryUser.userId },
-                data: { passwordHash }
+                data: { passwordHash, mustChangePassword: true }
             });
 
             await tx.auditLog.create({
@@ -580,6 +650,129 @@ export default async function adminRoutes(server: FastifyInstance) {
      * IMPORT HISTORY & MANAGEMENT
      */
 
+    // POST /admin/import/special-prices - Upload special prices with date window
+    server.post('/import/special-prices', { preHandler: requireRole('ADMIN') }, async (request, reply) => {
+        const data = await (request as any).file();
+        if (!data) {
+            return reply.status(400).send({ error: 'Bad Request', message: 'No file uploaded' });
+        }
+
+        const startDate = data.fields.startDate?.value as string | undefined;
+        const endDate = data.fields.endDate?.value as string | undefined;
+        if (!startDate || !endDate) {
+            return reply.status(400).send({
+                error: 'Bad Request',
+                message: 'startDate and endDate are required'
+            });
+        }
+
+        const startsAt = new Date(startDate);
+        const endsAt = new Date(endDate);
+        if (startsAt > endsAt) {
+            return reply.status(400).send({
+                error: 'Bad Request',
+                message: 'startDate must be before endDate'
+            });
+        }
+
+        const uploadDir = path.join(process.cwd(), 'infra/uploads/imports');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        const fileName = data.filename;
+        const filePath = path.join('infra/uploads/imports', `${Date.now()}-${fileName}`);
+        const absolutePath = path.resolve(process.cwd(), filePath);
+
+        const buffer = await data.toBuffer();
+        const fileHash = createHash('md5').update(buffer).digest('hex');
+        await fs.promises.writeFile(absolutePath, buffer);
+
+        const batch = await prisma.importBatch.create({
+            data: {
+                importType: ImportType.SPECIAL_PRICES,
+                fileName,
+                fileHash,
+                filePath,
+                status: ImportStatus.PROCESSING,
+                uploadedById: (request as AuthenticatedRequest).user!.userId
+            }
+        });
+
+        await prisma.auditLog.create({
+            data: {
+                actorType: ActorType.ADMIN,
+                actorUserId: (request as AuthenticatedRequest).user!.userId,
+                action: 'UPLOAD_IMPORT_FILE',
+                entityType: 'IMPORT_BATCH',
+                entityId: batch.id,
+                afterJson: { importType: ImportType.SPECIAL_PRICES, fileName, startDate, endDate }
+            }
+        });
+
+        await importService.processImport(
+            ImportType.SPECIAL_PRICES,
+            absolutePath,
+            batch.id,
+            { startsAt, endsAt }
+        );
+
+        return reply.status(201).send(batch);
+    });
+
+    // POST /admin/imports/run - Programmatic import (server-side file path)
+    server.post('/imports/run', { preHandler: requireRole('ADMIN') }, async (request, reply) => {
+        const data = RunImportSchema.parse(request.body);
+        const absolutePath = path.isAbsolute(data.filePath)
+            ? data.filePath
+            : path.resolve(process.cwd(), data.filePath);
+
+        if (!fs.existsSync(absolutePath)) {
+            return reply.status(400).send({ error: 'Bad Request', message: 'File not found' });
+        }
+
+        const fileHash = importService.calculateFileHash(absolutePath);
+        const fileName = path.basename(absolutePath);
+
+        const batch = await prisma.importBatch.create({
+            data: {
+                importType: data.importType,
+                fileName,
+                fileHash,
+                filePath: absolutePath,
+                status: ImportStatus.PROCESSING,
+                uploadedById: (request as AuthenticatedRequest).user!.userId
+            }
+        });
+
+        if (data.importType === ImportType.SPECIAL_PRICES && (!data.startsAt || !data.endsAt)) {
+            return reply.status(400).send({
+                error: 'Bad Request',
+                message: 'startsAt and endsAt are required for special price imports'
+            });
+        }
+
+        const window =
+            data.importType === ImportType.SPECIAL_PRICES
+                ? {
+                    startsAt: new Date(data.startsAt as string),
+                    endsAt: new Date(data.endsAt as string)
+                }
+                : undefined;
+        if (window && window.startsAt > window.endsAt) {
+            return reply.status(400).send({
+                error: 'Bad Request',
+                message: 'startsAt must be before endsAt'
+            });
+        }
+
+        if (supportedImports.has(data.importType)) {
+            await importService.processImport(data.importType, absolutePath, batch.id, window);
+        }
+
+        return reply.status(201).send(batch);
+    });
+
     // GET /admin/imports - List all import batches
     server.get('/imports', { preHandler: requireRole('ADMIN') }, async (request, reply) => {
         const querySchema = z.object({
@@ -742,8 +935,33 @@ export default async function adminRoutes(server: FastifyInstance) {
             }
         });
 
-        // Trigger worker asynchronously in Phase 2
-        // For now, we return the processing batch
+        const startsAtField = data.fields.startsAt?.value as string | undefined;
+        const endsAtField = data.fields.endsAt?.value as string | undefined;
+        if (importType === ImportType.SPECIAL_PRICES && (!startsAtField || !endsAtField)) {
+            return reply.status(400).send({
+                error: 'Bad Request',
+                message: 'startsAt and endsAt are required for special price imports'
+            });
+        }
+
+        const window =
+            importType === ImportType.SPECIAL_PRICES
+                ? {
+                    startsAt: new Date(startsAtField as string),
+                    endsAt: new Date(endsAtField as string)
+                }
+                : undefined;
+        if (window && window.startsAt > window.endsAt) {
+            return reply.status(400).send({
+                error: 'Bad Request',
+                message: 'startsAt must be before endsAt'
+            });
+        }
+
+        if (supportedImports.has(importType)) {
+            await importService.processImport(importType, absolutePath, batch.id, window);
+        }
+
         return reply.status(201).send(batch);
     });
 

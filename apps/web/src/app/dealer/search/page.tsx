@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { searchParts, type SearchParams } from '@/lib/services/dealerApi';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { searchParts, type SearchParams, getPartBySku } from '@/lib/services/dealerApi';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useDealerCart } from '@/context/DealerCartContext';
 import { DataTable } from '@/components/portal/DataTable';
@@ -20,6 +20,7 @@ const stockTone: Record<string, 'green' | 'amber' | 'red' | 'slate'> = {
 
 export default function DealerSearchPage() {
   const params = useSearchParams();
+  const router = useRouter();
   const queryParam = params.get('q') || '';
   const [query, setQuery] = useState(queryParam);
   const [partType, setPartType] = useState<SearchParams['partType']>('All');
@@ -36,6 +37,18 @@ export default function DealerSearchPage() {
   useEffect(() => {
     setQuery(queryParam);
   }, [queryParam]);
+
+  const applySearch = (value: string) => {
+    setQuery(value);
+    setPage(1);
+    const nextParams = new URLSearchParams(params.toString());
+    if (value) {
+      nextParams.set('q', value);
+    } else {
+      nextParams.delete('q');
+    }
+    router.push(`/dealer/search?${nextParams.toString()}`);
+  };
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -69,7 +82,30 @@ export default function DealerSearchPage() {
         onClick: () => setExpandedPartId(part.id === expandedPartId ? null : part.id),
         cells: [
           <div key={`${part.id}-name`}>
-            <div className="text-sm font-semibold text-slate-900">{part.sku}</div>
+            <div className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+              {part.sku}
+              {part.supersededBy && (
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                  Superseded
+                </span>
+              )}
+            </div>
+            {part.supersededBy && (
+              <div className="text-xs text-amber-700">
+                Superseded by{' '}
+                <button
+                  type="button"
+                  className="text-blue-600 hover:underline"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    applySearch(part.supersededBy || '');
+                  }}
+                >
+                  {part.supersededBy}
+                </button>
+                {part.replacementExists === false && ' (not currently stocked online)'}
+              </div>
+            )}
             <div className="text-xs text-slate-500">{part.name}</div>
             <div className="text-xs text-slate-400">{part.description}</div>
           </div>,
@@ -87,10 +123,21 @@ export default function DealerSearchPage() {
               className="bg-blue-600 text-white hover:bg-blue-700"
               onClick={(event) => {
                 event.stopPropagation();
+                if (part.supersededBy && part.replacementExists) {
+                  const replacement = getPartBySku(part.supersededBy);
+                  if (replacement) {
+                    addItem(replacement);
+                  }
+                  return;
+                }
+                if (part.supersededBy && part.replacementExists === false) {
+                  return;
+                }
                 addItem(part);
               }}
+              disabled={!!part.supersededBy && part.replacementExists === false}
             >
-              Add to Cart
+              {part.supersededBy && part.replacementExists ? 'Add Replacement' : 'Add to Cart'}
             </Button>
           </div>,
         ],
@@ -113,10 +160,7 @@ export default function DealerSearchPage() {
             <label className="sr-only" htmlFor="dealer-search">Search parts</label>
             <SearchInput
               defaultValue={query}
-              onSearch={(value) => {
-                setQuery(value);
-                setPage(1);
-              }}
+              onSearch={(value) => applySearch(value)}
               size="lg"
             />
           </div>

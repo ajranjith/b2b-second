@@ -40,8 +40,12 @@ enum PartType {
 enum ImportType {
   PRODUCTS_GENUINE
   PRODUCTS_AFTERMARKET
+  PRODUCTS_MIXED
+  DEALERS
   BACKORDERS
+  BACKORDER_UPDATE
   SUPERSESSION
+  SPECIAL_PRICES
   FULFILLMENT_STATUS
 }
 
@@ -68,10 +72,12 @@ enum ActorType {
 model AppUser {
   id           String     @id @default(uuid())
   email        String     @unique
+  emailNormalized String? @unique
   passwordHash String
   role         UserRole
   adminRole    AdminRole?
   isActive     Boolean    @default(true)
+  mustChangePassword Boolean @default(false)
   lastLoginAt  DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -106,6 +112,10 @@ model DealerAccount {
 
   dispatchDefault String?
 
+  defaultShippingMethod String?
+  shippingNotes         String?
+  notes                 String?
+
   // BUSINESS RULES (enforced at application level):
   // 1. Every DealerAccount MUST have at least one DealerUser (mandatory user association)
   // 2. Every DealerAccount MUST have exactly 3 DealerBandAssignments (GENUINE, AFTERMARKET, BRANDED)
@@ -114,6 +124,7 @@ model DealerAccount {
 
   users           DealerUser[]
   bandAssignments DealerBandAssignment[]
+  discountTiers   DealerDiscountTier[]
   carts           Cart[]
   orders          OrderHeader[]
 
@@ -140,6 +151,19 @@ model DealerUser {
 
   cart   Cart?
   orders OrderHeader[]
+}
+
+model DealerDiscountTier {
+  id              String   @id @default(uuid())
+  dealerAccountId String
+  discountCode    String
+  tierCode        String
+  updatedAt       DateTime @updatedAt
+
+  dealerAccount DealerAccount @relation(fields: [dealerAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([dealerAccountId, discountCode])
+  @@index([dealerAccountId, discountCode])
 }
 
 model DealerBandAssignment {
@@ -170,6 +194,7 @@ model Product {
   stock      ProductStock?
   refPrice   ProductPriceReference?
   bandPrices ProductPriceBand[]
+  netPrices  ProductNetPrice[]
   aliases    ProductAlias[]
 
   createdAt DateTime @default(now())
@@ -184,6 +209,19 @@ model Product {
   @@index([description])
 }
 
+model ProductNetPrice {
+  id        String   @id @default(uuid())
+  productId String
+  tierCode  String
+  price     Decimal  @db.Decimal(10, 2)
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, tierCode])
+  @@index([productId, tierCode])
+}
+
 model Supersession {
   id                  String   @id @default(uuid())
   originalPartCode    String
@@ -193,6 +231,7 @@ model Supersession {
   updatedAt           DateTime @updatedAt
 
   @@index([originalPartCode])
+  @@unique([originalPartCode, replacementPartCode])
 }
 
 model ProductStock {
@@ -256,6 +295,9 @@ model ImportBatch {
   totalRows   Int          @default(0)
   validRows   Int          @default(0)
   invalidRows Int          @default(0)
+  rowCount    Int          @default(0)
+  successCount Int         @default(0)
+  errorCount  Int          @default(0)
 
   uploadedById String?
   uploadedBy   AppUser? @relation("ImportBatchesUploadedBy", fields: [uploadedById], references: [id])
@@ -263,7 +305,11 @@ model ImportBatch {
   errors            ImportError[]
   stgProducts       StgProductPriceRow[]
   stgBackorders     StgBackorderRow[]
+  stgDealerAccounts StgDealerAccountRow[]
+  stgSupersessions  StgSupersessionRow[]
+  stgSpecialPrices  StgSpecialPriceRow[]
   backorderDatasets BackorderDataset[]
+  backorderUpdates  BackorderUpdateLine[]
 }
 
 model ImportError {
@@ -299,6 +345,67 @@ model StgProductPriceRow {
   band3Price  Decimal?
   band4Price  Decimal?
   freeStock   Int?
+
+  isValid          Boolean @default(false)
+  validationErrors String?
+  rawRowJson       Json?
+
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@id([batchId, rowNumber])
+  @@index([batchId, isValid])
+}
+
+model StgDealerAccountRow {
+  batchId    String
+  rowNumber  Int
+  accountNo  String?
+  companyName String?
+  firstName  String?
+  lastName   String?
+  email      String?
+  status     String?
+  defaultShippingMethod String?
+  shippingNotes String?
+
+  genuineTier     String?
+  aftermarketEsTier String?
+  aftermarketBrTier String?
+
+  isValid          Boolean @default(false)
+  validationErrors String?
+  rawRowJson       Json?
+
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@id([batchId, rowNumber])
+  @@index([batchId, isValid])
+}
+
+model StgSupersessionRow {
+  batchId   String
+  rowNumber Int
+  originalPartCode String?
+  replacementPartCode String?
+  note      String?
+
+  isValid          Boolean @default(false)
+  validationErrors String?
+  rawRowJson       Json?
+
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@id([batchId, rowNumber])
+  @@index([batchId, isValid])
+}
+
+model StgSpecialPriceRow {
+  batchId   String
+  rowNumber Int
+  productCode String?
+  discountCode String?
+  description  String?
+  discountPrice Decimal?
 
   isValid          Boolean @default(false)
   validationErrors String?
@@ -365,10 +472,34 @@ model BackorderLine {
   qtyOutstanding Int @default(0)
   inWh           Int @default(0)
 
+  portalOrderNo String?
+
   dataset BackorderDataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
 
   @@index([accountNo])
   @@index([datasetId])
+}
+
+model BackorderUpdateLine {
+  id        String @id @default(uuid())
+  batchId   String
+
+  accountNo    String
+  companyName  String?
+  portalOrderNo String?
+  ourOrderNo   String?
+  totalItem    Int?
+  productCode  String
+  description  String?
+  qtyOrdered   Int @default(0)
+  qtyOutstanding Int @default(0)
+  inWarehouse  Int @default(0)
+
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([accountNo])
+  @@index([batchId])
+  @@unique([batchId, accountNo, productCode, portalOrderNo, ourOrderNo])
 }
 
 model Cart {
@@ -399,13 +530,21 @@ model CartItem {
 model OrderHeader {
   id              String      @id @default(uuid())
   orderNo         String      @unique
+  portalOrderNumber String?   @unique
   dealerAccountId String
   dealerUserId    String
   status          OrderStatus @default(SUSPENDED)
 
   dispatchMethod String?
+  shippingMethod String?
   poRef          String?
+  poNumber       String?
   notes          String?
+  orderNote      String?
+  firstNameSnapshot String?
+  lastNameSnapshot  String?
+  emailSnapshot     String?
+  accountNoSnapshot String?
 
   subtotal Decimal @default(0)
   total    Decimal @default(0)
@@ -417,6 +556,7 @@ model OrderHeader {
   dealerAccount DealerAccount @relation(fields: [dealerAccountId], references: [id])
   dealerUser    DealerUser    @relation(fields: [dealerUserId], references: [id])
   lines         OrderLine[]
+  exportLines   OrderExportLine[]
   // @@index([status, createdAt])
 
   @@index([dealerAccountId, createdAt])
@@ -435,6 +575,10 @@ model OrderLine {
   unitPriceSnapshot Decimal
   bandCodeSnapshot  String
   minPriceApplied   Boolean @default(false)
+  lineTotalSnapshot Decimal?
+  productCode       String?
+  description       String?
+  quantityOrdered   Int?
 
   // optional fulfillment fields for future
   lineStatus         String?
@@ -448,6 +592,179 @@ model OrderLine {
   product Product     @relation(fields: [productId], references: [id])
 
   @@index([orderId])
+}
+
+model DealerPriceTierAssignment {
+  id            String   @id @default(uuid())
+  accountNo     String
+  categoryCode  String
+  netTier       String
+  updatedAt     DateTime @updatedAt
+
+  @@unique([accountNo, categoryCode])
+  @@index([accountNo, categoryCode])
+}
+
+model ProductCatalog {
+  productCode     String  @id
+  fullDescription String
+  freeStock       Int     @default(0)
+  net1Price       Decimal @db.Decimal(10, 2)
+  net2Price       Decimal @db.Decimal(10, 2)
+  net3Price       Decimal @db.Decimal(10, 2)
+  net4Price       Decimal @db.Decimal(10, 2)
+  net5Price       Decimal @db.Decimal(10, 2)
+  net6Price       Decimal @db.Decimal(10, 2)
+  net7Price       Decimal @db.Decimal(10, 2)
+  discountCode    String
+  updatedAt       DateTime @updatedAt
+  sourceBatchId   String?
+
+  @@index([discountCode])
+}
+
+model SupersessionMap {
+  id            String @id @default(uuid())
+  fromPartNo    String
+  toPartNo      String
+  sourceBatchId String?
+
+  @@index([fromPartNo])
+}
+
+model SupersessionResolved {
+  id            String   @id @default(uuid())
+  originalPartNo String
+  latestPartNo   String
+  depth          Int
+  resolvedAt     DateTime @default(now())
+  sourceBatchId  String?
+
+  @@index([originalPartNo])
+}
+
+model OrderExportLine {
+  id             String @id @default(uuid())
+  orderId        String
+  accountNo      String
+  companyName    String?
+  portalOrderNo  String
+  totalItem      Int
+  productCode    String
+  description    String
+  qtyOrdered     Int
+
+  order OrderHeader @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model SpecialPrice {
+  id              String   @id @default(uuid())
+  productCode     String
+  discountCode    String
+  description     String?
+  discountPrice   Decimal  @db.Decimal(10, 2)
+  currency        String   @default("GBP")
+  startsAt        DateTime
+  endsAt          DateTime
+  isActive        Boolean  @default(true)
+  dealerAccountId String?
+  importBatchId   String?
+  sourceBatchId   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([productCode, discountCode, startsAt, endsAt, dealerAccountId])
+  @@index([productCode])
+  @@index([discountCode])
+  @@index([dealerAccountId])
+  @@index([startsAt, endsAt])
+}
+
+model CartHeader {
+  id            String   @id @default(uuid())
+  accountNo     String
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  items CartItemContract[]
+
+  @@index([accountNo])
+}
+
+model CartItemContract {
+  id          String @id @default(uuid())
+  cartId      String
+  productCode String
+  quantity    Int
+
+  cart CartHeader @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  @@index([cartId])
+}
+
+model BackorderLineContract {
+  id             String   @id @default(uuid())
+  accountNo       String
+  portalOrderNumber String?
+  erpOrderNumber  String?
+  productCode     String
+  description     String?
+  qtyOrdered      Int @default(0)
+  qtyOutstanding  Int @default(0)
+  inWarehouse     Int @default(0)
+  updatedAt       DateTime @updatedAt
+
+  @@index([accountNo])
+}
+
+model NewsArticle {
+  id          String   @id @default(uuid())
+  title       String
+  bodyMd      String
+  isPublished Boolean  @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  attachments NewsAttachment[]
+}
+
+model NewsAttachment {
+  id          String   @id @default(uuid())
+  articleId   String
+  fileName    String
+  blobPath    String
+  mimeType    String
+  sizeBytes   BigInt   @default(0)
+  uploadedAt  DateTime @default(now())
+
+  article NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+}
+
+model SupportRequest {
+  id         String   @id @default(uuid())
+  accountNo  String?
+  email      String
+  subject    String
+  message    String
+  status     String   @default("OPEN")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model PasswordResetToken {
+  id         String   @id @default(uuid())
+  userId     String
+  tokenHash  String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model SystemSetting {

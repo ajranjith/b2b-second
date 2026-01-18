@@ -16,6 +16,9 @@ export type Part = {
   stockQty: number;
   price: number;
   band: string;
+  supersededBy?: string;
+  supersessionDepth?: number;
+  replacementExists?: boolean;
 };
 
 export type OrderLine = {
@@ -77,6 +80,20 @@ export const partsCatalog: Part[] = [
     stockStatus: "In Stock",
     stockQty: 120,
     price: 95.0,
+    band: "Band 1",
+    supersededBy: "P-0101",
+    supersessionDepth: 1,
+    replacementExists: true,
+  },
+  {
+    id: "part-001b",
+    sku: "P-0101",
+    name: "Brake Pad Set (Updated)",
+    description: "Updated front axle brake pads for 2019+ models",
+    partType: "Genuine",
+    stockStatus: "In Stock",
+    stockQty: 98,
+    price: 102.0,
     band: "Band 1",
   },
   {

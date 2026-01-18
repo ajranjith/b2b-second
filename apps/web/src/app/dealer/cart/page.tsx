@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -31,13 +31,16 @@ interface CartItem {
         description: string;
         partType: string;
     };
-    price: number;
+    yourPrice: number | null;
+    lineTotal: number | null;
+    supersededBy?: string | null;
+    supersessionDepth?: number | null;
+    replacementExists?: boolean;
 }
 
 interface Cart {
     items: CartItem[];
     subtotal: number;
-    itemCount: number;
 }
 
 export default function DealerCartPage() {
@@ -57,6 +60,9 @@ export default function DealerCartPage() {
             return response.data;
         },
     });
+
+    const itemCount = cart?.items?.reduce((sum, item) => sum + item.qty, 0) || 0;
+    const hasSupersededItems = cart?.items?.some((item) => item.supersededBy) ?? false;
 
     const updateQuantityMutation = useMutation({
         mutationFn: async ({ itemId, qty }: { itemId: string; qty: number }) => {
@@ -105,6 +111,11 @@ export default function DealerCartPage() {
         },
         onError: (error: any) => {
             const message = error.response?.data?.message;
+            const code = error.response?.data?.code;
+            if (code === 'ITEM_SUPERSEDED') {
+                toast.error('Some items are superseded. Please replace them before checkout.');
+                return;
+            }
             if (message?.includes('SUSPENDED')) {
                 toast.error('Your account is suspended. Please contact support.');
             } else {
@@ -124,8 +135,28 @@ export default function DealerCartPage() {
         }
     };
 
+    const handleReplaceItem = async (item: CartItem) => {
+        if (!item.supersededBy || !item.replacementExists) {
+            toast.error('Replacement not available online.');
+            return;
+        }
+        try {
+            const replacement = await api.get(`/dealer/product/${item.supersededBy}`);
+            await api.post('/dealer/cart/items', { productId: replacement.data.id, qty: item.qty });
+            await api.delete(`/dealer/cart/items/${item.id}`);
+            queryClient.invalidateQueries({ queryKey: ['cart'] });
+            toast.success(`Replaced with ${item.supersededBy}`);
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to replace item');
+        }
+    };
+
     const handleCheckout = () => {
         if (!cart?.items?.length) return;
+        if (hasSupersededItems) {
+            toast.error('Some items are superseded. Please replace them before checkout.');
+            return;
+        }
         setShowCheckout(true);
     };
 
@@ -158,7 +189,7 @@ export default function DealerCartPage() {
                         <h1 className="text-3xl font-bold">Shopping Cart</h1>
                         {!isEmpty && (
                             <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
-                                {cart.itemCount} items
+                                {itemCount} items
                             </Badge>
                         )}
                     </div>
@@ -207,6 +238,41 @@ export default function DealerCartPage() {
                                                         >
                                                             {item.product.partType}
                                                         </Badge>
+                                                        {item.supersededBy && (
+                                                            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                                                                <div className="flex items-center justify-between gap-3">
+                                                                    <div>
+                                                                        <span className="font-semibold">Superseded by:</span>{' '}
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                router.push(
+                                                                                    `/dealer/search?query=${encodeURIComponent(
+                                                                                        item.supersededBy || ''
+                                                                                    )}`
+                                                                                )
+                                                                            }
+                                                                            className="text-blue-600 hover:underline"
+                                                                        >
+                                                                            {item.supersededBy}
+                                                                        </button>
+                                                                    </div>
+                                                                    {item.replacementExists ? (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="outline"
+                                                                            onClick={() => handleReplaceItem(item)}
+                                                                        >
+                                                                            Replace in cart
+                                                                        </Button>
+                                                                    ) : (
+                                                                        <Badge variant="outline" className="border-amber-300 text-amber-700">
+                                                                            Not available online
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <Button
                                                         variant="ghost"
@@ -221,7 +287,7 @@ export default function DealerCartPage() {
                                                 {/* Price and Quantity */}
                                                 <div className="flex items-center justify-between mt-4">
                                                     <div className="text-sm text-slate-600">
-                                                        Unit Price: <span className="font-semibold">£{(item.price || 0).toFixed(2)}</span>
+                                                        Unit Price: <span className="font-semibold">GBP {(item.yourPrice || 0).toFixed(2)}</span>
                                                     </div>
 
                                                     <div className="flex items-center gap-3">
@@ -254,7 +320,7 @@ export default function DealerCartPage() {
                                                         </div>
 
                                                         <div className="text-lg font-bold text-blue-600 min-w-[100px] text-right">
-                                                            £{((item.price || 0) * item.qty).toFixed(2)}
+                                                            GBP {((item.yourPrice || 0) * item.qty).toFixed(2)}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -273,18 +339,24 @@ export default function DealerCartPage() {
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-slate-600">Items ({cart.itemCount})</span>
-                                        <span className="font-semibold">£{cart.subtotal.toFixed(2)}</span>
+                                        <span className="text-slate-600">Items ({itemCount})</span>
+                                        <span className="font-semibold">GBP {cart.subtotal.toFixed(2)}</span>
                                     </div>
                                     <div className="border-t pt-4">
                                         <div className="flex justify-between text-lg font-bold">
                                             <span>Subtotal</span>
-                                            <span className="text-blue-600">£{cart.subtotal.toFixed(2)}</span>
+                                            <span className="text-blue-600">GBP {cart.subtotal.toFixed(2)}</span>
                                         </div>
                                     </div>
+                                    {hasSupersededItems && (
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                                            Some items are superseded. Replace them before checkout.
+                                        </div>
+                                    )}
                                     <Button
                                         className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg"
                                         onClick={handleCheckout}
+                                        disabled={hasSupersededItems}
                                     >
                                         Proceed to Checkout
                                     </Button>
@@ -427,3 +499,9 @@ export default function DealerCartPage() {
         </div>
     );
 }
+
+
+
+
+
+

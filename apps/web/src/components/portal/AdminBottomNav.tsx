@@ -9,6 +9,7 @@ const adminNav = [
   { label: 'Dealers', href: '/admin/dealers', icon: Users },
   { label: 'Orders', href: '/admin/orders', icon: FileText },
   { label: 'Imports', href: '/admin/imports', icon: Upload },
+  { label: 'Special', href: '/admin/special-prices', icon: Upload },
   { label: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
@@ -17,7 +18,7 @@ export function AdminBottomNav() {
 
   return (
     <nav className="lg:hidden fixed bottom-0 inset-x-0 border-t border-slate-200 bg-white/95 backdrop-blur z-40">
-      <div className="grid grid-cols-5 gap-1 px-2 py-2">
+      <div className="grid grid-cols-6 gap-1 px-2 py-2">
         {adminNav.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (

@@ -10,6 +10,7 @@ const navLinks = [
   { label: 'Users', href: '/admin/users' },
   { label: 'Orders', href: '/admin/orders' },
   { label: 'Imports', href: '/admin/imports' },
+  { label: 'Special Prices', href: '/admin/special-prices' },
 ];
 
 export function AdminHeaderBar() {

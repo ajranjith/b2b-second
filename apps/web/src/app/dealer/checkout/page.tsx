@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -15,8 +15,10 @@ export default function DealerCheckoutPage() {
   const [poRef, setPoRef] = useState('');
   const [notes, setNotes] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
+  const hasSupersededItems = items.some((item) => item.supersededBy);
 
   const next = () => {
+    if (hasSupersededItems) return;
     if (step === 0 && !dispatchMethod) return;
     if (step === 1 && !orderNumber) {
       const nextOrder = `HB-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`;
@@ -47,6 +49,16 @@ export default function DealerCheckoutPage() {
           ))}
         </div>
       </div>
+      {hasSupersededItems && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4 text-sm text-amber-900">
+            <div>Some items in your cart are superseded. Replace them before checkout.</div>
+            <Link href="/dealer/cart">
+              <Button variant="outline">Return to cart</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       {step === 0 && (
         <Card>
@@ -111,7 +123,7 @@ export default function DealerCheckoutPage() {
             <div className="rounded-2xl border border-slate-200 p-4">
               <div className="text-sm font-semibold text-slate-700">Dispatch</div>
               <div className="text-sm text-slate-500 mt-1">
-                {dispatchMethod} • PO {poRef || '—'} • {notes || 'No notes'}
+                {dispatchMethod || 'Not set'} | PO {poRef || 'None'} | {notes || 'No notes'}
               </div>
             </div>
             <div className="space-y-3">
@@ -120,9 +132,12 @@ export default function DealerCheckoutPage() {
                   <div>
                     <div className="text-sm font-semibold text-slate-900">{item.product.productCode}</div>
                     <div className="text-xs text-slate-500">{item.product.description}</div>
+                    {item.supersededBy && (
+                      <div className="text-xs text-amber-700">Superseded by {item.supersededBy}</div>
+                    )}
                   </div>
                   <div className="text-sm font-semibold text-slate-700">
-                    x{item.qty} • GBP {((item.yourPrice || 0) * item.qty).toFixed(2)}
+                    x{item.qty} | GBP {((item.yourPrice || 0) * item.qty).toFixed(2)}
                   </div>
                 </div>
               ))}
@@ -161,7 +176,7 @@ export default function DealerCheckoutPage() {
           Back
         </Button>
         {step < steps.length - 1 ? (
-          <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={next}>
+          <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={next} disabled={hasSupersededItems}>
             Continue
           </Button>
         ) : (
@@ -173,3 +188,4 @@ export default function DealerCheckoutPage() {
     </div>
   );
 }
+

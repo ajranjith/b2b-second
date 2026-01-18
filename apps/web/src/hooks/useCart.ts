@@ -13,6 +13,9 @@ interface CartItem {
     };
     yourPrice: number | null;
     lineTotal: number | null;
+    supersededBy?: string | null;
+    supersessionDepth?: number | null;
+    replacementExists?: boolean;
 }
 
 interface Cart {

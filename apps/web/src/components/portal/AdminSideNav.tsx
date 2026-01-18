@@ -11,6 +11,7 @@ const adminNav = [
   { label: 'Products', href: '/admin/products', icon: Package },
   { label: 'Orders', href: '/admin/orders', icon: FileText },
   { label: 'Imports', href: '/admin/imports', icon: Upload },
+  { label: 'Special Prices', href: '/admin/special-prices', icon: Upload },
   { label: 'Templates', href: '/admin/templates', icon: Upload },
   { label: 'Settings', href: '/admin/settings', icon: Settings },
 ];

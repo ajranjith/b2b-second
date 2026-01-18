@@ -1,5 +1,5 @@
 import { PrismaClient } from 'db';
-import { PricingRules } from 'rules';
+import { PricingService } from '@packages/shared/src/services/PricingService';
 
 export interface CartItemInput {
     productId: string;
@@ -20,21 +20,27 @@ export interface CartWithItems {
             partType: string;
         };
         yourPrice: number | null;
-        bandCode: string | null;
-        available: boolean;
+        priceSource: string | null;
+        tierCode: string | null;
         lineTotal: number | null;
-        supersededBy?: string | null;
-        supersessionDepth?: number | null;
-        replacementExists?: boolean;
     }>;
     subtotal: number;
 }
 
-export class CartService {
-    constructor(
-        private prisma: PrismaClient,
-        private pricingRules: PricingRules
-    ) { }
+/**
+ * Cart Service V2 - Uses centralized PricingService
+ *
+ * Key Features:
+ * - Prices refresh automatically when cart is loaded (getOrCreateCart)
+ * - Uses centralized pricing algorithm (special price → net tier → fallback band)
+ * - Cart items always show current prices (not stale)
+ */
+export class CartServiceV2 {
+    private pricingService: PricingService;
+
+    constructor(private prisma: PrismaClient) {
+        this.pricingService = new PricingService(prisma);
+    }
 
     async getOrCreateCart(dealerUserId: string, dealerAccountId: string): Promise<CartWithItems> {
         // 1. Try to find existing cart
@@ -78,7 +84,7 @@ export class CartService {
             });
         }
 
-        // 3. Calculate pricing for all items
+        // 3. IMPORTANT: Refresh pricing for all items using current prices
         return this.enrichCartWithPricing(cart, dealerAccountId);
     }
 
@@ -91,16 +97,21 @@ export class CartService {
         if (!product) {
             throw new Error('Product not found');
         }
-        await this.assertNotSuperseded(product.productCode);
 
         // 2. Get or create cart
-        const cart = await this.getOrCreateCart(dealerUserId, dealerAccountId);
+        const cart = await this.prisma.cart.findUnique({
+            where: { dealerUserId }
+        });
+
+        const cartId = cart?.id || (await this.prisma.cart.create({
+            data: { dealerAccountId, dealerUserId }
+        })).id;
 
         // 3. Check if item already exists
         const existingItem = await this.prisma.cartItem.findUnique({
             where: {
                 cartId_productId: {
-                    cartId: cart.id,
+                    cartId,
                     productId: input.productId
                 }
             }
@@ -116,14 +127,14 @@ export class CartService {
             // Create new item
             await this.prisma.cartItem.create({
                 data: {
-                    cartId: cart.id,
+                    cartId,
                     productId: input.productId,
                     qty: input.qty
                 }
             });
         }
 
-        // 4. Return updated cart with pricing
+        // 4. Return updated cart with current pricing
         return this.getOrCreateCart(dealerUserId, dealerAccountId);
     }
 
@@ -137,12 +148,6 @@ export class CartService {
         if (!item || item.cart.dealerUserId !== dealerUserId) {
             throw new Error('Cart item not found');
         }
-        if (item.productId) {
-            const product = await this.prisma.product.findUnique({ where: { id: item.productId } });
-            if (product) {
-                await this.assertNotSuperseded(product.productCode);
-            }
-        }
 
         // 2. Update quantity
         await this.prisma.cartItem.update({
@@ -150,7 +155,7 @@ export class CartService {
             data: { qty }
         });
 
-        // 3. Return updated cart
+        // 3. Return updated cart with refreshed pricing
         return this.getOrCreateCart(dealerUserId, dealerAccountId);
     }
 
@@ -188,6 +193,10 @@ export class CartService {
         return this.getOrCreateCart(dealerUserId, dealerAccountId);
     }
 
+    /**
+     * Enrich cart with current pricing using centralized PricingService
+     * IMPORTANT: This always fetches CURRENT prices (never stale)
+     */
     private async enrichCartWithPricing(cart: any, dealerAccountId: string): Promise<CartWithItems> {
         if (cart.items.length === 0) {
             return {
@@ -197,41 +206,21 @@ export class CartService {
             };
         }
 
-        const productCodes = cart.items.map((item: any) => item.product.productCode.toUpperCase());
-        const supersessions = await this.prisma.supersessionResolved.findMany({
-            where: { originalPartNo: { in: productCodes } }
-        });
-        const supersessionMap = new Map(
-            supersessions.map((row) => [row.originalPartNo.toUpperCase(), row])
-        );
-        const replacementCodes = Array.from(
-            new Set(supersessions.map((row) => row.latestPartNo.toUpperCase()))
-        );
-        const replacements = replacementCodes.length
-            ? await this.prisma.product.findMany({
-                where: { productCode: { in: replacementCodes } },
-                select: { productCode: true }
-            })
-            : [];
-        const replacementSet = new Set(replacements.map((row) => row.productCode.toUpperCase()));
-
-        // Calculate pricing for all items
-        const priceMap = await this.pricingRules.calculatePrices(
+        // Use centralized pricing service to resolve prices (bulk operation)
+        const productIds = cart.items.map((item: any) => item.productId);
+        const priceMap = await this.pricingService.resolvePrices(
+            productIds,
             dealerAccountId,
-            cart.items.map((item: any) => item.productId)
+            new Date() // Current moment
         );
 
         let subtotal = 0;
         const enrichedItems = cart.items.map((item: any) => {
-            const pricing = priceMap.get(item.productId);
-            const lineTotal = pricing?.available ? Number(pricing.price) * item.qty : null;
-            const supersession = supersessionMap.get(item.product.productCode.toUpperCase());
-            const supersededBy = supersession?.latestPartNo ?? null;
-            const replacementExists = supersededBy
-                ? replacementSet.has(supersededBy.toUpperCase())
-                : false;
+            const priceResolution = priceMap.get(item.productId);
+            const price = priceResolution?.price || 0;
+            const lineTotal = price * item.qty;
 
-            if (lineTotal !== null) {
+            if (price > 0) {
                 subtotal += lineTotal;
             }
 
@@ -240,13 +229,10 @@ export class CartService {
                 productId: item.productId,
                 qty: item.qty,
                 product: item.product,
-                yourPrice: pricing?.available ? pricing.price : null,
-                bandCode: pricing?.bandCode ?? null,
-                available: pricing?.available ?? false,
-                lineTotal,
-                supersededBy,
-                supersessionDepth: supersession?.depth ?? null,
-                replacementExists
+                yourPrice: price > 0 ? price : null,
+                priceSource: priceResolution?.priceSource || null,
+                tierCode: priceResolution?.tierCode || null,
+                lineTotal: price > 0 ? lineTotal : null
             };
         });
 
@@ -259,20 +245,49 @@ export class CartService {
         };
     }
 
-    private async assertNotSuperseded(productCode: string) {
-        const supersession = await this.prisma.supersessionResolved.findFirst({
-            where: { originalPartNo: productCode.toUpperCase() }
-        });
-        if (!supersession) return;
+    /**
+     * Snapshot prices for checkout
+     * Returns cart items with snapshotted prices (for order creation)
+     */
+    async snapshotCartForCheckout(dealerUserId: string, dealerAccountId: string): Promise<{
+        items: Array<{
+            productId: string;
+            qty: number;
+            unitPriceSnapshot: number;
+            lineTotal: number;
+        }>;
+        subtotal: number;
+    }> {
+        const cart = await this.getOrCreateCart(dealerUserId, dealerAccountId);
 
-        const replacement = await this.prisma.product.findUnique({
-            where: { productCode: supersession.latestPartNo }
+        if (cart.items.length === 0) {
+            return { items: [], subtotal: 0 };
+        }
+
+        // Snapshot prices at this exact moment for checkout
+        const productIds = cart.items.map(item => item.productId);
+        const priceMap = await this.pricingService.resolvePrices(
+            productIds,
+            dealerAccountId,
+            new Date() // Snapshot current moment
+        );
+
+        let subtotal = 0;
+        const items = cart.items.map(item => {
+            const priceResolution = priceMap.get(item.productId);
+            const unitPriceSnapshot = priceResolution?.price || 0;
+            const lineTotal = unitPriceSnapshot * item.qty;
+
+            subtotal += lineTotal;
+
+            return {
+                productId: item.productId,
+                qty: item.qty,
+                unitPriceSnapshot, // CRITICAL: This price will be stored on OrderLine and never changes
+                lineTotal
+            };
         });
-        const error: any = new Error('Item is superseded');
-        error.code = 'ITEM_SUPERSEDED';
-        error.productCode = productCode;
-        error.supersededBy = supersession.latestPartNo;
-        error.replacementExists = !!replacement;
-        throw error;
+
+        return { items, subtotal };
     }
 }

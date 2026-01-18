@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(git checkout:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(taskkill /F /PID 136476)",
+      "Bash(taskkill //F //PID 136476)",
+      "Bash(pnpm dev)",
+      "Bash(ping:*)"
     ]
   }
 }

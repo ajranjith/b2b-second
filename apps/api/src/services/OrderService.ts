@@ -59,7 +59,7 @@ export class OrderService {
         // 2. Get dealer account for validation
         const dealerAccount = await this.prisma.dealerAccount.findUnique({
             where: { id: dealerAccountId },
-            select: { status: true }
+            select: { status: true, accountNo: true, companyName: true }
         });
 
         if (!dealerAccount) {
@@ -88,13 +88,31 @@ export class OrderService {
             throw new Error(errorMessages);
         }
 
-        // 4. Calculate pricing for all items (snapshot)
+        // 4. Validate supersession before pricing
+        for (const item of cart.items) {
+            const supersession = await this.prisma.supersessionResolved.findFirst({
+                where: { originalPartNo: item.product.productCode.toUpperCase() }
+            });
+            if (supersession) {
+                const replacement = await this.prisma.product.findUnique({
+                    where: { productCode: supersession.latestPartNo }
+                });
+                const error: any = new Error('Item is superseded');
+                error.code = 'ITEM_SUPERSEDED';
+                error.productCode = item.product.productCode;
+                error.supersededBy = supersession.latestPartNo;
+                error.replacementExists = !!replacement;
+                throw error;
+            }
+        }
+
+        // 5. Calculate pricing for all items (snapshot)
         const priceMap = await this.pricingRules.calculatePrices(
             dealerAccountId,
             cart.items.map(item => item.productId)
         );
 
-        // 4. Check all items are available and priced
+        // 6. Check all items are available and priced
         for (const item of cart.items) {
             const pricing = priceMap.get(item.productId);
             if (!pricing?.available) {
@@ -102,7 +120,7 @@ export class OrderService {
             }
         }
 
-        // 5. Calculate totals
+        // 7. Calculate totals
         let subtotal = 0;
         const orderLines = cart.items.map(item => {
             const pricing = priceMap.get(item.productId)!;
@@ -121,11 +139,13 @@ export class OrderService {
             };
         });
 
-        // 6. Create order in transaction
+        // 8. Create order in transaction
         const order = await this.prisma.$transaction(async (tx) => {
             // Generate order number
             const orderCount = await tx.orderHeader.count();
             const orderNo = `ORD-${String(orderCount + 1).padStart(6, '0')}`;
+
+            const totalItems = cart.items.length;
 
             // Create order
             const newOrder = await tx.orderHeader.create({
@@ -142,6 +162,17 @@ export class OrderService {
                     currency: 'GBP',
                     lines: {
                         create: orderLines
+                    },
+                    exportLines: {
+                        create: cart.items.map((item) => ({
+                            accountNo: dealerAccount.accountNo,
+                            companyName: dealerAccount.companyName || null,
+                            portalOrderNo: orderNo,
+                            totalItem: totalItems,
+                            productCode: item.product.productCode,
+                            description: item.product.description,
+                            qtyOrdered: item.qty
+                        }))
                     }
                 },
                 include: {

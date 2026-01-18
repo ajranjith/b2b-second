@@ -86,6 +86,7 @@ const authRoutes: FastifyPluginAsync = async (server) => {
                     id: user.id,
                     email: user.email,
                     role: user.role,
+                    mustChangePassword: user.mustChangePassword,
                     dealerAccountId: payload.dealerAccountId,
                     dealerUserId: payload.dealerUserId,
                     companyName: user.dealerUser?.dealerAccount?.companyName
