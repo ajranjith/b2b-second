@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 
 import { Button, Input, Label, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui';
 import api from '@/lib/api';
-import { setAuthToken } from '@/lib/auth';
+import { decodeJwtPayload, setAuthToken } from '@/lib/auth';
 
 const loginSchema = z.object({
     emailOrAccount: z.string().min(1, 'Email or Account Number is required'),
@@ -40,7 +40,7 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            const response = await api.post('/api/auth/login', {
+            const response = await api.post('/auth/login', {
                 email: data.emailOrAccount,
                 password: data.password,
             });
@@ -51,8 +51,7 @@ export default function LoginPage() {
             setAuthToken(token);
 
             // Decode token to get role
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const role = payload.role;
+            const role = response.data?.user?.role || decodeJwtPayload(token)?.role;
 
             toast.success('Login successful!');
 
@@ -168,7 +167,7 @@ export default function LoginPage() {
                     </form>
 
                     <div className="mt-6 text-center text-sm text-slate-500">
-                        <p>© 2024 Hotbray Ltd. All rights reserved.</p>
+                        <p>(c) 2024 Hotbray Ltd. All rights reserved.</p>
                     </div>
                 </CardContent>
             </Card>

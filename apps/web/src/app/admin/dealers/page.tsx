@@ -36,6 +36,8 @@ import { MoreHorizontal, Plus, Search } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { DealerDialog } from '@/admin';
+import { DensityToggle } from '@/components/portal/DensityToggle';
+import { useLoadingCursor } from '@/hooks/useLoadingCursor';
 
 type DealerStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 type Entitlement = 'GENUINE_ONLY' | 'AFTERMARKET_ONLY' | 'SHOW_ALL';
@@ -75,6 +77,7 @@ export default function DealersPage() {
     const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 20 });
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedDealer, setSelectedDealer] = useState<Dealer | null>(null);
+    const [density, setDensity] = useState<'comfortable' | 'dense'>('comfortable');
 
     const { data, isLoading, refetch } = useQuery({
         queryKey: ['dealers', statusFilter, searchQuery],
@@ -87,6 +90,8 @@ export default function DealersPage() {
             return response.data.dealers as Dealer[];
         },
     });
+
+    useLoadingCursor(isLoading);
 
     const handleResetPassword = async (dealerId: string, email: string) => {
         try {
@@ -232,20 +237,23 @@ export default function DealersPage() {
     });
 
     return (
-        <div className="p-8 space-y-6">
+        <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight">Dealer Management</h2>
                     <p className="text-slate-500">Manage dealer accounts and permissions</p>
                 </div>
-                <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
-                    setSelectedDealer(null);
-                    setIsDialogOpen(true);
-                }}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Dealer
-                </Button>
+                <div className="flex items-center gap-3">
+                    <DensityToggle value={density} onChange={setDensity} />
+                    <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
+                        setSelectedDealer(null);
+                        setIsDialogOpen(true);
+                    }}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Dealer
+                    </Button>
+                </div>
             </div>
 
             {/* Filters */}
@@ -283,7 +291,10 @@ export default function DealersPage() {
                                 {table.getHeaderGroups().map((headerGroup) => (
                                     <TableRow key={headerGroup.id}>
                                         {headerGroup.headers.map((header) => (
-                                            <TableHead key={header.id}>
+                                            <TableHead
+                                                key={header.id}
+                                                className={density === 'dense' ? 'py-2' : 'py-4'}
+                                            >
                                                 {!header.isPlaceholder &&
                                                     flexRender(header.column.columnDef.header, header.getContext())}
                                             </TableHead>
@@ -308,7 +319,10 @@ export default function DealersPage() {
                                     table.getRowModel().rows.map((row) => (
                                         <TableRow key={row.id}>
                                             {row.getVisibleCells().map((cell) => (
-                                                <TableCell key={cell.id}>
+                                                <TableCell
+                                                    key={cell.id}
+                                                    className={density === 'dense' ? 'py-2' : 'py-4'}
+                                                >
                                                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                                 </TableCell>
                                             ))}

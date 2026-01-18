@@ -1,35 +1,27 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { BarChart3, Package, UploadCloud, Users } from 'lucide-react';
+import { getUser } from '@/lib/auth';
 
 export default function AdminDashboard() {
     const router = useRouter();
-    const [userEmail, setUserEmail] = useState('');
 
     useEffect(() => {
-        const role = localStorage.getItem('userRole');
-        const email = localStorage.getItem('userEmail');
-
-        if (role !== 'admin') {
-            router.push('/admin/login');
-        } else {
-            setUserEmail(email || '');
+        const user = getUser();
+        if (!user || user.role !== 'ADMIN') {
+            router.push('/login');
+            return;
         }
     }, [router]);
 
-    const handleLogout = () => {
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userEmail');
-        router.push('/admin/login');
-    };
-
     const stats = [
-        { label: 'Total Dealers', value: '142', change: '+8', trend: 'up', icon: '👥' },
-        { label: 'Active Orders', value: '89', change: '+12', trend: 'up', icon: '📦' },
-        { label: 'Pending Imports', value: '3', change: '0', trend: 'neutral', icon: '📥' },
-        { label: 'Revenue (MTD)', value: '£245K', change: '+18%', trend: 'up', icon: '💰' },
+        { label: 'Total Dealers', value: '142', change: '+8', trend: 'up', icon: Users },
+        { label: 'Active Orders', value: '89', change: '+12', trend: 'up', icon: Package },
+        { label: 'Pending Imports', value: '3', change: '0', trend: 'neutral', icon: UploadCloud },
+        { label: 'Revenue (MTD)', value: 'GBP 245K', change: '+18%', trend: 'up', icon: BarChart3 },
     ];
 
     const recentActivity = [
@@ -40,35 +32,8 @@ export default function AdminDashboard() {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-50">
-            {/* Header */}
-            <header className="bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center space-x-8">
-                            <h1 className="text-2xl font-bold text-white">Hotbray Admin</h1>
-                            <nav className="hidden md:flex space-x-6">
-                                <Link href="/admin/dashboard" className="text-white font-medium">Dashboard</Link>
-                                <Link href="/admin/dealers" className="text-indigo-100 hover:text-white">Dealers</Link>
-                                <Link href="/admin/imports" className="text-indigo-100 hover:text-white">Imports</Link>
-                                <Link href="/admin/orders" className="text-indigo-100 hover:text-white">Orders</Link>
-                            </nav>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            <span className="text-sm text-indigo-100">{userEmail}</span>
-                            <button
-                                onClick={handleLogout}
-                                className="px-4 py-2 text-sm font-medium text-white border border-white/30 rounded-lg hover:bg-white/10 transition"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-8">
+            <main className="space-y-8">
                 {/* Welcome Section */}
                 <div className="mb-8">
                     <h2 className="text-3xl font-bold text-slate-900">Admin Dashboard</h2>
@@ -90,7 +55,9 @@ export default function AdminDashboard() {
                                         {stat.change}
                                     </div>
                                 </div>
-                                <div className="text-3xl">{stat.icon}</div>
+                                <div className="h-12 w-12 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-600">
+                                    <stat.icon className="h-6 w-6" />
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -103,25 +70,25 @@ export default function AdminDashboard() {
                             <h3 className="text-lg font-bold text-slate-900 mb-4">Quick Actions</h3>
                             <div className="grid grid-cols-2 gap-4">
                                 <Link href="/admin/dealers" className="p-4 border-2 border-indigo-200 rounded-lg hover:border-indigo-400 hover:bg-indigo-50 transition group">
-                                    <div className="text-2xl mb-2">👥</div>
+                                    <Users className="h-7 w-7 text-indigo-600 mb-2" />
                                     <h4 className="font-semibold text-slate-900 group-hover:text-indigo-600">Manage Dealers</h4>
                                     <p className="text-sm text-slate-600 mt-1">Add or edit dealer accounts</p>
                                 </Link>
 
                                 <Link href="/admin/imports" className="p-4 border-2 border-green-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition group">
-                                    <div className="text-2xl mb-2">📥</div>
+                                    <UploadCloud className="h-7 w-7 text-green-600 mb-2" />
                                     <h4 className="font-semibold text-slate-900 group-hover:text-green-600">Import Data</h4>
                                     <p className="text-sm text-slate-600 mt-1">Upload product & backorder files</p>
                                 </Link>
 
                                 <Link href="/admin/orders" className="p-4 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition group">
-                                    <div className="text-2xl mb-2">📦</div>
+                                    <Package className="h-7 w-7 text-blue-600 mb-2" />
                                     <h4 className="font-semibold text-slate-900 group-hover:text-blue-600">View Orders</h4>
                                     <p className="text-sm text-slate-600 mt-1">Monitor all dealer orders</p>
                                 </Link>
 
                                 <button className="p-4 border-2 border-orange-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition group">
-                                    <div className="text-2xl mb-2">📊</div>
+                                    <BarChart3 className="h-7 w-7 text-orange-600 mb-2" />
                                     <h4 className="font-semibold text-slate-900 group-hover:text-orange-600">Reports</h4>
                                     <p className="text-sm text-slate-600 mt-1">Generate analytics</p>
                                 </button>
@@ -166,7 +133,7 @@ export default function AdminDashboard() {
                             ))}
                         </div>
                         <button className="w-full mt-4 text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                            View all activity →
+                            View all activity
                         </button>
                     </div>
                 </div>

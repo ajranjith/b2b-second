@@ -142,7 +142,7 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
     server.get('/cart', {
         preHandler: requireAuth
     }, async (request: AuthenticatedRequest, reply) => {
-        if (!request.user?.userId || !request.user?.dealerAccountId) {
+        if (!request.user?.dealerUserId || !request.user?.dealerAccountId) {
             return reply.status(400).send({
                 error: 'Bad Request',
                 message: 'User information not found'
@@ -151,7 +151,7 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
 
         try {
             const cart = await cartService.getOrCreateCart(
-                request.user.userId,
+                request.user.dealerUserId,
                 request.user.dealerAccountId
             );
 
@@ -179,7 +179,7 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
             });
         }
 
-        if (!request.user?.userId || !request.user?.dealerAccountId) {
+        if (!request.user?.dealerUserId || !request.user?.dealerAccountId) {
             return reply.status(400).send({
                 error: 'Bad Request',
                 message: 'User information not found'
@@ -188,7 +188,7 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
 
         try {
             const cart = await cartService.addItem(
-                request.user.userId,
+                request.user.dealerUserId,
                 request.user.dealerAccountId,
                 validation.data
             );
@@ -230,7 +230,7 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
             });
         }
 
-        if (!request.user?.userId || !request.user?.dealerAccountId) {
+        if (!request.user?.dealerUserId || !request.user?.dealerAccountId) {
             return reply.status(400).send({
                 error: 'Bad Request',
                 message: 'User information not found'
@@ -240,7 +240,7 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
         try {
             const cart = await cartService.updateItem(
                 paramsValidation.data.id,
-                request.user.userId,
+                request.user.dealerUserId,
                 request.user.dealerAccountId,
                 bodyValidation.data.qty
             );
@@ -277,7 +277,7 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
             });
         }
 
-        if (!request.user?.userId || !request.user?.dealerAccountId) {
+        if (!request.user?.dealerUserId || !request.user?.dealerAccountId) {
             return reply.status(400).send({
                 error: 'Bad Request',
                 message: 'User information not found'
@@ -287,7 +287,7 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
         try {
             const cart = await cartService.removeItem(
                 validation.data.id,
-                request.user.userId,
+                request.user.dealerUserId,
                 request.user.dealerAccountId
             );
 
@@ -310,7 +310,7 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
     server.delete('/cart', {
         preHandler: requireAuth
     }, async (request: AuthenticatedRequest, reply) => {
-        if (!request.user?.userId || !request.user?.dealerAccountId) {
+        if (!request.user?.dealerUserId || !request.user?.dealerAccountId) {
             return reply.status(400).send({
                 error: 'Bad Request',
                 message: 'User information not found'
@@ -319,7 +319,7 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
 
         try {
             const cart = await cartService.clearCart(
-                request.user.userId,
+                request.user.dealerUserId,
                 request.user.dealerAccountId
             );
 
@@ -347,7 +347,7 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
             });
         }
 
-        if (!request.user?.userId || !request.user?.dealerAccountId) {
+        if (!request.user?.dealerUserId || !request.user?.dealerAccountId) {
             return reply.status(400).send({
                 error: 'Bad Request',
                 message: 'User information not found'
@@ -356,7 +356,7 @@ const dealerRoutes: FastifyPluginAsync = async (server) => {
 
         try {
             const order = await orderService.createOrder(
-                request.user.userId,
+                request.user.dealerUserId,
                 request.user.dealerAccountId,
                 validation.data
             );

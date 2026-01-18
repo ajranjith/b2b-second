@@ -1,300 +1,226 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Button, Input, Badge, Card, CardContent } from '@/ui';
-import { Search, Filter, ShoppingCart, Loader2 } from 'lucide-react';
-import api from '@/lib/api';
-import { toast } from 'sonner';
-import { useCart } from '@/hooks/useCart';
-import { useCartUI } from '@/context/CartContext';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { searchParts, type SearchParams } from '@/lib/services/dealerApi';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { useDealerCart } from '@/context/DealerCartContext';
+import { DataTable } from '@/components/portal/DataTable';
+import { DensityToggle } from '@/components/portal/DensityToggle';
+import { StatusChip } from '@/components/portal/StatusChip';
+import { SearchInput } from '@/components/portal/SearchInput';
+import { Card, CardContent, CardHeader, Button } from '@/ui';
 
-type PartType = 'GENUINE' | 'AFTERMARKET' | 'BRANDED';
-type SortOption = 'relevance' | 'price_asc' | 'price_desc' | 'stock';
-
-interface Product {
-    id: string;
-    productCode: string;
-    description: string;
-    partType: PartType;
-    freeStock: number;
-    price: number;
-    bandLevel?: string;
-    entitlementContext?: string;
-}
-
-const partTypeColors: Record<PartType, string> = {
-    GENUINE: 'bg-blue-100 text-blue-700 border-blue-200',
-    AFTERMARKET: 'bg-purple-100 text-purple-700 border-purple-200',
-    BRANDED: 'bg-green-100 text-green-700 border-green-200',
+const stockTone: Record<string, 'green' | 'amber' | 'red' | 'slate'> = {
+  'In Stock': 'green',
+  'Low Stock': 'amber',
+  Backorder: 'red',
 };
 
 export default function DealerSearchPage() {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [activeSearch, setActiveSearch] = useState('');
-    const [showFilters, setShowFilters] = useState(false);
-    const [partTypeFilter, setPartTypeFilter] = useState<PartType | 'ALL'>('ALL');
-    const [inStockOnly, setInStockOnly] = useState(false);
-    const [sortBy, setSortBy] = useState<SortOption>('relevance');
-    const [quantities, setQuantities] = useState<Record<string, number>>({});
-    const [addingToCart, setAddingToCart] = useState<string | null>(null);
+  const params = useSearchParams();
+  const queryParam = params.get('q') || '';
+  const [query, setQuery] = useState(queryParam);
+  const [partType, setPartType] = useState<SearchParams['partType']>('All');
+  const [stock, setStock] = useState<SearchParams['stock']>('All');
+  const [page, setPage] = useState(1);
+  const [density, setDensity] = useState<'comfortable' | 'dense'>('comfortable');
+  const [expandedPartId, setExpandedPartId] = useState<string | null>(null);
+  const debouncedQuery = useDebouncedValue(query, 300);
+  const [results, setResults] = useState<{ items: any[]; total: number }>({ items: [], total: 0 });
+  const [loading, setLoading] = useState(false);
 
-    const { addItem } = useCart();
-    const { openMiniCart, closeMiniCart } = useCartUI();
+  const { addItem, items } = useDealerCart();
 
-    const { data: products, isLoading } = useQuery({
-        queryKey: ['products', activeSearch, partTypeFilter, inStockOnly, sortBy],
-        queryFn: async () => {
-            if (!activeSearch) return [];
+  useEffect(() => {
+    setQuery(queryParam);
+  }, [queryParam]);
 
-            const params: any = { q: activeSearch };
-            if (partTypeFilter !== 'ALL') params.partType = partTypeFilter;
-            if (inStockOnly) params.inStockOnly = 'true';
-            if (sortBy !== 'relevance') params.sortBy = sortBy;
-
-            const response = await api.get('/api/dealer/search', { params });
-            return response.data as Product[];
-        },
-        enabled: !!activeSearch,
-    });
-
-    const handleSearch = () => {
-        if (searchQuery.trim()) {
-            setActiveSearch(searchQuery.trim());
-        }
+  useEffect(() => {
+    const fetchResults = async () => {
+      setLoading(true);
+      const response = await searchParts({
+        query: debouncedQuery,
+        page,
+        pageSize: 6,
+        stock,
+        partType,
+      });
+      setResults(response);
+      setLoading(false);
     };
+    fetchResults();
+  }, [debouncedQuery, page, partType, stock]);
 
-    const handleAddToCart = async (product: Product) => {
-        const quantity = quantities[product.id] || 1;
-        setAddingToCart(product.id);
+  const totalPages = Math.max(1, Math.ceil(results.total / 6));
 
-        try {
-            await addItem({ productId: product.id, qty: quantity });
-            toast.success(`Added ${quantity}x ${product.productCode} to cart!`);
+  const columns = [
+    { key: 'sku', label: 'Part', width: '30%' },
+    { key: 'stock', label: 'Stock', width: '20%' },
+    { key: 'price', label: 'Price', align: 'right' as const },
+    { key: 'action', label: '', align: 'right' as const, width: '20%' },
+  ];
 
-            // Auto-open mini cart
-            openMiniCart();
+  const rows = useMemo(
+    () =>
+      results.items.map((part) => ({
+        id: part.id,
+        onClick: () => setExpandedPartId(part.id === expandedPartId ? null : part.id),
+        cells: [
+          <div key={`${part.id}-name`}>
+            <div className="text-sm font-semibold text-slate-900">{part.sku}</div>
+            <div className="text-xs text-slate-500">{part.name}</div>
+            <div className="text-xs text-slate-400">{part.description}</div>
+          </div>,
+          <div key={`${part.id}-stock`} className="space-y-2">
+            <StatusChip label={part.stockStatus} tone={stockTone[part.stockStatus]} />
+            <div className="text-xs text-slate-400">{part.stockQty} available</div>
+          </div>,
+          <div key={`${part.id}-price`} className="text-right">
+            <div className="text-sm font-semibold text-slate-900">GBP {part.price.toFixed(2)}</div>
+            <div className="text-xs text-slate-400">{part.band}</div>
+          </div>,
+          <div key={`${part.id}-action`} className="flex justify-end">
+            <Button
+              size="sm"
+              className="bg-blue-600 text-white hover:bg-blue-700"
+              onClick={(event) => {
+                event.stopPropagation();
+                addItem(part);
+              }}
+            >
+              Add to Cart
+            </Button>
+          </div>,
+        ],
+      })),
+    [results.items, addItem, expandedPartId]
+  );
 
-            // Auto-close after 3 seconds
-            setTimeout(() => {
-                closeMiniCart();
-            }, 3000);
-        } catch (error) {
-            toast.error('Failed to add item to cart');
-        } finally {
-            setAddingToCart(null);
-        }
-    };
-
-    const getStockBadge = (freeStock: number) => {
-        if (freeStock === 0) {
-            return <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200">Out of Stock</Badge>;
-        } else if (freeStock <= 5) {
-            return <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-200">Low Stock ({freeStock} units)</Badge>;
-        } else {
-            return <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">In Stock ({freeStock} units)</Badge>;
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-slate-50">
-            <div className="max-w-7xl mx-auto p-6 space-y-6">
-                {/* Search Header */}
-                <Card className="shadow-sm border-slate-200">
-                    <CardContent className="pt-6">
-                        <div className="space-y-4">
-                            {/* Main Search */}
-                            <div className="flex gap-3">
-                                <div className="relative flex-1">
-                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                                    <Input
-                                        placeholder="Search by part number, description, or vehicle model..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                        className="pl-12 h-14 text-lg"
-                                    />
-                                </div>
-                                <Button className="bg-blue-600 hover:bg-blue-700 h-14 px-8" onClick={handleSearch}>
-                                    Search
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    className="h-14 px-6"
-                                    onClick={() => setShowFilters(!showFilters)}
-                                >
-                                    <Filter className="h-4 w-4 mr-2" />
-                                    Filters
-                                </Button>
-                            </div>
-
-                            {/* Filters */}
-                            {showFilters && (
-                                <div className="grid gap-4 md:grid-cols-4 pt-4 border-t">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium">Part Type</label>
-                                        <select
-                                            value={partTypeFilter}
-                                            onChange={(e) => setPartTypeFilter(e.target.value as any)}
-                                            className="w-full px-3 py-2 border border-slate-200 rounded-md"
-                                        >
-                                            <option value="ALL">All Types</option>
-                                            <option value="GENUINE">Genuine</option>
-                                            <option value="AFTERMARKET">Aftermarket</option>
-                                            <option value="BRANDED">Branded</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium">Availability</label>
-                                        <label className="flex items-center space-x-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={inStockOnly}
-                                                onChange={(e) => setInStockOnly(e.target.checked)}
-                                                className="h-4 w-4 text-blue-600 rounded"
-                                            />
-                                            <span className="text-sm">In Stock Only</span>
-                                        </label>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium">Sort By</label>
-                                        <select
-                                            value={sortBy}
-                                            onChange={(e) => setSortBy(e.target.value as SortOption)}
-                                            className="w-full px-3 py-2 border border-slate-200 rounded-md"
-                                        >
-                                            <option value="relevance">Relevance</option>
-                                            <option value="price_asc">Price: Low to High</option>
-                                            <option value="price_desc">Price: High to Low</option>
-                                            <option value="stock">Stock Level</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Results Count */}
-                {activeSearch && (
-                    <div className="text-sm text-slate-600">
-                        {isLoading ? (
-                            'Searching...'
-                        ) : (
-                            `Showing ${products?.length || 0} results for "${activeSearch}"`
-                        )}
-                    </div>
-                )}
-
-                {/* Product Results */}
-                {isLoading && (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {[1, 2, 3, 4, 5, 6].map((i) => (
-                            <Card key={i} className="animate-pulse">
-                                <CardContent className="p-6">
-                                    <div className="h-32 bg-slate-200 rounded mb-4" />
-                                    <div className="h-6 bg-slate-200 rounded w-3/4 mb-2" />
-                                    <div className="h-4 bg-slate-200 rounded w-full" />
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                )}
-
-                {!isLoading && products && products.length > 0 && (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {products.map((product) => (
-                            <Card key={product.id} className="shadow-sm border-slate-200 hover:shadow-md transition-shadow">
-                                <CardContent className="p-6">
-                                    {/* Product Image Placeholder */}
-                                    <div className="w-full h-40 bg-slate-100 rounded-lg mb-4 flex items-center justify-center">
-                                        <span className="text-slate-400 text-sm">Product Image</span>
-                                    </div>
-
-                                    {/* Product Info */}
-                                    <div className="space-y-3">
-                                        <div>
-                                            <h3 className="font-bold text-lg">{product.productCode}</h3>
-                                            <p className="text-sm text-slate-600 line-clamp-2">{product.description}</p>
-                                        </div>
-
-                                        <div className="flex gap-2">
-                                            <Badge variant="outline" className={partTypeColors[product.partType]}>
-                                                {product.partType}
-                                            </Badge>
-                                            {getStockBadge(product.freeStock)}
-                                        </div>
-
-                                        {/* Pricing */}
-                                        <div className="border-t pt-3">
-                                            <div className="text-3xl font-bold text-blue-600">
-                                                £{product.price.toFixed(2)}
-                                            </div>
-                                            {product.bandLevel && (
-                                                <div className="text-xs text-slate-500">Band {product.bandLevel} pricing</div>
-                                            )}
-                                            {product.entitlementContext && (
-                                                <div className="text-xs text-slate-500 mt-1">{product.entitlementContext}</div>
-                                            )}
-                                        </div>
-
-                                        {/* Add to Cart */}
-                                        <div className="flex gap-2 pt-2">
-                                            <Input
-                                                type="number"
-                                                min="1"
-                                                value={quantities[product.id] || 1}
-                                                onChange={(e) =>
-                                                    setQuantities({ ...quantities, [product.id]: parseInt(e.target.value) || 1 })
-                                                }
-                                                className="w-20"
-                                            />
-                                            <Button
-                                                className="flex-1 bg-blue-600 hover:bg-blue-700"
-                                                onClick={() => handleAddToCart(product)}
-                                                disabled={product.freeStock === 0 || addingToCart === product.id}
-                                            >
-                                                {addingToCart === product.id ? (
-                                                    <>
-                                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                        Adding...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <ShoppingCart className="h-4 w-4 mr-2" />
-                                                        Add to Cart
-                                                    </>
-                                                )}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                )}
-
-                {!isLoading && products && products.length === 0 && activeSearch && (
-                    <Card className="shadow-sm border-slate-200">
-                        <CardContent className="py-16 text-center">
-                            <p className="text-slate-500 text-lg">No products found for "{activeSearch}"</p>
-                            <p className="text-slate-400 text-sm mt-2">Try adjusting your search or filters</p>
-                        </CardContent>
-                    </Card>
-                )}
-
-                {!activeSearch && (
-                    <Card className="shadow-sm border-slate-200">
-                        <CardContent className="py-16 text-center">
-                            <Search className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-                            <p className="text-slate-500 text-lg">Search for parts to get started</p>
-                            <p className="text-slate-400 text-sm mt-2">
-                                Use part numbers, descriptions, or vehicle models
-                            </p>
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
+  return (
+    <>
+      <div className="rounded-3xl border border-slate-200 bg-white shadow-sm p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-semibold text-slate-900">Search Parts</h1>
+            <p className="text-slate-500 mt-1">Live stock and pricing for your account.</p>
+          </div>
+          <DensityToggle value={density} onChange={setDensity} />
         </div>
-    );
+        <div className="mt-6 grid gap-4 lg:grid-cols-[2fr_1fr_1fr]">
+          <div>
+            <label className="sr-only" htmlFor="dealer-search">Search parts</label>
+            <SearchInput
+              defaultValue={query}
+              onSearch={(value) => {
+                setQuery(value);
+                setPage(1);
+              }}
+              size="lg"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-2" htmlFor="part-type-filter">
+              Part Type
+            </label>
+            <select
+              id="part-type-filter"
+              value={partType}
+              onChange={(event) => {
+                setPartType(event.target.value as SearchParams['partType']);
+                setPage(1);
+              }}
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
+            >
+              <option value="All">All Part Types</option>
+              <option value="Genuine">Genuine</option>
+              <option value="Aftermarket">Aftermarket</option>
+              <option value="Branded">Branded</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-2" htmlFor="stock-filter">
+              Stock Status
+            </label>
+            <select
+              id="stock-filter"
+              value={stock}
+              onChange={(event) => {
+                setStock(event.target.value as SearchParams['stock']);
+                setPage(1);
+              }}
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
+            >
+              <option value="All">All Stock</option>
+              <option value="In Stock">In Stock</option>
+              <option value="Low Stock">Low Stock</option>
+              <option value="Backorder">Backorder</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[2.2fr_1fr]">
+        <div className="space-y-4">
+          {loading ? (
+            <Card>
+              <CardContent className="py-16 text-center text-slate-500">Loading results...</CardContent>
+            </Card>
+          ) : (
+            <DataTable columns={columns} rows={rows} density={density} />
+          )}
+          {expandedPartId && (
+            <Card>
+              <CardContent className="py-6 text-sm text-slate-600">
+                Details for this part will appear here (supersessions, fitment notes, and lead time).
+              </CardContent>
+            </Card>
+          )}
+          <div className="flex items-center justify-between text-sm text-slate-500">
+            <span>
+              Showing page {page} of {totalPages}
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(page - 1)}>
+                Previous
+              </Button>
+              <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage(page + 1)}>
+                Next
+              </Button>
+            </div>
+          </div>
+        </div>
+        <Card className="h-fit">
+          <CardHeader className="pb-2">
+            <h2 className="text-lg font-semibold text-slate-900">Cart Preview</h2>
+            <p className="text-xs text-slate-400">Updates instantly as you add items.</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {items.length === 0 ? (
+              <div className="text-sm text-slate-500">No items yet.</div>
+            ) : (
+              items.map((item) => (
+                <div key={item.id} className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div>
+                    <div className="text-sm font-semibold text-slate-900">{item.part.sku}</div>
+                    <div className="text-xs text-slate-400">{item.part.name}</div>
+                  </div>
+                  <div className="text-sm font-semibold text-slate-700">x{item.qty}</div>
+                </div>
+              ))
+            )}
+            <div className="pt-2">
+              <Link
+                href="/dealer/cart"
+                className="inline-flex w-full items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
+              >
+                Go to Cart
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </>
+  );
 }

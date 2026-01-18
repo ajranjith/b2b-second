@@ -1,42 +1,31 @@
-'use client'
+﻿'use client'
 
 import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/ui';
 import { Users, Package, ShoppingCart, TrendingUp, TrendingDown } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import api from '@/lib/api';
 
 export default function AdminDashboard() {
-    const { data: layout, isLoading } = useQuery({
-        queryKey: ['admin-dashboard-layout'],
-        queryFn: async () => {
-            const response = await api.get('/api/layout/dashboard');
-            return response.data;
-        }
-    });
+    const stats = [
+        { title: 'Total Dealers', value: '56', change: '+12%', trend: 'up', color: 'blue' },
+        { title: 'Total Products', value: '110', change: '+5%', trend: 'up', color: 'green' },
+        { title: 'Orders Today', value: '45', change: '-3%', trend: 'down', color: 'orange' },
+        { title: 'Active Imports', value: '2', change: '+1', trend: 'up', color: 'purple' },
+    ];
 
-    if (isLoading) return <div className="p-8">Loading dashboard...</div>;
-
-    const stats = layout?.widgets?.filter((w: any) => w.type === 'stats') || [];
-    const recentOrdersWidget = layout?.widgets?.find((w: any) => w.type === 'recent-orders');
-
-    // Recent orders still mock for now until order service integration
     const recentOrders = [
-        { id: 'ORD-001', dealer: 'Test Dealer Ltd', amount: '£234.50', status: 'completed' },
-        { id: 'ORD-002', dealer: 'ABC Motors', amount: '£445.00', status: 'processing' },
-        { id: 'ORD-003', dealer: 'XYZ Parts', amount: '£189.99', status: 'pending' },
+        { id: 'ORD-001', dealer: 'Test Dealer Ltd', amount: 'GBP 234.50', status: 'completed' },
+        { id: 'ORD-002', dealer: 'ABC Motors', amount: 'GBP 445.00', status: 'processing' },
+        { id: 'ORD-003', dealer: 'XYZ Parts', amount: 'GBP 189.99', status: 'pending' },
     ];
 
     return (
         <div className="space-y-6">
-            {/* Page header */}
             <div>
                 <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-                <p className="text-gray-500 mt-1">Welcome back, here's what's happening today (SDUI Active)</p>
+                <p className="text-gray-500 mt-1">Welcome back, here's what's happening today</p>
             </div>
 
-            {/* Stats grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {stats.map((stat: any) => {
+                {stats.map((stat) => {
                     const Icon = {
                         blue: Users,
                         green: Package,
@@ -49,7 +38,7 @@ export default function AdminDashboard() {
                         green: 'bg-green-100 text-green-600',
                         orange: 'bg-orange-100 text-orange-600',
                         purple: 'bg-purple-100 text-purple-600',
-                    }[stat.color as 'blue' | 'green' | 'orange' | 'purple']
+                    }[stat.color as 'blue' | 'green' | 'orange' | 'purple'];
 
                     return (
                         <Card key={stat.title} className="stat-card">
@@ -78,40 +67,37 @@ export default function AdminDashboard() {
                                 )}
                             </CardContent>
                         </Card>
-                    )
+                    );
                 })}
             </div>
 
-            {/* Recent orders */}
-            {recentOrdersWidget && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{recentOrdersWidget.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {recentOrders.map((order) => (
-                                <div key={order.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
-                                    <div>
-                                        <p className="font-medium text-gray-900">{order.id}</p>
-                                        <p className="text-sm text-gray-500">{order.dealer}</p>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <p className="font-medium text-gray-900">{order.amount}</p>
-                                        <Badge variant={
-                                            order.status === 'completed' ? 'default' :
-                                                order.status === 'processing' ? 'secondary' :
-                                                    'outline'
-                                        }>
-                                            {order.status}
-                                        </Badge>
-                                    </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Recent Orders</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {recentOrders.map((order) => (
+                            <div key={order.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
+                                <div>
+                                    <p className="font-medium text-gray-900">{order.id}</p>
+                                    <p className="text-sm text-gray-500">{order.dealer}</p>
                                 </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+                                <div className="flex items-center gap-4">
+                                    <p className="font-medium text-gray-900">{order.amount}</p>
+                                    <Badge variant={
+                                        order.status === 'completed' ? 'default' :
+                                            order.status === 'processing' ? 'secondary' :
+                                                'outline'
+                                    }>
+                                        {order.status}
+                                    </Badge>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
         </div>
-    )
+    );
 }

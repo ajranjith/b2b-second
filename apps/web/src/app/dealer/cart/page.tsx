@@ -221,7 +221,7 @@ export default function DealerCartPage() {
                                                 {/* Price and Quantity */}
                                                 <div className="flex items-center justify-between mt-4">
                                                     <div className="text-sm text-slate-600">
-                                                        Unit Price: <span className="font-semibold">£{item.price.toFixed(2)}</span>
+                                                        Unit Price: <span className="font-semibold">£{(item.price || 0).toFixed(2)}</span>
                                                     </div>
 
                                                     <div className="flex items-center gap-3">
@@ -254,7 +254,7 @@ export default function DealerCartPage() {
                                                         </div>
 
                                                         <div className="text-lg font-bold text-blue-600 min-w-[100px] text-right">
-                                                            £{(item.price * item.qty).toFixed(2)}
+                                                            £{((item.price || 0) * item.qty).toFixed(2)}
                                                         </div>
                                                     </div>
                                                 </div>

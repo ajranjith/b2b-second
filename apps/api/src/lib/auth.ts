@@ -8,6 +8,7 @@ export interface JWTPayload {
     email: string;
     role: string;
     dealerAccountId?: string;
+    dealerUserId?: string;
 }
 
 export interface AuthenticatedRequest extends FastifyRequest {
