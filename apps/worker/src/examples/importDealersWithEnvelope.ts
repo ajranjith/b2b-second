@@ -21,6 +21,7 @@ dotenv.config({ path: path.resolve(__dirname, "../../../../packages/db/.env") })
 
 import { ImportType, ImportStatus, Prisma, db, disconnectWorkerPrisma } from "../lib/prisma";
 import { withJobEnvelope } from "../lib/withJobEnvelope";
+import { QUERIES } from "@repo/identity";
 
 interface ImportInput {
   file: string;
@@ -56,7 +57,7 @@ const importDealers = withJobEnvelope<ImportInput, ImportResult>(
     log.info("File hash calculated", { fileHash: fileHash.substring(0, 16) });
 
     log.info("Creating import batch");
-    const batch = await db("DB-A-10-01", (p) =>
+    const batch = await db(QUERIES.IMPORT_BATCH_CREATE, (p) =>
       p.importBatch.create({
         data: {
           importType: ImportType.DEALERS,
@@ -85,7 +86,7 @@ const importDealers = withJobEnvelope<ImportInput, ImportResult>(
         throw new Error(`Missing required columns: ${missingColumns.join(", ")}`);
       }
 
-      await db("DB-A-10-04", (p) =>
+      await db(QUERIES.IMPORT_BATCH_STATUS_UPDATE, (p) =>
         p.importBatch.update({
           where: { id: batch.id },
           data: { totalRows: rows.length },
@@ -111,7 +112,7 @@ const importDealers = withJobEnvelope<ImportInput, ImportResult>(
 
         const isValid = errors.length === 0;
 
-        await db("DB-A-10-02", (p) =>
+        await db(QUERIES.IMPORT_STAGING_ROWS_INSERT, (p) =>
           p.stgDealerAccountRow.create({
             data: {
               batchId: batch.id,
@@ -139,7 +140,7 @@ const importDealers = withJobEnvelope<ImportInput, ImportResult>(
         } else {
           invalidCount++;
 
-          await db("DB-A-10-03", (p) =>
+          await db(QUERIES.IMPORT_ERRORS_LOG, (p) =>
             p.importError.create({
               data: {
                 batchId: batch.id,
@@ -165,7 +166,7 @@ const importDealers = withJobEnvelope<ImportInput, ImportResult>(
       log.info("Row validation complete", { valid: validCount, invalid: invalidCount });
 
       if (validCount === 0) {
-        await db("DB-A-10-04", (p) =>
+        await db(QUERIES.IMPORT_BATCH_STATUS_UPDATE, (p) =>
           p.importBatch.update({
             where: { id: batch.id },
             data: {
@@ -181,7 +182,7 @@ const importDealers = withJobEnvelope<ImportInput, ImportResult>(
 
       log.info("Upserting dealer accounts");
 
-      const validStgRows = await db("DB-A-10-02", (p) =>
+      const validStgRows = await db(QUERIES.IMPORT_STAGING_ROWS_INSERT, (p) =>
         p.stgDealerAccountRow.findMany({
           where: { batchId: batch.id, isValid: true },
         }),
@@ -190,7 +191,7 @@ const importDealers = withJobEnvelope<ImportInput, ImportResult>(
       let processedCount = 0;
 
       for (const stgRow of validStgRows) {
-        const dealerAccount = await db("DB-A-10-05", (p) =>
+        const dealerAccount = await db(QUERIES.IMPORT_DEALER_ACCOUNTS_UPSERT, (p) =>
           p.dealerAccount.upsert({
             where: { accountNo: stgRow.accountNo! },
             create: {
@@ -209,7 +210,7 @@ const importDealers = withJobEnvelope<ImportInput, ImportResult>(
         );
 
         if (stgRow.genuineTier) {
-          await db("DB-A-10-07", (p) =>
+          await db(QUERIES.IMPORT_DEALER_TIERS_UPSERT, (p) =>
             p.dealerPriceTierAssignment.upsert({
               where: {
                 accountNo_categoryCode: {
@@ -230,7 +231,7 @@ const importDealers = withJobEnvelope<ImportInput, ImportResult>(
         }
 
         if (stgRow.aftermarketEsTier) {
-          await db("DB-A-10-07", (p) =>
+          await db(QUERIES.IMPORT_DEALER_TIERS_UPSERT, (p) =>
             p.dealerPriceTierAssignment.upsert({
               where: {
                 accountNo_categoryCode: {
@@ -251,7 +252,7 @@ const importDealers = withJobEnvelope<ImportInput, ImportResult>(
         }
 
         if (stgRow.aftermarketBrTier) {
-          await db("DB-A-10-07", (p) =>
+          await db(QUERIES.IMPORT_DEALER_TIERS_UPSERT, (p) =>
             p.dealerPriceTierAssignment.upsert({
               where: {
                 accountNo_categoryCode: {
@@ -274,7 +275,7 @@ const importDealers = withJobEnvelope<ImportInput, ImportResult>(
         processedCount++;
       }
 
-      await db("DB-A-10-04", (p) =>
+      await db(QUERIES.IMPORT_BATCH_STATUS_UPDATE, (p) =>
         p.importBatch.update({
           where: { id: batch.id },
           data: {
@@ -298,7 +299,7 @@ const importDealers = withJobEnvelope<ImportInput, ImportResult>(
         processedCount,
       };
     } catch (error) {
-      await db("DB-A-10-04", (p) =>
+      await db(QUERIES.IMPORT_BATCH_STATUS_UPDATE, (p) =>
         p.importBatch.update({
           where: { id: batch.id },
           data: {

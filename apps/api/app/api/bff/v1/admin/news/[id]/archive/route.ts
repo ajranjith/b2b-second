@@ -9,14 +9,15 @@ import { withEnvelope } from "@/lib/withEnvelope";
 
 async function handlePOST(
   request: NextRequest,
-  context: { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await context.params;
   const auth = requireRole(request, "ADMIN");
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);
   }
 
-  const data = await archiveNews(context.params.id);
+  const data = await archiveNews(id);
   if (!data) {
     return fail({ message: "News article not found" }, 404);
   }

@@ -1,6 +1,6 @@
 import * as path from "node:path";
 import { spawn } from "node:child_process";
-import { buildEnvelope, newSessionId, newTraceId } from "@repo/identity";
+import { buildEnvelope, newSessionId, newTraceId, QUERIES, type QueryKey } from "@repo/identity";
 import { runWithContext } from "../lib/runtimeContext";
 import { db, prisma } from "../lib/prisma";
 import { checkDatabaseReachable } from "../../../../scripts/db-preflight";
@@ -104,6 +104,7 @@ async function testPrismaWithoutEnvelope() {
 async function runStageOne() {
   printBanner("STAGE 1: Static Analysis & Unit Tests (Mandatory)");
   await runCommand("Registry & route scan", "pnpm", ["tsx", "scripts/check-registry-and-routes.ts"]);
+  await runCommand("Model registry validation", "pnpm", ["tsx", "scripts/verify-model-registry.ts"]);
   await runCommand("TypeScript check", "pnpm", ["typecheck"]);
   await runCommand("Identity unit tests", "pnpm", ["test"]);
   await testPrismaWithoutEnvelope();
@@ -129,7 +130,7 @@ async function testNamespaceMismatch() {
     description: "Namespace mismatch when using Dealer DB on Admin envelope",
     fn: async () => {
       await runWithContext(envelope, async () => {
-        await db("DB-D-01-01").$queryRaw`SELECT 1`;
+        await db(QUERIES.DEALER_DASHBOARD_ACCOUNT).$queryRaw`SELECT 1`;
       });
     },
     expectedMessage: "ENVELOPE_MISMATCH",
@@ -138,13 +139,17 @@ async function testNamespaceMismatch() {
 
 async function testConcurrencySafety() {
   const envelope = createAdminEnvelope();
-  const dbIds = ["DB-A-01-01", "DB-A-02-01", "DB-A-06-01"];
+  const dbIds: QueryKey[] = [
+    "ADMIN_DASHBOARD_DEALER_STATS",
+    "ADMIN_DEALERS_LIST",
+    "ADMIN_IMPORTS_LIST",
+  ];
 
   await runWithContext(envelope, async () => {
     const tasks = Array.from({ length: 50 }, (_, index) => {
       const dbId = dbIds[index % dbIds.length];
       return async () => {
-        const result = await db(dbId).$queryRaw<{ value: number }>`SELECT 1 AS value`;
+        const result = await db(dbId).$queryRaw<{ value: number }[]>`SELECT 1 AS value`;
         return { dbId, value: result[0]?.value ?? null };
       };
     });

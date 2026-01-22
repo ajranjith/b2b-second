@@ -1,4 +1,6 @@
-import { db, ImportBatch, ImportType, ImportStatus } from "../lib/prisma";
+import { ImportBatch, ImportType, ImportStatus } from "../lib/prisma";
+import { createImportBatch, updateImportBatch } from "../repos/import/importBatchRepo";
+import { createImportError } from "../repos/import/importErrorRepo";
 
 export interface ValidationResult {
   isValid: boolean;
@@ -38,20 +40,7 @@ export abstract class ImportService<TRow = any> {
     fileHash: string,
     filePath?: string,
   ): Promise<ImportBatch> {
-    return db("DB-A-10-01", (p) =>
-      p.importBatch.create({
-        data: {
-          importType,
-          fileName,
-          fileHash,
-          filePath,
-          status: ImportStatus.PROCESSING,
-          totalRows: 0,
-          validRows: 0,
-          invalidRows: 0,
-        },
-      }),
-    );
+    return createImportBatch(importType, fileName, fileHash, filePath);
   }
 
   /**
@@ -92,18 +81,13 @@ export abstract class ImportService<TRow = any> {
       status = ImportStatus.SUCCEEDED_WITH_ERRORS;
     }
 
-    await db("DB-A-10-04", (p) =>
-      p.importBatch.update({
-        where: { id: batchId },
-        data: {
-          totalRows: counts.total,
-          validRows: counts.valid,
-          invalidRows: counts.invalid,
-          status,
-          completedAt: new Date(),
-        },
-      }),
-    );
+    await updateImportBatch(batchId, {
+      totalRows: counts.total,
+      validRows: counts.valid,
+      invalidRows: counts.invalid,
+      status,
+      completedAt: new Date(),
+    });
   }
 
   /**
@@ -117,33 +101,17 @@ export abstract class ImportService<TRow = any> {
     errorCode?: string,
     rawRow?: any,
   ): Promise<void> {
-    await db("DB-A-10-03", (p) =>
-      p.importError.create({
-        data: {
-          batchId,
-          rowNumber,
-          columnName,
-          errorCode,
-          errorMessage,
-          rawRowJson: rawRow,
-        },
-      }),
-    );
+    await createImportError(batchId, rowNumber, errorMessage, columnName, errorCode, rawRow);
   }
 
   /**
    * Helper: Mark batch as failed
    */
   async markBatchFailed(batchId: string, error?: Error): Promise<void> {
-    await db("DB-A-10-04", (p) =>
-      p.importBatch.update({
-        where: { id: batchId },
-        data: {
-          status: ImportStatus.FAILED,
-          completedAt: new Date(),
-        },
-      }),
-    );
+    await updateImportBatch(batchId, {
+      status: ImportStatus.FAILED,
+      completedAt: new Date(),
+    });
 
     if (error) {
       await this.logError(batchId, 0, error.message, undefined, "BATCH_ERROR");

@@ -1,9 +1,18 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
-const dbStorage = new AsyncLocalStorage<{ dbId: string }>();
+export type DbScope = {
+  dbId: string;
+  allowedModels: readonly string[];
+};
 
-export function runWithDbContext<T>(dbId: string, fn: () => T): T {
-  return dbStorage.run({ dbId }, fn);
+const dbStorage = new AsyncLocalStorage<DbScope>();
+
+export function runWithDbContext<T>(scope: DbScope, fn: () => T): T {
+  return dbStorage.run(scope, fn);
+}
+
+export function getCurrentDbScope(): DbScope | undefined {
+  return dbStorage.getStore();
 }
 
 export function getCurrentDbId(): string | undefined {

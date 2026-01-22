@@ -20,6 +20,7 @@ import {
   FEATURES,
   OPERATIONS,
   SERVICES,
+  QUERY_REGISTRY,
   QUERIES,
   resolveOperationId,
   resolveFeatureId,
@@ -310,10 +311,10 @@ async function checkRegistryIntegrity(): Promise<void> {
   }
   console.log(`    ✓ ${SERVICES.length} entries, ${serviceIds.size} unique IDs`);
 
-  // Check QUERIES
-  console.log("  Checking QUERIES registry:");
+  // Check QUERY_REGISTRY (array of QueryRegistryEntry with queryId from QUERIES object)
+  console.log("  Checking QUERY_REGISTRY:");
   const queryIds = new Set<string>();
-  for (const query of QUERIES) {
+  for (const query of QUERY_REGISTRY) {
     if (queryIds.has(query.queryId)) {
       addViolation(
         "packages/identity/src/index.ts",
@@ -345,7 +346,7 @@ async function checkRegistryIntegrity(): Promise<void> {
       );
     }
   }
-  console.log(`    ✓ ${QUERIES.length} entries, ${queryIds.size} unique IDs`);
+  console.log(`    ✓ ${QUERY_REGISTRY.length} entries, ${queryIds.size} unique IDs`);
 }
 
 /**
@@ -494,8 +495,8 @@ async function checkDbWrapperUsage(): Promise<void> {
     // Note: Legacy apps/worker/src/services/* are excluded until migration
   ];
 
-  // Get all registered DB IDs
-  const registeredDbIds = new Set(QUERIES.map((q) => q.queryId));
+  // Get all registered query keys and DB IDs from QUERIES object
+  const registeredQueryKeys = new Set(Object.keys(QUERIES));
 
   for (const file of serviceFiles) {
     const content = fs.readFileSync(file, "utf-8");
@@ -506,31 +507,56 @@ async function checkDbWrapperUsage(): Promise<void> {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
-      // Match db("DB-X-XX-XX") pattern
-      const dbCallMatch = line.match(/\bdb\s*\(\s*["']([^"']+)["']\s*\)/);
-      if (dbCallMatch) {
-        const dbId = dbCallMatch[1];
+      // Match db("QUERY_KEY") pattern
+      const dbKeyMatch = line.match(/\bdb\s*\(\s*["']([A-Z0-9_]+)["']\s*[),]/);
+      if (dbKeyMatch) {
+        const queryKey = dbKeyMatch[1];
 
-        // Check if DB ID is registered
-        if (!registeredDbIds.has(dbId)) {
+        if (!registeredQueryKeys.has(queryKey)) {
           addViolation(
             relativePath,
             i + 1,
-            "UNREGISTERED_DB_ID",
-            `DB ID '${dbId}' is not registered in QUERIES registry.`,
+            "UNREGISTERED_DB_QUERY_KEY",
+            `Query key '${queryKey}' is not registered in QUERIES registry.`,
             line.trim(),
           );
+        } else {
+          const dbId = QUERIES[queryKey as keyof typeof QUERIES].id;
+          if (!/^DB-[AD]-\d{2}-\d{2}$/.test(dbId)) {
+            addViolation(
+              relativePath,
+              i + 1,
+              "INVALID_DB_ID_FORMAT",
+              `DB ID '${dbId}' does not match format DB-{A|D}-##-##`,
+              line.trim(),
+            );
+          }
         }
+      }
 
-        // Check DB ID format
-        if (!/^DB-[AD]-\d{2}-\d{2}$/.test(dbId)) {
+      // Match db(QUERIES.KEY) pattern
+      const dbConstMatch = line.match(/\bdb\s*\(\s*QUERIES\.([A-Z0-9_]+)\s*[),]/);
+      if (dbConstMatch) {
+        const queryKey = dbConstMatch[1];
+        if (!registeredQueryKeys.has(queryKey)) {
           addViolation(
             relativePath,
             i + 1,
-            "INVALID_DB_ID_FORMAT",
-            `DB ID '${dbId}' does not match format DB-{A|D}-##-##`,
+            "UNREGISTERED_DB_QUERY_KEY",
+            `Query key '${queryKey}' is not registered in QUERIES registry.`,
             line.trim(),
           );
+        } else {
+          const dbId = QUERIES[queryKey as keyof typeof QUERIES].id;
+          if (!/^DB-[AD]-\d{2}-\d{2}$/.test(dbId)) {
+            addViolation(
+              relativePath,
+              i + 1,
+              "INVALID_DB_ID_FORMAT",
+              `DB ID '${dbId}' does not match format DB-{A|D}-##-##`,
+              line.trim(),
+            );
+          }
         }
       }
 

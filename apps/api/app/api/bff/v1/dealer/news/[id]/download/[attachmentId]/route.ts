@@ -7,14 +7,15 @@ import { withEnvelope } from "@/lib/withEnvelope";
 
 async function handleGET(
   request: NextRequest,
-  context: { params: { id: string; attachmentId: string } },
+  context: { params: Promise<{ id: string; attachmentId: string }> },
 ) {
+  const { id, attachmentId } = await context.params;
   const auth = requireRole(request, "DEALER");
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);
   }
 
-  const data = await getNewsAttachment(context.params.id, context.params.attachmentId);
+  const data = await getNewsAttachment(id, attachmentId);
   if (!data) {
     return fail({ message: "Attachment not found" }, 404);
   }

@@ -83,7 +83,7 @@ const buildPayload = (record: Awaited<ReturnType<typeof fetchDealerAccountById>>
 
 const attachTiers = async (payload: DealerAccountPayload, accountNo: string) => {
   const assignments = await fetchDealerTierAssignments(accountNo);
-  const tiers = {
+  const tiers: DealerAccountDTO["tiers"] = {
     genuine: null,
     aftermarketEs: null,
     aftermarketBr: null,

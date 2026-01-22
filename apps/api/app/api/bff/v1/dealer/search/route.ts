@@ -1,6 +1,5 @@
 import type { NextRequest } from "next/server";
 
-import { cacheLife, cacheTag } from "next/cache";
 import { DealerSearchResponseSchema } from "@repo/lib";
 
 import { requireRole } from "@/auth/requireRole";
@@ -18,9 +17,6 @@ async function handleGET(request: NextRequest) {
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);
   }
-
-  cacheTag("dealer-search");
-  cacheLife("short");
 
   const url = new URL(request.url);
   const query = url.searchParams.get("q") ?? "";

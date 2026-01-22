@@ -31,7 +31,14 @@
       "Bash(git add:*)",
       "Bash(git push:*)",
       "Bash(set:*)",
-      "Bash(pnpm tsc:*)"
+      "Bash(pnpm tsc:*)",
+      "Bash(pnpm dev:deps:*)",
+      "Bash(pnpm db:migrate:*)",
+      "Bash(pkill:*)",
+      "Bash(powershell -Command \"Stop-Process -Id 70652 -Force\")",
+      "Bash(powershell -Command \"Stop-Process -Id 22404 -Force\")",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NDkzYzgwYy03Nzk3LTRkZTgtOWU5YS01NWJmMjA2YjdlOTQiLCJlbWFpbCI6InUtMUBkZWFsZXIuY29tIiwicm9sZSI6IkRFQUxFUiIsImRlYWxlckFjY291bnRJZCI6ImIzZGE3ZWI4LWMxOGUtNDYyZS04OTdlLTA5MmZmOWQ4YWYyMSIsImRlYWxlclVzZXJJZCI6ImRhZGExMjNjLWNlYTYtNDJkZi04YWU2LTkwMGIyYTIzZGEzNyIsImlhdCI6MTc2OTExMTExOCwiZXhwIjoxNzY5MTk3NTE4fQ.2d-1zyeBVj9yxBC3xMn9ruqvT5UU1gtH71EzfNkdRtM\")",
+      "Bash(ls:*)"
     ]
   }
 }

@@ -7,6 +7,7 @@ import * as fs from "fs";
 import { ImportType, db, disconnectWorkerPrisma } from "./lib/prisma";
 import { SpecialPriceImportService } from "./services/SpecialPriceImportService";
 import { withJobEnvelope } from "./lib/withJobEnvelope";
+import { QUERIES } from "@repo/identity";
 
 interface ImportArgs {
   file: string;
@@ -130,7 +131,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
 
       console.log("All required columns present");
 
-      await db("DB-A-10-04", (p) =>
+      await db(QUERIES.IMPORT_BATCH_STATUS_UPDATE, (p) =>
         p.importBatch.update({
           where: { id: batch.id },
           data: { totalRows: rows.length },
@@ -147,7 +148,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
 
         const parsedRow = importService.parseRow(row, batch.id, rowNumber);
 
-        await db("DB-A-10-02", (p) =>
+        await db(QUERIES.IMPORT_STAGING_ROWS_INSERT, (p) =>
           p.stgSpecialPriceRow.create({
             data: {
               batchId: parsedRow.batchId,
@@ -208,8 +209,8 @@ const runImport = withJobEnvelope<ImportArgs, void>(
       });
 
       console.log("\nGenerating statistics...");
-      const totalSpecialPrices = await db("DB-A-10-11", (p) => p.specialPrice.count());
-      const activeSpecialPrices = await db("DB-A-10-11", (p) =>
+      const totalSpecialPrices = await db(QUERIES.IMPORT_SPECIAL_PRICES_UPSERT, (p) => p.specialPrice.count());
+      const activeSpecialPrices = await db(QUERIES.IMPORT_SPECIAL_PRICES_UPSERT, (p) =>
         p.specialPrice.count({
           where: {
             startsAt: { lte: new Date() },
@@ -218,7 +219,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
         }),
       );
 
-      const thisRangeCount = await db("DB-A-10-11", (p) =>
+      const thisRangeCount = await db(QUERIES.IMPORT_SPECIAL_PRICES_UPSERT, (p) =>
         p.specialPrice.count({
           where: {
             startsAt: parsedStartDate,
@@ -241,7 +242,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
       console.log(`This Date Range:          ${thisRangeCount}`);
       console.log(`Date Range:               ${startDate} to ${endDate}`);
 
-      const finalBatch = await db("DB-A-10-04", (p) =>
+      const finalBatch = await db(QUERIES.IMPORT_BATCH_STATUS_UPDATE, (p) =>
         p.importBatch.findUnique({
           where: { id: batch.id },
         }),

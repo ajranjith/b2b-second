@@ -9,17 +9,18 @@ import { withEnvelope } from "@/lib/withEnvelope";
 
 async function handleGET(
   request: NextRequest,
-  context: { params: { type: string } },
+  context: { params: Promise<{ type: string }> },
 ) {
+  const { type } = await context.params;
   cacheTag("admin-import-templates");
-  cacheLife("long");
+  cacheLife({ revalidate: 300, expire: 1800 });
 
   const auth = requireRole(request, "ADMIN");
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);
   }
 
-  const template = getImportTemplate(context.params.type.toUpperCase());
+  const template = getImportTemplate(type.toUpperCase());
   if (!template) {
     return fail({ message: "Template not found" }, 404);
   }

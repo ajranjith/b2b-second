@@ -12,6 +12,7 @@ export { UserForm } from "./UserForm";
 // Import Management
 export { ImportHistory } from "./ImportHistory";
 export { ImportUpload } from "./ImportUpload";
+export { ImportModernView, ImportStepper, UploadDropZone } from "./imports";
 
 // Dashboard
 export { AdminDashboard } from "./AdminDashboard";

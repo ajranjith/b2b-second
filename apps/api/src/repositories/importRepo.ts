@@ -88,8 +88,10 @@ export async function fetchImportBatchById(id: string) {
 }
 
 export async function insertImportBatch(payload: {
+  id: string;
   importType: string;
   fileName: string | null;
+  fileHash: string;
   uploadedById: string | null;
 }) {
   const result = await writeClient.query<ImportBatchRecord>(

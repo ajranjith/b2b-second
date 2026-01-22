@@ -5,12 +5,13 @@
  * with Promise.all for concurrency-safe parallel queries.
  *
  * Each query uses its own registered DB-ID from the QUERIES registry:
- * - DB-A-02-01: List dealer accounts
- * - DB-A-02-02: List dealer users
- * - DB-A-02-03: List dealer discount tiers
+ * - ADMIN_DEALERS_LIST: List dealer accounts
+ * - ADMIN_DEALERS_USERS_LIST: List dealer users
+ * - ADMIN_DEALERS_TIERS_LIST: List dealer discount tiers
  */
 
 import { db } from "@/lib/prisma";
+import { QUERIES } from "@repo/identity";
 
 export type DealerAccountRecord = {
   id: string;
@@ -43,12 +44,12 @@ export type DealerDiscountTierRecord = {
 
 /**
  * Fetch all dealer accounts
- * DB-ID: DB-A-02-01 - List dealer accounts
+ * DB-ID: ADMIN_DEALERS_LIST - List dealer accounts
  */
 export async function fetchDealerAccounts(): Promise<DealerAccountRecord[]> {
   // Each db() call creates a scoped context for the DB-ID
   // This is concurrency-safe even when used with Promise.all
-  return db("DB-A-02-01").$queryRaw<DealerAccountRecord[]>`
+  return db(QUERIES.ADMIN_DEALERS_LIST).$queryRaw<DealerAccountRecord[]>`
     SELECT
       id,
       "accountNo",
@@ -70,10 +71,10 @@ export async function fetchDealerAccounts(): Promise<DealerAccountRecord[]> {
 
 /**
  * Fetch all dealer users with their email
- * DB-ID: DB-A-02-02 - List dealer users
+ * DB-ID: ADMIN_DEALERS_USERS_LIST - List dealer users
  */
 export async function fetchDealerUsers(): Promise<DealerUserRecord[]> {
-  return db("DB-A-02-02").$queryRaw<DealerUserRecord[]>`
+  return db(QUERIES.ADMIN_DEALERS_USERS_LIST).$queryRaw<DealerUserRecord[]>`
     SELECT
       du."dealerAccountId",
       du."firstName",
@@ -86,10 +87,10 @@ export async function fetchDealerUsers(): Promise<DealerUserRecord[]> {
 
 /**
  * Fetch all dealer discount tiers
- * DB-ID: DB-A-02-03 - List dealer discount tiers
+ * DB-ID: ADMIN_DEALERS_TIERS_LIST - List dealer discount tiers
  */
 export async function fetchDealerDiscountTiers(): Promise<DealerDiscountTierRecord[]> {
-  return db("DB-A-02-03").$queryRaw<DealerDiscountTierRecord[]>`
+  return db(QUERIES.ADMIN_DEALERS_TIERS_LIST).$queryRaw<DealerDiscountTierRecord[]>`
     SELECT
       "dealerAccountId",
       "discountCode",
@@ -108,8 +109,8 @@ export async function fetchDealerDiscountTiers(): Promise<DealerDiscountTierReco
  *
  * Usage in service:
  *   const [accounts, users, tiers] = await Promise.all([
- *     fetchDealerAccounts(),    // Traced as DB-A-02-01
- *     fetchDealerUsers(),       // Traced as DB-A-02-02
- *     fetchDealerDiscountTiers() // Traced as DB-A-02-03
+ *     fetchDealerAccounts(),    // Traced as ADMIN_DEALERS_LIST (DB-A-02-01)
+ *     fetchDealerUsers(),       // Traced as ADMIN_DEALERS_USERS_LIST (DB-A-02-02)
+ *     fetchDealerDiscountTiers() // Traced as ADMIN_DEALERS_TIERS_LIST (DB-A-02-03)
  *   ]);
  */

@@ -7,6 +7,7 @@ import * as fs from "fs";
 import { ImportType, db, disconnectWorkerPrisma } from "./lib/prisma";
 import { DealerImportService } from "./services/DealerImportService";
 import { withJobEnvelope } from "./lib/withJobEnvelope";
+import { QUERIES } from "@repo/identity";
 
 interface ImportArgs {
   file: string;
@@ -97,7 +98,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
 
       console.log("All required columns present");
 
-      await db("DB-A-10-04", (p) =>
+      await db(QUERIES.IMPORT_BATCH_STATUS_UPDATE, (p) =>
         p.importBatch.update({
           where: { id: batch.id },
           data: { totalRows: rows.length },
@@ -115,7 +116,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
 
         const parsedRow = importService.parseRow(row, batch.id, rowNumber);
 
-        await db("DB-A-10-02", (p) =>
+        await db(QUERIES.IMPORT_STAGING_ROWS_INSERT, (p) =>
           p.stgDealerAccountRow.create({
             data: {
               batchId: parsedRow.batchId,
@@ -184,7 +185,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
       });
 
       console.log("\nVerifying tier assignments...");
-      const tierCounts = await db("DB-A-10-07", (p) =>
+      const tierCounts = await db(QUERIES.IMPORT_DEALER_TIERS_UPSERT, (p) =>
         p.dealerPriceTierAssignment.groupBy({
           by: ["accountNo"],
           _count: { _all: true },
@@ -203,7 +204,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
       console.log(`Dealers Created/Updated: ${processedCount}`);
       console.log(`Dealers with 3 Tiers:   ${dealersWithComplete3Tiers.length}`);
 
-      const finalBatch = await db("DB-A-10-04", (p) =>
+      const finalBatch = await db(QUERIES.IMPORT_BATCH_STATUS_UPDATE, (p) =>
         p.importBatch.findUnique({
           where: { id: batch.id },
         }),

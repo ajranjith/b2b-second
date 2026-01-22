@@ -1,5 +1,14 @@
 import { ImportService, ValidationResult } from "./ImportService";
-import { db } from "../lib/prisma";
+import {
+  listValidSpecialPriceRows,
+  findProductByCode,
+  findExistingSpecialPrice,
+  updateSpecialPrice,
+  createSpecialPrice,
+  findActiveSpecialPrice,
+  listActiveSpecialPrices,
+  deleteExpiredSpecialPrices,
+} from "../repos/import/specialPriceImportRepo";
 
 interface SpecialPriceRow {
   "Part No"?: string;
@@ -89,11 +98,7 @@ export class SpecialPriceImportService extends ImportService<SpecialPriceRow> {
   }
 
   async processValidRows(batchId: string): Promise<number> {
-    const validRows = await db("DB-A-10-02", (p) =>
-      p.stgSpecialPriceRow.findMany({
-        where: { batchId, isValid: true },
-      }),
-    );
+    const validRows = await listValidSpecialPriceRows(batchId);
 
     let processedCount = 0;
 
@@ -102,62 +107,45 @@ export class SpecialPriceImportService extends ImportService<SpecialPriceRow> {
     );
 
     for (const row of validRows) {
-      await db("DB-A-10-11", (p) =>
-        p.$transaction(async (tx) => {
-        const product = await tx.product.findUnique({
-          where: { productCode: row.productCode! },
+      const product = await findProductByCode(row.productCode!);
+
+      if (!product) {
+        await this.logError(
+          batchId,
+          row.rowNumber,
+          `Product not found for Part No: ${row.productCode}`,
+          "Part No",
+          "PRODUCT_NOT_FOUND",
+          row.rawRowJson,
+        );
+        continue;
+      }
+
+      const existing = await findExistingSpecialPrice({
+        productCode: row.productCode!,
+        discountCode: row.discountCode!,
+        startDate: this.importOptions.startDate,
+        endDate: this.importOptions.endDate,
+      });
+
+      if (existing) {
+        await updateSpecialPrice({
+          id: existing.id,
+          discountPrice: Number(row.discountPrice),
+          description: row.description,
+          batchId,
         });
-
-        if (!product) {
-          await this.logError(
-            batchId,
-            row.rowNumber,
-            `Product not found for Part No: ${row.productCode}`,
-            "Part No",
-            "PRODUCT_NOT_FOUND",
-            row.rawRowJson,
-          );
-          return;
-        }
-
-        const existing = await tx.specialPrice.findFirst({
-          where: {
-            productCode: row.productCode!,
-            discountCode: row.discountCode!,
-            startsAt: this.importOptions.startDate,
-            endsAt: this.importOptions.endDate,
-            dealerAccountId: null,
-          },
+      } else {
+        await createSpecialPrice({
+          productCode: row.productCode!,
+          discountCode: row.discountCode!,
+          description: row.description,
+          discountPrice: Number(row.discountPrice),
+          startDate: this.importOptions.startDate,
+          endDate: this.importOptions.endDate,
+          batchId,
         });
-
-        if (existing) {
-          await tx.specialPrice.update({
-            where: { id: existing.id },
-            data: {
-              discountPrice: row.discountPrice!,
-              description: row.description,
-              importBatchId: batchId,
-              source: "IMPORT",
-              sourceBatchId: batchId,
-            },
-          });
-        } else {
-          await tx.specialPrice.create({
-            data: {
-              productCode: row.productCode!,
-              discountCode: row.discountCode!,
-              description: row.description,
-              discountPrice: row.discountPrice!,
-              startsAt: this.importOptions.startDate,
-              endsAt: this.importOptions.endDate,
-              importBatchId: batchId,
-              source: "IMPORT",
-              sourceBatchId: batchId,
-            },
-          });
-        }
-      }),
-      );
+      }
 
       processedCount++;
       if (processedCount % 50 === 0) {
@@ -172,43 +160,17 @@ export class SpecialPriceImportService extends ImportService<SpecialPriceRow> {
     productCode: string,
     asOfDate: Date = new Date(),
   ): Promise<number | null> {
-    const specialPrice = await db("DB-A-10-11", (p) =>
-      p.specialPrice.findFirst({
-        where: {
-          productCode,
-          startsAt: { lte: asOfDate },
-          endsAt: { gte: asOfDate },
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-    );
+    const specialPrice = await findActiveSpecialPrice(productCode, asOfDate);
 
     return specialPrice ? Number(specialPrice.discountPrice) : null;
   }
 
   async getActiveSpecialPrices(startDate: Date, endDate: Date): Promise<any[]> {
-    return await db("DB-A-10-11", (p) =>
-      p.specialPrice.findMany({
-        where: {
-          OR: [
-            { startsAt: { gte: startDate, lte: endDate } },
-            { endsAt: { gte: startDate, lte: endDate } },
-            { startsAt: { lte: startDate }, endsAt: { gte: endDate } },
-          ],
-        },
-        orderBy: { startsAt: "asc" },
-      }),
-    );
+    return listActiveSpecialPrices(startDate, endDate);
   }
 
   async cleanupExpiredPrices(beforeDate: Date = new Date()): Promise<number> {
-    const result = await db("DB-A-10-11", (p) =>
-      p.specialPrice.deleteMany({
-        where: {
-          endsAt: { lt: beforeDate },
-        },
-      }),
-    );
+    const result = await deleteExpiredSpecialPrices(beforeDate);
 
     return result.count;
   }

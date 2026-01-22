@@ -17,9 +17,12 @@ import {
 } from "@repo/identity";
 import { runWithContext } from "./runtimeContext";
 
-type RouteContext = Record<string, unknown>;
+type RouteContext = unknown;
 
-type RouteHandler = (req: NextRequest, context: RouteContext) => Promise<NextResponse>;
+type RouteHandler<TContext = RouteContext> = (
+  req: NextRequest,
+  context: TContext,
+) => Promise<Response | NextResponse>;
 
 export interface WithEnvelopeOptions {
   namespace?: Namespace;
@@ -167,13 +170,13 @@ function validateOperationalIds(
   return { valid: true };
 }
 
-export function withEnvelope(
+export function withEnvelope<TContext = RouteContext>(
   options: WithEnvelopeOptions | undefined,
-  handler: RouteHandler,
-): RouteHandler {
+  handler: RouteHandler<TContext>,
+): RouteHandler<TContext> {
   return async function handlerWithEnvelope(
     req: NextRequest,
-    context: RouteContext = {},
+    context: TContext,
   ): Promise<NextResponse> {
     const pathname = req.nextUrl?.pathname ?? "/";
     const method = req.method;
@@ -285,17 +288,25 @@ export function withEnvelope(
     // Step 8: Execute handler inside AsyncLocalStorage
     return runWithContext(envelope, async () => {
       const response = await handler(req, context);
+      const nextResponse =
+        response instanceof NextResponse
+          ? response
+          : new NextResponse(response.body, {
+              status: response.status,
+              statusText: response.statusText,
+              headers: response.headers,
+            });
 
       // Set all envelope headers on response
-      response.headers.set(TRACE_HEADER, traceId);
-      response.headers.set(NAMESPACE_HEADER, namespace);
-      response.headers.set(SESSION_HEADER, sessionId);
-      response.headers.set(FEATURE_HEADER, featureId);
-      response.headers.set(OPERATION_HEADER, operationId);
+      nextResponse.headers.set(TRACE_HEADER, traceId);
+      nextResponse.headers.set(NAMESPACE_HEADER, namespace);
+      nextResponse.headers.set(SESSION_HEADER, sessionId);
+      nextResponse.headers.set(FEATURE_HEADER, featureId);
+      nextResponse.headers.set(OPERATION_HEADER, operationId);
 
       // Step 9: Set namespace-specific session cookie if new session
       if (isNewSession) {
-        response.cookies.set(cookieName, sessionId, {
+        nextResponse.cookies.set(cookieName, sessionId, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "strict",
@@ -305,7 +316,7 @@ export function withEnvelope(
         });
       }
 
-      return response;
+      return nextResponse;
     });
   };
 }

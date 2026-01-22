@@ -1,4 +1,5 @@
-import { readClient } from "../db";
+import { dbRead } from "../db";
+import { QUERIES } from "@repo/identity";
 
 export type SearchResultItem = {
   productId: string;
@@ -15,7 +16,8 @@ export type SearchResultItem = {
 export async function searchProducts(query: string, limit = 20, offset = 0) {
   const likeQuery = `%${query}%`;
 
-  const rows = await readClient.query<SearchResultItem>(
+  const rows = await dbRead<SearchResultItem>(
+    QUERIES.DEALER_SEARCH_PRODUCTS,
     `
       SELECT
         p.id AS "productId",

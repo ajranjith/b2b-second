@@ -7,14 +7,15 @@ import { withEnvelope } from "@/lib/withEnvelope";
 
 async function handleGET(
   request: NextRequest,
-  context: { params: { batchId: string } },
+  context: { params: Promise<{ batchId: string }> },
 ) {
+  const { batchId } = await context.params;
   const auth = requireRole(request, "ADMIN");
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);
   }
 
-  const data = await getImportStatus(context.params.batchId);
+  const data = await getImportStatus(batchId);
   if (!data) {
     return fail({ message: "Import batch not found" }, 404);
   }

@@ -11,7 +11,7 @@ import { withEnvelope } from "@/lib/withEnvelope";
 
 async function handleGET(request: NextRequest) {
   cacheTag("dealer-banners");
-  cacheLife("long");
+  cacheLife({ revalidate: 300, expire: 1800 });
 
   const auth = requireRole(request, "DEALER");
   if (!auth.ok) {

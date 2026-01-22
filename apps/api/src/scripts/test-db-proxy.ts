@@ -1,7 +1,7 @@
 import { db, prisma } from "../lib/prisma";
 import { runWithContext } from "../lib/runtimeContext";
 import { getCurrentDbId } from "../lib/dbContext";
-import { buildEnvelope, newSessionId, newTraceId } from "@repo/identity";
+import { buildEnvelope, newSessionId, newTraceId, QUERIES } from "@repo/identity";
 
 const envelope = buildEnvelope({
   namespace: "A",
@@ -20,7 +20,7 @@ async function test() {
     console.log("Inside runWithContext");
     console.log("dbId before db() call:", getCurrentDbId());
 
-    const client = db("DB-A-01-01");
+    const client = db(QUERIES.ADMIN_DASHBOARD_DEALER_STATS);
     console.log("Got client, dbId:", getCurrentDbId());
 
     try {

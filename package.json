@@ -14,6 +14,7 @@
     "check:no-json-registries": "tsx scripts/check-no-json-registries.ts",
     "check:registries": "tsx scripts/check-registry-and-routes.ts",
     "verify:identity": "pnpm check:no-json-registries && pnpm identity:verify && pnpm worker:identity-proof",
+    "id:audit": "pnpm --filter api exec tsx src/scripts/id-arch-audit.ts",
     "dev:deps": "docker compose -f infra/docker/docker-compose.yml up -d",
     "dev:deps:down": "docker compose -f infra/docker/docker-compose.yml down",
     "dev:reset-db": "pnpm --filter db exec tsx scripts/dev-reset-db.ts",

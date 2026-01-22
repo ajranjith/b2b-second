@@ -1,7 +1,7 @@
 import { PrismaClient, type Prisma } from "@prisma/client";
 import { getContext } from "@/lib/runtimeContext";
-import { getCurrentDbId, runWithDbContext } from "@/lib/dbContext";
-import { isValidDb } from "@repo/identity";
+import { getCurrentDbScope, runWithDbContext, type DbScope } from "@/lib/dbContext";
+import { MODELS, QUERIES, type QueryDefEntry, type QueryKey, isValidDb } from "@repo/identity";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
@@ -17,7 +17,9 @@ if (process.env.NODE_ENV !== "production") {
 
 prisma.$use(async (params, next) => {
   const context = getContext();
-  const dbId = getCurrentDbId();
+  const dbScope = getCurrentDbScope();
+  const dbId = dbScope?.dbId;
+  const allowedModels = dbScope?.allowedModels ?? [];
 
   // BLOCKER 1: Envelope must exist
   if (!context) {
@@ -25,8 +27,8 @@ prisma.$use(async (params, next) => {
   }
 
   // BLOCKER 2: DB-ID must be in scope
-  if (!dbId) {
-    throw new Error("BLOCKER: No DB-ID in scope - use db(dbId) runner for all database operations.");
+  if (!dbId || !dbScope) {
+    throw new Error("BLOCKER: No DB-ID in scope - use db(query) runner for all database operations.");
   }
 
   // BLOCKER 3: Namespace mismatch check
@@ -36,6 +38,16 @@ prisma.$use(async (params, next) => {
       `ENVELOPE_MISMATCH: DB-ID '${dbId}' does not match request namespace '${context.namespace}'. ` +
         `Expected prefix '${expectedPrefix}'.`,
     );
+  }
+
+  const modelName = params.model ?? "raw";
+  if (params.model && !allowedModels.includes(params.model)) {
+    throw new Error(`MODEL_MISMATCH: Query ${dbId} is not allowed to access model ${params.model}.`);
+  }
+
+  const modelId = params.model ? MODELS[params.model as keyof typeof MODELS] : "MDL-00-00";
+  if (params.model && !modelId) {
+    throw new Error(`REGISTRY_MISSING_MODEL_ID: No model ID for ${params.model}.`);
   }
 
   const start = Date.now();
@@ -50,7 +62,8 @@ prisma.$use(async (params, next) => {
     api: context.operationId,
     svc: (context as PrismaContextWithService)?.serviceId ?? null,
     dbId,
-    model: params.model ?? "raw",
+    model: modelName,
+    modelId,
     action: params.action,
     durationMs,
     timestamp: new Date().toISOString(),
@@ -65,12 +78,17 @@ type PrismaContextWithService = {
 
 const proxyCache = new Map<string, PrismaClient>();
 
-function wrapValue(value: unknown, dbId: string, cache: WeakMap<object, object>, parent: object) {
+function wrapValue(
+  value: unknown,
+  scope: DbScope,
+  cache: WeakMap<object, object>,
+  parent: object,
+) {
   if (typeof value === "function") {
     // Wrap function calls to maintain dbId context through async operations
     // The async wrapper ensures Prisma's lazy promises resolve within the context
     return (...args: unknown[]) =>
-      runWithDbContext(dbId, async () => {
+      runWithDbContext(scope, async () => {
         const result = (value as (...args: unknown[]) => unknown).apply(parent, args);
         // Await any promise/thenable to ensure context is maintained
         return result;
@@ -81,7 +99,7 @@ function wrapValue(value: unknown, dbId: string, cache: WeakMap<object, object>,
     if (cache.has(value)) {
       return cache.get(value);
     }
-    const proxy = new Proxy(value, createHandler(dbId, cache));
+    const proxy = new Proxy(value, createHandler(scope, cache));
     cache.set(value, proxy);
     return proxy;
   }
@@ -89,20 +107,27 @@ function wrapValue(value: unknown, dbId: string, cache: WeakMap<object, object>,
   return value;
 }
 
-function createHandler(dbId: string, cache: WeakMap<object, object>): ProxyHandler<object> {
+function createHandler(scope: DbScope, cache: WeakMap<object, object>): ProxyHandler<object> {
   return {
     get(target, prop, receiver) {
       const value = Reflect.get(target, prop, receiver);
-      return wrapValue(value, dbId, cache, target);
+      return wrapValue(value, scope, cache, target);
     },
   };
 }
 
-function createProxy(target: PrismaClient, dbId: string): PrismaClient {
+function createProxy(target: PrismaClient, scope: DbScope): PrismaClient {
   const cache = new WeakMap<object, object>();
-  const proxy = new Proxy(target, createHandler(dbId, cache));
+  const proxy = new Proxy(target, createHandler(scope, cache));
   cache.set(target, proxy);
   return proxy as PrismaClient;
+}
+
+function resolveQueryDef(query: QueryKey | QueryDefEntry): QueryDefEntry {
+  if (typeof query === "string") {
+    return QUERIES[query];
+  }
+  return query;
 }
 
 export function ensureDbId(dbId?: string): string {
@@ -112,13 +137,18 @@ export function ensureDbId(dbId?: string): string {
   return dbId;
 }
 
-export function db(dbId: string): PrismaClient {
-  const validId = ensureDbId(dbId);
+export function db(query: QueryKey | QueryDefEntry): PrismaClient {
+  const def = resolveQueryDef(query);
+  const validId = ensureDbId(def.id);
   if (proxyCache.has(validId)) {
     return proxyCache.get(validId)!;
   }
 
-  const proxied = createProxy(prisma, validId);
+  const scope: DbScope = {
+    dbId: validId,
+    allowedModels: def.models,
+  };
+  const proxied = createProxy(prisma, scope);
   proxyCache.set(validId, proxied);
   return proxied;
 }

@@ -9,8 +9,9 @@ import { withEnvelope } from "@/lib/withEnvelope";
 
 async function handlePATCH(
   request: NextRequest,
-  context: { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await context.params;
   const auth = requireRole(request, "ADMIN");
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);
@@ -19,7 +20,7 @@ async function handlePATCH(
   try {
     const body = (await request.json()) as AdminUserUpdateDTO;
     const payload = AdminUserUpdateSchema.parse(body);
-    const user = await updateAdminUser(context.params.id, payload);
+    const user = await updateAdminUser(id, payload);
     if (!user) {
       return fail({ message: "Admin user not found" }, 404);
     }

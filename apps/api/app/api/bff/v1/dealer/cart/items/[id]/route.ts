@@ -10,8 +10,9 @@ import { withEnvelope } from "@/lib/withEnvelope";
 
 async function handlePATCH(
   request: NextRequest,
-  context: { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await context.params;
   const auth = requireRole(request, "DEALER");
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);
@@ -25,7 +26,7 @@ async function handlePATCH(
 
   try {
     const payload = DealerCartUpdateItemSchema.parse(await request.json());
-    const cart = await updateDealerCartItem(accountId, dealerUserId, context.params.id, payload.qty);
+    const cart = await updateDealerCartItem(accountId, dealerUserId, id, payload.qty);
     return ok(cart);
   } catch (error: unknown) {
     if (error instanceof ZodError) {
@@ -37,8 +38,9 @@ async function handlePATCH(
 
 async function handleDELETE(
   request: NextRequest,
-  context: { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await context.params;
   const auth = requireRole(request, "DEALER");
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);
@@ -50,7 +52,7 @@ async function handleDELETE(
     return fail({ message: "Dealer context missing" }, 400);
   }
 
-  const cart = await removeCartItemForDealer(accountId, dealerUserId, context.params.id);
+  const cart = await removeCartItemForDealer(accountId, dealerUserId, id);
   return ok(cart);
 }
 

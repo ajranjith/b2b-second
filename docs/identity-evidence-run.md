@@ -41,7 +41,7 @@ PASS: Namespace mismatch when using Dealer DB on Admin envelope failed as expect
 [DB_TRACE] {"ns":"A","sid":"SID-A-01KFKDCHTZTT5CW0CVAK9NEWAZ","ref":"REF-A-01","api":"API-A-01-01","svc":null,"dbId":"DB-A-01-01","model":"raw","action":"queryRaw","durationMs":22,"timestamp":"2026-01-22T17:52:41.334Z"}
 [DB_TRACE] {"ns":"A","sid":"SID-A-01KFKDCHTZTT5CW0CVAK9NEWAZ","ref":"REF-A-01","api":"API-A-01-01","svc":null,"dbId":"DB-A-02-01","model":"raw","action":"queryRaw","durationMs":21,"timestamp":"2026-01-22T17:52:41.335Z"}
 [... 50 concurrent queries executed ...]
-[STAGE 2] Concurrency proof ran in 76ms; DB IDs: DB-A-01-01, DB-A-02-01, DB-A-06-01
+[STAGE 2] Concurrency proof ran in 76ms; DB IDs: DB-A-01-01, DB-A-02-01, DB-A-10-03
 
 OK: Identity enforcement scripts completed.
 ```

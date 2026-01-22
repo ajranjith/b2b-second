@@ -1,4 +1,5 @@
-import { readClient } from "../db";
+import { dbRead } from "../db";
+import { QUERIES } from "@repo/identity";
 
 export type AdminDealerStats = {
   total: number;
@@ -90,7 +91,8 @@ export async function fetchAdminDealerStats(): Promise<AdminDealerStats> {
     suspended: 0,
   };
 
-  const result = await readClient.query<{ status: string; count: string }>(
+  const result = await dbRead<{ status: string; count: string }>(
+    QUERIES.ADMIN_DASHBOARD_DEALER_STATS,
     `
       SELECT status, COUNT(*)::int AS count
       FROM "DealerAccount"
@@ -114,12 +116,13 @@ export async function fetchAdminOrderStats(
   startOfWeek: Date,
   startOfMonth: Date,
 ): Promise<AdminOrderStats> {
-  const result = await readClient.query<{
+  const result = await dbRead<{
     today: string;
     thisWeek: string;
     thisMonth: string;
     totalRevenue: string;
   }>(
+    QUERIES.ADMIN_DASHBOARD_ORDER_STATS,
     `
       SELECT
         COUNT(*) FILTER (WHERE "createdAt" >= $1)::int AS "today",
@@ -150,14 +153,16 @@ export async function fetchAdminProductStats(): Promise<AdminProductStats> {
   };
 
   const [productsResult, lowStockResult] = await Promise.all([
-    readClient.query<{ partType: string; count: string }>(
+    dbRead<{ partType: string; count: string }>(
+      QUERIES.ADMIN_DASHBOARD_PRODUCT_STATS,
       `
         SELECT "partType", COUNT(*)::int AS count
         FROM "Product"
         GROUP BY "partType";
       `,
     ),
-    readClient.query<{ count: string }>(
+    dbRead<{ count: string }>(
+      QUERIES.ADMIN_DASHBOARD_PRODUCT_STATS,
       `
         SELECT COUNT(*)::int AS count
         FROM "ProductStock"
@@ -180,7 +185,8 @@ export async function fetchAdminProductStats(): Promise<AdminProductStats> {
 
 export async function fetchAdminImportStats(startOfToday: Date): Promise<AdminImportStats> {
   const [todayImports, lastSuccess, failedToday, activeImports] = await Promise.all([
-    readClient.query<{ count: string }>(
+    dbRead<{ count: string }>(
+      QUERIES.ADMIN_DASHBOARD_IMPORT_STATS,
       `
         SELECT COUNT(*)::int AS count
         FROM "ImportBatch"
@@ -188,7 +194,8 @@ export async function fetchAdminImportStats(startOfToday: Date): Promise<AdminIm
       `,
       [startOfToday],
     ),
-    readClient.query<{ completedAt: Date }>(
+    dbRead<{ completedAt: Date }>(
+      QUERIES.ADMIN_DASHBOARD_IMPORT_STATS,
       `
         SELECT "completedAt"
         FROM "ImportBatch"
@@ -197,7 +204,8 @@ export async function fetchAdminImportStats(startOfToday: Date): Promise<AdminIm
         LIMIT 1;
       `,
     ),
-    readClient.query<{ count: string }>(
+    dbRead<{ count: string }>(
+      QUERIES.ADMIN_DASHBOARD_IMPORT_STATS,
       `
         SELECT COUNT(*)::int AS count
         FROM "ImportBatch"
@@ -206,7 +214,8 @@ export async function fetchAdminImportStats(startOfToday: Date): Promise<AdminIm
       `,
       [startOfToday],
     ),
-    readClient.query<{ count: string }>(
+    dbRead<{ count: string }>(
+      QUERIES.ADMIN_DASHBOARD_IMPORT_STATS,
       `
         SELECT COUNT(*)::int AS count
         FROM "ImportBatch"
@@ -224,7 +233,7 @@ export async function fetchAdminImportStats(startOfToday: Date): Promise<AdminIm
 }
 
 export async function fetchAdminRecentOrders(limit = 10): Promise<AdminRecentOrder[]> {
-  const result = await readClient.query<{
+  const result = await dbRead<{
     id: string;
     orderNo: string;
     status: string;
@@ -233,6 +242,7 @@ export async function fetchAdminRecentOrders(limit = 10): Promise<AdminRecentOrd
     companyName: string | null;
     accountNo: string | null;
   }>(
+    QUERIES.ADMIN_DASHBOARD_RECENT_ORDERS,
     `
       SELECT
         o.id,
@@ -267,7 +277,8 @@ export async function fetchAdminRecentOrders(limit = 10): Promise<AdminRecentOrd
 }
 
 export async function fetchDealerAccount(accountNo: string): Promise<DealerAccountSummary | null> {
-  const result = await readClient.query<DealerAccountSummary>(
+  const result = await dbRead<DealerAccountSummary>(
+    QUERIES.DEALER_DASHBOARD_ACCOUNT,
     `
       SELECT
         id,
@@ -288,7 +299,8 @@ export async function fetchDealerAccount(accountNo: string): Promise<DealerAccou
 export async function fetchDealerTierAssignments(
   accountNo: string,
 ): Promise<DealerTierAssignment[]> {
-  const result = await readClient.query<DealerTierAssignment>(
+  const result = await dbRead<DealerTierAssignment>(
+    QUERIES.DEALER_DASHBOARD_TIERS,
     `
       SELECT "categoryCode", "netTier"
       FROM "DealerPriceTierAssignment"
@@ -301,7 +313,8 @@ export async function fetchDealerTierAssignments(
 }
 
 export async function fetchDealerBackorderCount(accountNo: string): Promise<number> {
-  const result = await readClient.query<{ count: string }>(
+  const result = await dbRead<{ count: string }>(
+    QUERIES.DEALER_DASHBOARD_BACKORDERS,
     `
       SELECT COUNT(*)::int AS count
       FROM "BackorderLine"
@@ -314,7 +327,8 @@ export async function fetchDealerBackorderCount(accountNo: string): Promise<numb
 }
 
 export async function fetchDealerOrdersInProgressCount(accountId: string): Promise<number> {
-  const result = await readClient.query<{ count: string }>(
+  const result = await dbRead<{ count: string }>(
+    QUERIES.DEALER_DASHBOARD_ORDERS_IN_PROGRESS,
     `
       SELECT COUNT(*)::int AS count
       FROM "OrderHeader"
@@ -331,13 +345,14 @@ export async function fetchDealerRecentOrders(
   accountId: string,
   limit = 10,
 ): Promise<DealerRecentOrder[]> {
-  const result = await readClient.query<{
+  const result = await dbRead<{
     id: string;
     orderNo: string;
     status: string;
     total: string;
     createdAt: Date;
   }>(
+    QUERIES.DEALER_DASHBOARD_RECENT_ORDERS,
     `
       SELECT id, "orderNo", status, total, "createdAt"
       FROM "OrderHeader"
@@ -361,7 +376,8 @@ export async function fetchDealerNews(limit = 5): Promise<{
   news: DealerNewsRow[];
   attachments: DealerNewsAttachmentRow[];
 }> {
-  const newsResult = await readClient.query<DealerNewsRow>(
+  const newsResult = await dbRead<DealerNewsRow>(
+    QUERIES.DEALER_DASHBOARD_NEWS,
     `
       SELECT
         id,
@@ -385,7 +401,8 @@ export async function fetchDealerNews(limit = 5): Promise<{
     return { news: [], attachments: [] };
   }
 
-  const attachmentsResult = await readClient.query<DealerNewsAttachmentRow>(
+  const attachmentsResult = await dbRead<DealerNewsAttachmentRow>(
+    QUERIES.DEALER_DASHBOARD_NEWS_ATTACHMENTS,
     `
       SELECT id, "articleId", "fileName", "mimeType"
       FROM "NewsAttachment"

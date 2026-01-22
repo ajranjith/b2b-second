@@ -7,6 +7,7 @@ import * as fs from "fs";
 import { ImportType, db, disconnectWorkerPrisma } from "./lib/prisma";
 import { SupersessionImportService } from "./services/SupersessionImportService";
 import { withJobEnvelope } from "./lib/withJobEnvelope";
+import { QUERIES } from "@repo/identity";
 
 interface ImportArgs {
   file: string;
@@ -96,7 +97,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
 
       console.log("All required columns present");
 
-      await db("DB-A-10-04", (p) =>
+      await db(QUERIES.IMPORT_BATCH_STATUS_UPDATE, (p) =>
         p.importBatch.update({
           where: { id: batch.id },
           data: { totalRows: rows.length },
@@ -113,7 +114,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
 
         const parsedRow = importService.parseRow(row, batch.id, rowNumber);
 
-        await db("DB-A-10-02", (p) =>
+        await db(QUERIES.IMPORT_STAGING_ROWS_INSERT, (p) =>
           p.stgSupersessionRow.create({
             data: {
               batchId: parsedRow.batchId,
@@ -173,14 +174,14 @@ const runImport = withJobEnvelope<ImportArgs, void>(
       });
 
       console.log("\nGenerating statistics...");
-      const totalSupersessions = await db("DB-A-10-10", (p) => p.supersession.count());
-      const totalResolved = await db("DB-A-10-10", (p) => p.supersessionResolved.count());
-      const avgDepth = await db("DB-A-10-10", (p) =>
+      const totalSupersessions = await db(QUERIES.IMPORT_SUPERSESSIONS_UPSERT, (p) => p.supersession.count());
+      const totalResolved = await db(QUERIES.IMPORT_SUPERSESSIONS_UPSERT, (p) => p.supersessionResolved.count());
+      const avgDepth = await db(QUERIES.IMPORT_SUPERSESSIONS_UPSERT, (p) =>
         p.supersessionResolved.aggregate({
           _avg: { depth: true },
         }),
       );
-      const maxDepth = await db("DB-A-10-10", (p) =>
+      const maxDepth = await db(QUERIES.IMPORT_SUPERSESSIONS_UPSERT, (p) =>
         p.supersessionResolved.aggregate({
           _max: { depth: true },
         }),
@@ -200,7 +201,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
       console.log(`Avg Chain Depth:          ${avgDepth._avg.depth?.toFixed(2) || 0}`);
       console.log(`Max Chain Depth:          ${maxDepth._max.depth || 0}`);
 
-      const finalBatch = await db("DB-A-10-04", (p) =>
+      const finalBatch = await db(QUERIES.IMPORT_BATCH_STATUS_UPDATE, (p) =>
         p.importBatch.findUnique({
           where: { id: batch.id },
         }),

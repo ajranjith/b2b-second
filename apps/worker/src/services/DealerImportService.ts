@@ -1,7 +1,7 @@
 import { ImportService, ValidationResult } from "./ImportService";
-import { db } from "../lib/prisma";
 import * as bcrypt from "bcrypt";
 import * as crypto from "crypto";
+import { listValidDealerRows, upsertDealerFromRow } from "../repos/import/dealerImportRepo";
 
 interface DealerAccountRow {
   "Account Number"?: string;
@@ -149,152 +149,26 @@ export class DealerImportService extends ImportService<DealerAccountRow> {
   }
 
   async processValidRows(batchId: string): Promise<number> {
-    const validRows = await db("DB-A-10-02", (p) =>
-      p.stgDealerAccountRow.findMany({
-        where: { batchId, isValid: true },
-      }),
-    );
+    const validRows = await listValidDealerRows(batchId);
 
     let processedCount = 0;
 
     for (const row of validRows) {
-      await db("DB-A-10-05", (p) =>
-        p.$transaction(async (tx) => {
-          const normalizedEmail = this.normalizeEmail(row.email) ?? row.email ?? "";
-          const dealerAccount = await tx.dealerAccount.upsert({
-            where: { accountNo: row.accountNo! },
-            update: {
-              companyName: row.companyName!,
-              status: row.status as any,
-              notes: row.shippingNotes,
-              shippingNotes: row.shippingNotes,
-              mainEmail: normalizedEmail || undefined,
-              defaultShippingMethod: row.defaultShippingMethod,
-              updatedAt: new Date(),
-            },
-            create: {
-              accountNo: row.accountNo!,
-              companyName: row.companyName!,
-              status: row.status as any,
-              notes: row.shippingNotes,
-              shippingNotes: row.shippingNotes,
-              mainEmail: normalizedEmail || undefined,
-              defaultShippingMethod: row.defaultShippingMethod,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          });
+      const normalizedEmail = this.normalizeEmail(row.email) ?? row.email ?? "";
+      const rawRow = row.rawRowJson as Record<string, unknown> | null;
+      const providedPassword = rawRow
+        ? this.trimString(this.getColumnValue(rawRow, "Temp password"))
+        : null;
+      const tempPassword = providedPassword || this.generateTempPassword();
+      const passwordHash = await bcrypt.hash(tempPassword, this.SALT_ROUNDS);
 
-          let appUser = await tx.appUser.findUnique({
-            where: { email: normalizedEmail },
-          });
+      const { dealerAccountId } = await upsertDealerFromRow({
+        row,
+        normalizedEmail,
+        passwordHash,
+      });
 
-          const rawRow = row.rawRowJson as Record<string, unknown> | null;
-          const providedPassword = rawRow
-            ? this.trimString(this.getColumnValue(rawRow, "Temp password"))
-            : null;
-          const tempPassword = providedPassword || this.generateTempPassword();
-          const passwordHash = await bcrypt.hash(tempPassword, this.SALT_ROUNDS);
-
-          if (!appUser) {
-            appUser = await tx.appUser.create({
-              data: {
-                email: normalizedEmail,
-                emailNormalized: normalizedEmail,
-                passwordHash,
-                role: "DEALER",
-                mustChangePassword: true,
-                isActive: row.status === "ACTIVE",
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              },
-            });
-          } else {
-            const existingDealerUser = await tx.dealerUser.findUnique({
-              where: { userId: appUser.id },
-            });
-
-            if (!existingDealerUser) {
-              await tx.appUser.update({
-                where: { id: appUser.id },
-                data: {
-                  passwordHash,
-                  mustChangePassword: true,
-                  role: "DEALER",
-                  updatedAt: new Date(),
-                },
-              });
-            }
-          }
-
-          await tx.dealerUser.upsert({
-            where: { userId: appUser.id },
-            update: {
-              dealerAccountId: dealerAccount.id,
-              firstName: row.firstName!,
-              lastName: row.lastName!,
-            },
-            create: {
-              userId: appUser.id,
-              dealerAccountId: dealerAccount.id,
-              firstName: row.firstName!,
-              lastName: row.lastName!,
-            },
-          });
-
-          const tierAssignments = [
-            { categoryCode: "gn", netTier: row.genuineTier! },
-            { categoryCode: "es", netTier: row.aftermarketEsTier! },
-            { categoryCode: "br", netTier: row.aftermarketBrTier! },
-          ];
-
-          for (const assignment of tierAssignments) {
-            await tx.dealerPriceTierAssignment.upsert({
-              where: {
-                accountNo_categoryCode: {
-                  accountNo: dealerAccount.accountNo,
-                  categoryCode: assignment.categoryCode,
-                },
-              },
-              update: {
-                netTier: assignment.netTier,
-                updatedAt: new Date(),
-              },
-              create: {
-                accountNo: dealerAccount.accountNo,
-                categoryCode: assignment.categoryCode,
-                netTier: assignment.netTier,
-                updatedAt: new Date(),
-              },
-            });
-            await tx.dealerDiscountTier.upsert({
-              where: {
-                dealerAccountId_discountCode: {
-                  dealerAccountId: dealerAccount.id,
-                  discountCode: assignment.categoryCode,
-                },
-              },
-              update: {
-                tierCode: assignment.netTier,
-                updatedAt: new Date(),
-              },
-              create: {
-                dealerAccountId: dealerAccount.id,
-                discountCode: assignment.categoryCode,
-                tierCode: assignment.netTier,
-                updatedAt: new Date(),
-              },
-            });
-          }
-
-          await this.logWelcomeEmail(
-            dealerAccount.id,
-            normalizedEmail,
-            row.accountNo!,
-            tempPassword,
-          );
-        }),
-      );
+      await this.logWelcomeEmail(dealerAccountId, normalizedEmail, row.accountNo!, tempPassword);
 
       processedCount++;
     }

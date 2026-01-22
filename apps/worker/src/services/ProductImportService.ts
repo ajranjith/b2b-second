@@ -1,5 +1,6 @@
 import { ImportService, ValidationResult } from "./ImportService";
-import { db, PartType } from "../lib/prisma";
+import { PartType } from "../lib/prisma";
+import { listValidProductRows, upsertProductFromRow } from "../repos/import/productImportRepo";
 
 /**
  * DGS Sample File Format:
@@ -157,14 +158,7 @@ export class ProductImportService extends ImportService<DGSProductRow> {
    * Process valid rows: UPSERT products, stock, and net prices
    */
   async processValidRows(batchId: string): Promise<number> {
-    const validRows = await db("DB-A-10-02", (p) =>
-      p.stgProductPriceRow.findMany({
-        where: {
-          batchId,
-          isValid: true,
-        },
-      }),
-    );
+    const validRows = await listValidProductRows(batchId);
 
     console.log(`\n📊 Processing ${validRows.length} valid products...`);
 
@@ -172,80 +166,7 @@ export class ProductImportService extends ImportService<DGSProductRow> {
 
     for (const row of validRows) {
       try {
-        await db("DB-A-10-08", (p) =>
-          p.$transaction(async (tx) => {
-          // 1. UPSERT Product
-          const product = await tx.product.upsert({
-            where: { productCode: row.productCode! },
-            update: {
-              supplier: row.supplier,
-              description: row.description!,
-              discountCode: row.discountCode,
-              partType: row.partType,
-              isActive: true,
-              updatedAt: new Date(),
-            },
-            create: {
-              productCode: row.productCode!,
-              supplier: row.supplier,
-              description: row.description!,
-              discountCode: row.discountCode,
-              partType: row.partType,
-              isActive: true,
-            },
-          });
-
-          // 2. UPSERT ProductStock
-          if (row.freeStock !== null) {
-            await tx.productStock.upsert({
-              where: { productId: product.id },
-              update: {
-                freeStock: row.freeStock,
-                lastImportBatchId: batchId,
-                updatedAt: new Date(),
-              },
-              create: {
-                productId: product.id,
-                freeStock: row.freeStock,
-                lastImportBatchId: batchId,
-              },
-            });
-          }
-
-          // 3. UPSERT ProductNetPrice (7 tiers: Net1..Net7)
-          const netPrices = [
-            { tierCode: "Net1", price: row.band1Price }, // Using band1Price for Net1 (schema mapping)
-            { tierCode: "Net2", price: row.band2Price },
-            { tierCode: "Net3", price: row.band3Price },
-            { tierCode: "Net4", price: row.band4Price },
-            { tierCode: "Net5", price: null }, // Not in StgProductPriceRow schema
-            { tierCode: "Net6", price: null },
-            { tierCode: "Net7", price: null },
-          ];
-
-          for (const netPrice of netPrices) {
-            if (netPrice.price !== null && netPrice.price !== undefined) {
-              await tx.productNetPrice.upsert({
-                where: {
-                  productId_tierCode: {
-                    productId: product.id,
-                    tierCode: netPrice.tierCode,
-                  },
-                },
-                update: {
-                  price: netPrice.price,
-                  updatedAt: new Date(),
-                },
-                create: {
-                  productId: product.id,
-                  tierCode: netPrice.tierCode,
-                  price: netPrice.price,
-                },
-              });
-            }
-          }
-        }),
-        );
+        await upsertProductFromRow(batchId, row);
 
         processedCount++;
 

@@ -6,7 +6,7 @@ This project enforces the Identity Passport contract end-to-end. Follow these st
 
 **IMPORTANT: Registries are TypeScript exports only. JSON registries are forbidden.**
 
-All registries (FEATURES, OPERATIONS, QUERIES, SERVICES, RULES, QUEUES, NOTIFICATIONS, CACHES) are defined as TypeScript `as const` arrays in `packages/identity/src/index.ts`.
+Registries are defined as TypeScript exports under `packages/identity/src/registries/` and re-exported in `packages/identity/src/index.ts`.
 
 ```typescript
 // Example: Adding a new feature
@@ -39,27 +39,38 @@ A CI guardrail (`scripts/check-no-json-registries.ts`) fails if any `*registry*.
 4. Ensure no direct `fetch`, `axios`, or Prisma calls escape the wrapper—use `bffClient` and DTO validation.
 5. Run `pnpm tsx scripts/check-registry-and-routes.ts` or `pnpm verify:identity` to confirm the new route is wired to the registry.
 
-## 2. Adding a new DB query
+## 2. Adding a new Prisma model
 
-1. Add the query to the `QUERIES` registry in `packages/identity/src/index.ts` (`DB-A-xx` or `DB-D-xx`).
-2. Use the scoped runner: `await db("DB-A-xx-yy").model.operation(...)`.
-3. Never import `@prisma/client` outside `apps/api/src/lib/prisma.ts` or `apps/worker/src/lib/withJobEnvelope.ts`.
-4. The `db()` wrapper enforces namespace and log tags, so every operation automatically emits `[DB_TRACE]`.
+1. Add the Prisma model to `packages/db/prisma/schema.prisma`.
+2. Assign it a stable Model ID in `packages/identity/src/registries/models.ts`:
+   - Use format `MDL-##-##` and match the Prisma model name exactly.
+3. Run `pnpm identity:verify` to ensure the registry matches the schema.
 
-## 3. Forbidden patterns
+## 3. Adding a new DB query
+
+1. Add the query to `packages/identity/src/registries/queries.ts` with:
+   - `id: "DB-A-xx-yy"` or `id: "DB-D-xx-yy"`
+   - `models: ["PrismaModelName", ...]` (all models touched by the query)
+2. Use the scoped runner:
+   - API (Prisma): `db(QUERIES.YOUR_QUERY_KEY).model.operation(...)`
+   - Worker (Prisma): `db(QUERIES.YOUR_QUERY_KEY, (p) => p.model.operation(...))`
+3. Never import `@prisma/client` outside `apps/api/src/lib/prisma.ts` or `apps/worker/src/lib/prisma.ts`.
+4. The `db()` wrapper enforces namespace + model access and emits `[DB_TRACE]` with `dbId` and `modelId`.
+
+## 4. Forbidden patterns
 
 - **No direct HTTP clients**: ban `axios`, `node-fetch`, and global `fetch` inside BFF routes and services—use the shared `bffClient`.
 - **No direct Prisma imports**: only `lib/prisma.ts` (API) and `lib/withJobEnvelope.ts` (workers) may import `@prisma/client`.
 - **No DB access from UI**: all UI apps must call `/api/bff/v1/*` endpoints and rely on the DTO contracts in `@repo/lib`.
 - **No bypass of withEnvelope**: every route must export HTTP handlers via the `withEnvelope` wrapper; the CI scan catches any wrapperless route.
 
-## 4. Troubleshooting
+## 5. Troubleshooting
 
 - **ENVELOPE_MISMATCH**: check that you registered both the feature and operation with the correct namespace, and that the route path matches the template. Misaligned namespaces (e.g. a Dealer route under `/admin`) trigger this error.
 - **BLOCKER: No DB-ID**: wrap your Prisma usage with `db("DB-A-xx-yy", fn)` or grab a proxied client through `db()` before invoking any `.find...` methods. The registry must contain the referenced `DB-*` ID.
 - **CRITICAL: No Identity Envelope**: you invoked Prisma outside a `withEnvelope` context. Wrap the handler or job with `withEnvelope`/`withJobEnvelope` before accessing the database.
 
-## 5. Command checklist
+## 6. Command checklist
 
 Run the following locally to verify enforcement (CI runs the same commands).
 
@@ -116,15 +127,17 @@ pnpm tsx scripts/check-no-json-registries.ts
 pnpm verify:identity
 ```
 
-## 6. What each stage validates
+## 7. What each stage validates
 
 **Stage 1 (Mandatory - always runs):**
 - Registry integrity (no duplicates, correct ID formats)
+- Prisma model registry matches schema (`MODELS` ↔ `schema.prisma`)
+- QUERIES entries have valid model mappings
 - Route handler coverage (all routes use withEnvelope)
 - TypeScript type checking
 - Identity unit tests
 - Disallowed imports (no axios, node-fetch, direct @prisma/client)
-- DB wrapper usage patterns (all Prisma calls via db(dbId))
+- DB wrapper usage patterns (all Prisma calls via db(QUERIES.KEY))
 - Prisma envelope guard (blocks direct access without Identity Envelope)
 
 **Stage 2 (Requires database):**

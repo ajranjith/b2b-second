@@ -1,4 +1,4 @@
-import { assertJobPayloadValid, buildJobPayload, newSessionId, newTraceId } from "@repo/identity";
+import { assertJobPayloadValid, buildJobPayload, newSessionId, newTraceId, QUERIES } from "@repo/identity";
 import { checkDatabaseReachable } from "../lib/dbPreflight";
 import { db, disconnectWorkerPrisma } from "../lib/prisma";
 import { getJobContext, withJobEnvelope } from "../lib/withJobEnvelope";
@@ -46,8 +46,8 @@ const happyJob = withJobEnvelope(
   },
   async ({ log }) => {
     log.info("Happy path job starting");
-    await db("DB-A-01-01", (p) => p.$queryRaw`SELECT 1`);
-    await db("DB-A-02-01", (p) => p.$queryRaw`SELECT 1`);
+    await db(QUERIES.ADMIN_DASHBOARD_DEALER_STATS, (p) => p.$queryRaw`SELECT 1`);
+    await db(QUERIES.ADMIN_DEALERS_LIST, (p) => p.$queryRaw`SELECT 1`);
     log.info("Happy path job completed");
     return { success: true };
   },
@@ -61,7 +61,7 @@ const mismatchJob = withJobEnvelope(
     operationId: "API-A-01-02",
   },
   async () => {
-    await db("DB-D-01-01", (p) => p.$queryRaw`SELECT 1`);
+    await db(QUERIES.DEALER_DASHBOARD_ACCOUNT, (p) => p.$queryRaw`SELECT 1`);
     return { success: true };
   },
 );
@@ -202,7 +202,7 @@ async function runWorkerDbProofs(): Promise<void> {
     results.push({
       jobId: "JOB-A-ENVELOPE-PROOF",
       succeeded: true,
-      message: "Happy path job executed with DB-A-01-01 and DB-A-02-01.",
+      message: `Happy path job executed with ${QUERIES.ADMIN_DASHBOARD_DEALER_STATS.id} and ${QUERIES.ADMIN_DEALERS_LIST.id}.`,
     });
   } catch (error) {
     results.push({

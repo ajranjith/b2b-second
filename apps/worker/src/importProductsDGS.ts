@@ -7,6 +7,7 @@ import * as fs from "fs";
 import { ImportType, ImportStatus, db, disconnectWorkerPrisma } from "./lib/prisma";
 import { withJobEnvelope } from "./lib/withJobEnvelope";
 import { ProductImportService } from "./services/ProductImportService";
+import { QUERIES } from "@repo/identity";
 
 interface ImportArgs {
   file: string;
@@ -101,7 +102,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
 
       console.log("All required columns present");
 
-      await db("DB-A-10-04", (p) =>
+      await db(QUERIES.IMPORT_BATCH_STATUS_UPDATE, (p) =>
         p.importBatch.update({
           where: { id: batch.id },
           data: { totalRows: rows.length },
@@ -119,7 +120,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
 
         const parsedRow = importService.parseRow(row, batch.id, rowNumber);
 
-        await db("DB-A-10-02", (p) =>
+        await db(QUERIES.IMPORT_STAGING_ROWS_INSERT, (p) =>
           p.stgProductPriceRow.create({
             data: {
               batchId: parsedRow.batchId,

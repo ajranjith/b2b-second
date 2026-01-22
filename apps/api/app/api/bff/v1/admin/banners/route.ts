@@ -56,7 +56,7 @@ const normalizePayload = (payload: Record<string, any>) => ({
 
 async function handleGET(request: NextRequest) {
   cacheTag("dealer-banners");
-  cacheLife("long");
+  cacheLife({ revalidate: 300, expire: 1800 });
 
   const banners = await getActiveBanners();
   const response = AdminBannersListResponseSchema.parse({ banners });

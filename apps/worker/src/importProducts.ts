@@ -6,6 +6,7 @@ import * as crypto from "crypto";
 import * as fs from "fs";
 import { ImportStatus, ImportType, PartType, db, disconnectWorkerPrisma } from "./lib/prisma";
 import { withJobEnvelope } from "./lib/withJobEnvelope";
+import { QUERIES } from "@repo/identity";
 
 interface ImportArgs {
   type: "GENUINE" | "AFTERMARKET" | "BRANDED";
@@ -148,7 +149,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
           ? PartType.BRANDED
           : PartType.AFTERMARKET;
 
-    const batch = await db("DB-A-10-01", (p) =>
+    const batch = await db(QUERIES.IMPORT_BATCH_CREATE, (p) =>
       p.importBatch.create({
         data: {
           importType,
@@ -171,7 +172,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
       const worksheet = workbook.Sheets[sheetName];
       const rows: ExcelRow[] = XLSX.utils.sheet_to_json(worksheet);
 
-      await db("DB-A-10-04", (p) =>
+      await db(QUERIES.IMPORT_BATCH_STATUS_UPDATE, (p) =>
         p.importBatch.update({
           where: { id: batch.id },
           data: { totalRows: rows.length },
@@ -187,7 +188,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
         const rowNumber = i + 2;
         const validation = validateRow(row);
 
-        await db("DB-A-10-02", (p) =>
+        await db(QUERIES.IMPORT_STAGING_ROWS_INSERT, (p) =>
           p.stgProductPriceRow.create({
             data: {
               batchId: batch.id,
@@ -216,7 +217,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
         if (validation.isValid) {
           validCount++;
 
-          await db("DB-A-10-08", (p) =>
+          await db(QUERIES.IMPORT_PRODUCTS_UPSERT, (p) =>
             p.$transaction(async (tx) => {
               const product = await tx.product.upsert({
                 where: { productCode: row["Product Code"]! },
@@ -308,7 +309,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
           );
         } else {
           invalidCount++;
-          await db("DB-A-10-03", (p) =>
+          await db(QUERIES.IMPORT_ERRORS_LOG, (p) =>
             p.importError.create({
               data: {
                 batchId: batch.id,
@@ -337,7 +338,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
         finalStatus = ImportStatus.SUCCEEDED_WITH_ERRORS;
       }
 
-      await db("DB-A-10-04", (p) =>
+      await db(QUERIES.IMPORT_BATCH_STATUS_UPDATE, (p) =>
         p.importBatch.update({
           where: { id: batch.id },
           data: {
@@ -352,7 +353,7 @@ const runImport = withJobEnvelope<ImportArgs, void>(
       console.log(`Import batch ${batch.id} completed with status: ${finalStatus}`);
     } catch (error) {
       console.error("\nImport failed:", error);
-      await db("DB-A-10-04", (p) =>
+      await db(QUERIES.IMPORT_BATCH_STATUS_UPDATE, (p) =>
         p.importBatch.update({
           where: { id: batch.id },
           data: { status: ImportStatus.FAILED, completedAt: new Date() },

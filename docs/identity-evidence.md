@@ -109,7 +109,7 @@ STAGE 2: DB-Backed Identity Proof
 PASS: Enforced DB-ID requirement failed as expected (No DB-ID).
 PASS: Namespace mismatch when using Dealer DB on Admin envelope failed as expected (ENVELOPE_MISMATCH).
 [DB_TRACE] {"ns":"A","sid":"SID-A-...","ref":"REF-A-01","api":"API-A-01-01",...}
-[STAGE 2] Concurrency proof ran in 184ms; DB IDs: DB-A-01-01, DB-A-02-01, DB-A-06-01
+[STAGE 2] Concurrency proof ran in 184ms; DB IDs: DB-A-01-01, DB-A-02-01, DB-A-10-03
 
 [STAGE 2] All checks passed.
 

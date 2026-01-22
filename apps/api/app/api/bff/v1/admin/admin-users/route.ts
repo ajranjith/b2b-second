@@ -11,7 +11,7 @@ import { withEnvelope } from "@/lib/withEnvelope";
 
 async function handleGET(request: NextRequest) {
   cacheTag("admin-users");
-  cacheLife("short");
+  cacheLife({ revalidate: 60, expire: 300 });
 
   const auth = requireRole(request, "ADMIN");
   if (!auth.ok) {

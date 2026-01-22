@@ -6,6 +6,7 @@ import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import { ImportType, ImportStatus, db, disconnectWorkerPrisma } from "./lib/prisma";
 import { withJobEnvelope } from "./lib/withJobEnvelope";
+import { QUERIES } from "@repo/identity";
 
 // Arg parsing
 const args = process.argv.slice(2);
@@ -47,7 +48,7 @@ const runImport = withJobEnvelope<{ filePath: string }, void>(
     const fileContent = fs.readFileSync(filePath, "utf-8");
     const fileHash = `hash_${Date.now()}`;
 
-    const batch = await db("DB-A-10-01", (p) =>
+    const batch = await db(QUERIES.IMPORT_BATCH_CREATE, (p) =>
       p.importBatch.create({
         data: {
           importType: ImportType.BACKORDERS,
@@ -67,7 +68,7 @@ const runImport = withJobEnvelope<{ filePath: string }, void>(
       }) as any[];
 
       console.log(`Found ${rows.length} rows`);
-      await db("DB-A-10-04", (p) =>
+      await db(QUERIES.IMPORT_BATCH_STATUS_UPDATE, (p) =>
         p.importBatch.update({
           where: { id: batch.id },
           data: { totalRows: rows.length },
@@ -108,7 +109,7 @@ const runImport = withJobEnvelope<{ filePath: string }, void>(
           validationErrors = validation.error.issues.map((issue) => issue.message).join(", ");
         }
 
-        await db("DB-A-10-02", (p) =>
+        await db(QUERIES.IMPORT_STAGING_ROWS_INSERT, (p) =>
           p.stgBackorderRow.create({
             data: {
               ...mapped,
@@ -122,7 +123,7 @@ const runImport = withJobEnvelope<{ filePath: string }, void>(
           validCount++;
         } else {
           invalidCount++;
-          await db("DB-A-10-03", (p) =>
+          await db(QUERIES.IMPORT_ERRORS_LOG, (p) =>
             p.importError.create({
               data: {
                 batchId: batch.id,
@@ -137,7 +138,7 @@ const runImport = withJobEnvelope<{ filePath: string }, void>(
 
       if (invalidCount > 0) {
         console.warn(`Batch failed due to ${invalidCount} invalid rows.`);
-        await db("DB-A-10-04", (p) =>
+        await db(QUERIES.IMPORT_BATCH_STATUS_UPDATE, (p) =>
           p.importBatch.update({
             where: { id: batch.id },
             data: {
@@ -153,7 +154,7 @@ const runImport = withJobEnvelope<{ filePath: string }, void>(
 
       console.log("All rows valid. Performing transactional swap of BackorderDataset.");
 
-      await db("DB-A-10-12", (p) =>
+      await db(QUERIES.IMPORT_BACKORDER_LINES_UPSERT, (p) =>
         p.$transaction(async (tx) => {
           await tx.backorderDataset.updateMany({
             where: { isActive: true },
@@ -205,7 +206,7 @@ const runImport = withJobEnvelope<{ filePath: string }, void>(
       console.log("Backorder import transaction completed successfully.");
     } catch (error) {
       console.error("Import failed", error);
-      await db("DB-A-10-04", (p) =>
+      await db(QUERIES.IMPORT_BATCH_STATUS_UPDATE, (p) =>
         p.importBatch.update({
           where: { id: batch.id },
           data: {

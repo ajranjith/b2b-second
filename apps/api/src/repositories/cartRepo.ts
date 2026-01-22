@@ -1,5 +1,6 @@
 import crypto from "crypto";
-import { readClient, writeClient } from "../db";
+import { dbRead, dbWrite } from "../db";
+import { QUERIES } from "@repo/identity";
 
 export type CartRow = {
   id: string;
@@ -29,7 +30,8 @@ export type CartItemSummary = {
 };
 
 export async function findCart(dealerAccountId: string, dealerUserId: string) {
-  const result = await readClient.query<CartRow>(
+  const result = await dbRead<CartRow>(
+    QUERIES.DEALER_CART_GET,
     `
       SELECT id, "dealerAccountId", "dealerUserId"
       FROM "Cart"
@@ -43,7 +45,8 @@ export async function findCart(dealerAccountId: string, dealerUserId: string) {
 }
 
 export async function createCart(dealerAccountId: string, dealerUserId: string) {
-  const result = await writeClient.query<CartRow>(
+  const result = await dbWrite<CartRow>(
+    QUERIES.DEALER_CART_CREATE,
     `
       INSERT INTO "Cart" (
         id,
@@ -60,7 +63,8 @@ export async function createCart(dealerAccountId: string, dealerUserId: string) 
 }
 
 export async function fetchCartItems(cartId: string) {
-  const result = await readClient.query<CartItemRow>(
+  const result = await dbRead<CartItemRow>(
+    QUERIES.DEALER_CART_ITEMS_LIST,
     `
       SELECT
         ci.id,
@@ -86,7 +90,8 @@ export async function fetchCartItems(cartId: string) {
 }
 
 export async function findCartItem(cartId: string, productId: string) {
-  const result = await readClient.query<CartItemSummary>(
+  const result = await dbRead<CartItemSummary>(
+    QUERIES.DEALER_CART_ITEM_GET,
     `
       SELECT id, "cartId", "productId", qty
       FROM "CartItem"
@@ -100,7 +105,8 @@ export async function findCartItem(cartId: string, productId: string) {
 }
 
 export async function insertCartItem(cartId: string, productId: string, qty: number) {
-  const result = await writeClient.query(
+  const result = await dbWrite(
+    QUERIES.DEALER_CART_ITEM_INSERT,
     `
       INSERT INTO "CartItem" (
         id,
@@ -118,7 +124,8 @@ export async function insertCartItem(cartId: string, productId: string, qty: num
 }
 
 export async function updateCartItemQuantity(itemId: string, qty: number) {
-  const result = await writeClient.query(
+  const result = await dbWrite(
+    QUERIES.DEALER_CART_ITEM_UPDATE,
     `
       UPDATE "CartItem"
       SET qty = $1
@@ -131,7 +138,8 @@ export async function updateCartItemQuantity(itemId: string, qty: number) {
 }
 
 export async function deleteCartItem(itemId: string) {
-  await writeClient.query(
+  await dbWrite(
+    QUERIES.DEALER_CART_ITEM_DELETE,
     `
       DELETE FROM "CartItem"
       WHERE id = $1;
@@ -141,7 +149,8 @@ export async function deleteCartItem(itemId: string) {
 }
 
 export async function clearCart(cartId: string) {
-  await writeClient.query(
+  await dbWrite(
+    QUERIES.DEALER_CART_CLEAR,
     `
       DELETE FROM "CartItem"
       WHERE "cartId" = $1;
