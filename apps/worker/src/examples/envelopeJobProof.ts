@@ -1,6 +1,7 @@
-import { checkDatabaseReachable } from "../../../../scripts/db-preflight";
 import { assertJobPayloadValid, buildJobPayload, newSessionId, newTraceId } from "@repo/identity";
-import { db, disconnectWorkerPrisma, getJobContext, withJobEnvelope } from "../lib/withJobEnvelope";
+import { checkDatabaseReachable } from "../lib/dbPreflight";
+import { db, disconnectWorkerPrisma } from "../lib/prisma";
+import { getJobContext, withJobEnvelope } from "../lib/withJobEnvelope";
 
 /**
  * Worker Identity Proof Script
@@ -45,8 +46,8 @@ const happyJob = withJobEnvelope(
   },
   async ({ log }) => {
     log.info("Happy path job starting");
-    await db("DB-A-01-01").$queryRaw`SELECT 1`;
-    await db("DB-A-02-01").$queryRaw`SELECT 1`;
+    await db("DB-A-01-01", (p) => p.$queryRaw`SELECT 1`);
+    await db("DB-A-02-01", (p) => p.$queryRaw`SELECT 1`);
     log.info("Happy path job completed");
     return { success: true };
   },
@@ -60,7 +61,7 @@ const mismatchJob = withJobEnvelope(
     operationId: "API-A-01-02",
   },
   async () => {
-    await db("DB-D-01-01").$queryRaw`SELECT 1`;
+    await db("DB-D-01-01", (p) => p.$queryRaw`SELECT 1`);
     return { success: true };
   },
 );

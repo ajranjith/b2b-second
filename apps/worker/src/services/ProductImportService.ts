@@ -1,5 +1,5 @@
-import { PrismaClient, ImportType, PartType } from "@prisma/client";
 import { ImportService, ValidationResult } from "./ImportService";
+import { db, PartType } from "../lib/prisma";
 
 /**
  * DGS Sample File Format:
@@ -46,9 +46,6 @@ interface ParsedProductRow {
 }
 
 export class ProductImportService extends ImportService<DGSProductRow> {
-  constructor(prisma: PrismaClient) {
-    super(prisma);
-  }
 
   /**
    * Validate required columns exist in the Excel file
@@ -160,13 +157,14 @@ export class ProductImportService extends ImportService<DGSProductRow> {
    * Process valid rows: UPSERT products, stock, and net prices
    */
   async processValidRows(batchId: string): Promise<number> {
-    // Get all valid rows from staging table
-    const validRows = await this.prisma.stgProductPriceRow.findMany({
-      where: {
-        batchId,
-        isValid: true,
-      },
-    });
+    const validRows = await db("DB-A-10-02", (p) =>
+      p.stgProductPriceRow.findMany({
+        where: {
+          batchId,
+          isValid: true,
+        },
+      }),
+    );
 
     console.log(`\n📊 Processing ${validRows.length} valid products...`);
 
@@ -174,7 +172,8 @@ export class ProductImportService extends ImportService<DGSProductRow> {
 
     for (const row of validRows) {
       try {
-        await this.prisma.$transaction(async (tx) => {
+        await db("DB-A-10-08", (p) =>
+          p.$transaction(async (tx) => {
           // 1. UPSERT Product
           const product = await tx.product.upsert({
             where: { productCode: row.productCode! },
@@ -245,7 +244,8 @@ export class ProductImportService extends ImportService<DGSProductRow> {
               });
             }
           }
-        });
+        }),
+        );
 
         processedCount++;
 

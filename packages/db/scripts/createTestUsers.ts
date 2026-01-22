@@ -120,3 +120,72 @@ async function createTestUsers() {
         console.log('💰 Creating Pricing Band Assignments...')
 
         // Genuine parts - Band 1 (best pricing)
+        await prisma.dealerDiscountTier.upsert({
+            where: {
+                dealerAccountId_discountCode: {
+                    dealerAccountId: dealerAccount.id,
+                    discountCode: 'gn',
+                },
+            },
+            update: {},
+            create: {
+                dealerAccountId: dealerAccount.id,
+                discountCode: 'gn',
+                tierCode: 'Net1',
+            },
+        })
+
+        // Aftermarket ES - Band 2
+        await prisma.dealerDiscountTier.upsert({
+            where: {
+                dealerAccountId_discountCode: {
+                    dealerAccountId: dealerAccount.id,
+                    discountCode: 'es',
+                },
+            },
+            update: {},
+            create: {
+                dealerAccountId: dealerAccount.id,
+                discountCode: 'es',
+                tierCode: 'Net2',
+            },
+        })
+
+        // Aftermarket BR - Band 3
+        await prisma.dealerDiscountTier.upsert({
+            where: {
+                dealerAccountId_discountCode: {
+                    dealerAccountId: dealerAccount.id,
+                    discountCode: 'br',
+                },
+            },
+            update: {},
+            create: {
+                dealerAccountId: dealerAccount.id,
+                discountCode: 'br',
+                tierCode: 'Net3',
+            },
+        })
+
+        console.log('✅ Pricing Bands assigned:')
+        console.log('   Genuine (gn): Net1')
+        console.log('   Aftermarket ES (es): Net2')
+        console.log('   Aftermarket BR (br): Net3\n')
+
+        console.log('=' .repeat(50))
+        console.log('🎉 Test users created successfully!')
+        console.log('=' .repeat(50))
+        console.log('\n📝 Login credentials:')
+        console.log('   Admin:  admin@hotbray.com / Admin123!')
+        console.log('   Dealer: dealer@test.com / Dealer123!\n')
+    } catch (error) {
+        console.error('Error creating test users:', error)
+        throw error
+    } finally {
+        await prisma.$disconnect()
+        await pool.end()
+    }
+}
+
+createTestUsers()
+    .catch(console.error)

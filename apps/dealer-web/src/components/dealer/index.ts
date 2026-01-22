@@ -33,7 +33,7 @@ export { OrderSummary } from "./OrderSummary";
 // Other Components
 export { NewsFeed } from "./NewsFeed";
 export { DashboardKPICard } from "./DashboardKPICard";
-export { MiniCartButton } from "./MiniCartButton";
+export { default as MiniCartButton } from "./MiniCartButton";
 
 // Types
 export type { ProductCardProps, CartSummaryProps, OrderCardProps } from "./types";

@@ -1,17 +1,11 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
 dotenv.config({ path: path.resolve(__dirname, "../../../packages/db/.env") });
-import { Pool } from "pg";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient, PartType, ImportType, ImportStatus } from "@prisma/client";
 import * as XLSX from "xlsx";
 import * as crypto from "crypto";
 import * as fs from "fs";
-
-const connectionString = process.env.DATABASE_URL!;
-const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter } as any);
+import { ImportStatus, ImportType, PartType, db, disconnectWorkerPrisma } from "./lib/prisma";
+import { withJobEnvelope } from "./lib/withJobEnvelope";
 
 interface ImportArgs {
   type: "GENUINE" | "AFTERMARKET" | "BRANDED";
@@ -22,7 +16,7 @@ interface ExcelRow {
   Supplier?: string;
   "Product Code"?: string;
   Description?: string;
-  "Full Description"?: string; // Synonym for Description
+  "Full Description"?: string;
   "Discount Code"?: string;
   "Cost Price"?: number;
   "Retail Price"?: number;
@@ -47,21 +41,21 @@ function parseArgs(): ImportArgs {
 
   if (typeIndex === -1 || fileIndex === -1) {
     console.error(
-      "❌ Usage: ts-node importProducts.ts --type GENUINE|AFTERMARKET|BRANDED --file <path-to-xlsx>",
+      "Usage: ts-node importProducts.ts --type GENUINE|AFTERMARKET|BRANDED --file <path-to-xlsx>",
     );
     process.exit(1);
   }
 
-  const type = args[typeIndex + 1] as "GENUINE" | "AFTERMARKET";
+  const type = args[typeIndex + 1] as "GENUINE" | "AFTERMARKET" | "BRANDED";
   const file = args[fileIndex + 1];
 
   if (!["GENUINE", "AFTERMARKET", "BRANDED"].includes(type)) {
-    console.error("❌ Type must be GENUINE, AFTERMARKET, or BRANDED");
+    console.error("Type must be GENUINE, AFTERMARKET, or BRANDED");
     process.exit(1);
   }
 
   if (!file) {
-    console.error("❌ File path is required");
+    console.error("File path is required");
     process.exit(1);
   }
 
@@ -75,21 +69,18 @@ function calculateFileHash(filePath: string): string {
   return hashSum.digest("hex");
 }
 
-function validateRow(row: ExcelRow, rowNumber: number): ValidationResult {
+function validateRow(row: ExcelRow): ValidationResult {
   const errors: string[] = [];
 
-  // Required fields
   if (!row["Product Code"] || row["Product Code"].trim() === "") {
     errors.push("Product Code is required");
   }
 
-  // Accept either Description or Full Description
   const description = row.Description || row["Full Description"];
   if (!description || description.trim() === "") {
     errors.push("Description is required");
   }
 
-  // Price validations
   const priceFields = [
     "Cost Price",
     "Retail Price",
@@ -108,307 +99,273 @@ function validateRow(row: ExcelRow, rowNumber: number): ValidationResult {
     }
   }
 
-  // Stock validation
   if (row["Free Stock"] !== undefined && row["Free Stock"] !== null && row["Free Stock"] < 0) {
     errors.push("Free Stock cannot be negative");
   }
 
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
+  return { isValid: errors.length === 0, errors };
 }
 
 function parseDecimal(value: any): number | null {
   if (value === undefined || value === null || value === "") return null;
   const num = typeof value === "number" ? value : parseFloat(value);
-  return isNaN(num) ? null : num;
+  return Number.isNaN(num) ? null : num;
 }
 
-function parseInt(value: any): number | null {
+function parseIntValue(value: any): number | null {
   if (value === undefined || value === null || value === "") return null;
   const num = typeof value === "number" ? value : Number(value);
-  return isNaN(num) ? null : Math.floor(num);
+  return Number.isNaN(num) ? null : Math.floor(num);
 }
 
-async function main() {
-  const { type, file } = parseArgs();
+const runImport = withJobEnvelope<ImportArgs, void>(
+  {
+    namespace: "A",
+    jobId: "JOB-A-IMPORT-PRODUCTS",
+    featureId: "REF-A-06",
+    operationId: "API-A-06-02",
+  },
+  async (_ctx, { type, file }) => {
+    console.log("Product Import Worker");
+    console.log(`Type: ${type}`);
+    console.log(`File: ${file}\n`);
 
-  console.log("📦 Product Import Worker");
-  console.log(`   Type: ${type}`);
-  console.log(`   File: ${file}\n`);
+    const filePath = path.isAbsolute(file) ? file : path.resolve(process.cwd(), file);
 
-  // Resolve file path
-  const filePath = path.isAbsolute(file) ? file : path.resolve(process.cwd(), file);
+    if (!fs.existsSync(filePath)) {
+      console.error(`File not found: ${filePath}`);
+      process.exit(1);
+    }
 
-  if (!fs.existsSync(filePath)) {
-    console.error(`❌ File not found: ${filePath}`);
-    process.exit(1);
-  }
+    const fileHash = calculateFileHash(filePath);
 
-  console.log(`📂 Reading file: ${filePath}`);
+    const importType =
+      type === "GENUINE" ? ImportType.PRODUCTS_GENUINE : ImportType.PRODUCTS_AFTERMARKET;
+    const partType =
+      type === "GENUINE"
+        ? PartType.GENUINE
+        : type === "BRANDED"
+          ? PartType.BRANDED
+          : PartType.AFTERMARKET;
 
-  // Calculate file hash
-  const fileHash = calculateFileHash(filePath);
-  console.log(`🔐 File hash: ${fileHash.substring(0, 16)}...`);
-
-  // Create import batch
-  console.log("\n📝 Creating import batch...");
-  const importType =
-    type === "GENUINE" ? ImportType.PRODUCTS_GENUINE : ImportType.PRODUCTS_AFTERMARKET;
-  const partType =
-    type === "GENUINE"
-      ? PartType.GENUINE
-      : type === "BRANDED"
-        ? PartType.BRANDED
-        : PartType.AFTERMARKET;
-
-  const batch = await prisma.importBatch.create({
-    data: {
-      importType,
-      fileName: path.basename(filePath),
-      fileHash,
-      filePath,
-      status: ImportStatus.PROCESSING,
-      totalRows: 0,
-      validRows: 0,
-      invalidRows: 0,
-    },
-  });
-
-  console.log(`✅ Import batch created: ${batch.id}`);
-
-  try {
-    // Read Excel file
-    console.log("\n📊 Parsing Excel file...");
-    const workbook = XLSX.readFile(filePath);
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const rows: ExcelRow[] = XLSX.utils.sheet_to_json(worksheet);
-
-    console.log(`   Found ${rows.length} rows\n`);
-
-    // Update total rows
-    await prisma.importBatch.update({
-      where: { id: batch.id },
-      data: { totalRows: rows.length },
-    });
-
-    let validCount = 0;
-    let invalidCount = 0;
-    let processedCount = 0;
-
-    // Process each row
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const rowNumber = i + 2; // Excel rows start at 1, header is row 1
-
-      // Validate row
-      const validation = validateRow(row, rowNumber);
-
-      // Insert into staging table
-      await prisma.stgProductPriceRow.create({
+    const batch = await db("DB-A-10-01", (p) =>
+      p.importBatch.create({
         data: {
-          batchId: batch.id,
-          rowNumber,
-          partType,
-          supplier: row.Supplier || null,
-          productCode: row["Product Code"] || null,
-          description: row.Description || row["Full Description"] || null,
-          discountCode: row["Discount Code"] || null,
-          costPrice: parseDecimal(row["Cost Price"]),
-          retailPrice: parseDecimal(row["Retail Price"]),
-          tradePrice: parseDecimal(row["Trade Price"]),
-          listPrice: parseDecimal(row["List Price"]),
-          band1Price: parseDecimal(row["Band 1"]),
-          band2Price: parseDecimal(row["Band 2"]),
-          band3Price: parseDecimal(row["Band 3"]),
-          band4Price: parseDecimal(row["Band 4"]),
-          freeStock: parseInt(row["Free Stock"]),
-          isValid: validation.isValid,
-          validationErrors: validation.errors.length > 0 ? validation.errors.join("; ") : null,
-          rawRowJson: row as any,
+          importType,
+          fileName: path.basename(filePath),
+          fileHash,
+          filePath,
+          status: ImportStatus.PROCESSING,
+          totalRows: 0,
+          validRows: 0,
+          invalidRows: 0,
         },
-      });
+      }),
+    );
 
-      if (validation.isValid) {
-        validCount++;
+    console.log(`Import batch created: ${batch.id}`);
 
-        // Upsert product data
-        await prisma.$transaction(async (tx) => {
-          // 1. Upsert Product
-          const product = await tx.product.upsert({
-            where: { productCode: row["Product Code"]! },
-            update: {
-              supplier: row.Supplier || null,
-              description: (row.Description || row["Full Description"])!,
-              discountCode: row["Discount Code"] || null,
+    try {
+      const workbook = XLSX.readFile(filePath);
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const rows: ExcelRow[] = XLSX.utils.sheet_to_json(worksheet);
+
+      await db("DB-A-10-04", (p) =>
+        p.importBatch.update({
+          where: { id: batch.id },
+          data: { totalRows: rows.length },
+        }),
+      );
+
+      let validCount = 0;
+      let invalidCount = 0;
+      let processedCount = 0;
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const rowNumber = i + 2;
+        const validation = validateRow(row);
+
+        await db("DB-A-10-02", (p) =>
+          p.stgProductPriceRow.create({
+            data: {
+              batchId: batch.id,
+              rowNumber,
               partType,
-              isActive: true,
-            },
-            create: {
-              productCode: row["Product Code"]!,
               supplier: row.Supplier || null,
-              description: (row.Description || row["Full Description"])!,
+              productCode: row["Product Code"] || null,
+              description: row.Description || row["Full Description"] || null,
               discountCode: row["Discount Code"] || null,
-              partType,
-              isActive: true,
-            },
-          });
-
-          // 2. Upsert ProductStock
-          if (row["Free Stock"] !== undefined && row["Free Stock"] !== null) {
-            await tx.productStock.upsert({
-              where: { productId: product.id },
-              update: {
-                freeStock: row["Free Stock"],
-                lastImportBatchId: batch.id,
-              },
-              create: {
-                productId: product.id,
-                freeStock: row["Free Stock"],
-                lastImportBatchId: batch.id,
-              },
-            });
-          }
-
-          // 3. Upsert ProductPriceReference
-          await tx.productPriceReference.upsert({
-            where: { productId: product.id },
-            update: {
               costPrice: parseDecimal(row["Cost Price"]),
               retailPrice: parseDecimal(row["Retail Price"]),
               tradePrice: parseDecimal(row["Trade Price"]),
               listPrice: parseDecimal(row["List Price"]),
-              minimumPrice: parseDecimal(row["Trade Price"])
-                ? parseDecimal(row["Trade Price"])! * 0.9
-                : null,
-              lastImportBatchId: batch.id,
+              band1Price: parseDecimal(row["Band 1"]),
+              band2Price: parseDecimal(row["Band 2"]),
+              band3Price: parseDecimal(row["Band 3"]),
+              band4Price: parseDecimal(row["Band 4"]),
+              freeStock: parseIntValue(row["Free Stock"]),
+              isValid: validation.isValid,
+              validationErrors: validation.errors.length > 0 ? validation.errors.join("; ") : null,
+              rawRowJson: row as any,
             },
-            create: {
-              productId: product.id,
-              costPrice: parseDecimal(row["Cost Price"]),
-              retailPrice: parseDecimal(row["Retail Price"]),
-              tradePrice: parseDecimal(row["Trade Price"]),
-              listPrice: parseDecimal(row["List Price"]),
-              minimumPrice: parseDecimal(row["Trade Price"])
-                ? parseDecimal(row["Trade Price"])! * 0.9
-                : null,
-              lastImportBatchId: batch.id,
-            },
-          });
+          }),
+        );
 
-          // 4. Upsert ProductPriceBand (4 bands)
-          const bands = [
-            { code: "1", price: row["Band 1"] },
-            { code: "2", price: row["Band 2"] },
-            { code: "3", price: row["Band 3"] },
-            { code: "4", price: row["Band 4"] },
-          ];
+        if (validation.isValid) {
+          validCount++;
 
-          for (const band of bands) {
-            if (band.price !== undefined && band.price !== null) {
-              await tx.productPriceBand.upsert({
-                where: {
-                  productId_bandCode: {
-                    productId: product.id,
-                    bandCode: band.code,
-                  },
-                },
+          await db("DB-A-10-08", (p) =>
+            p.$transaction(async (tx) => {
+              const product = await tx.product.upsert({
+                where: { productCode: row["Product Code"]! },
                 update: {
-                  price: band.price,
+                  supplier: row.Supplier || null,
+                  description: (row.Description || row["Full Description"])!,
+                  discountCode: row["Discount Code"] || null,
+                  partType,
+                  isActive: true,
+                },
+                create: {
+                  productCode: row["Product Code"]!,
+                  supplier: row.Supplier || null,
+                  description: (row.Description || row["Full Description"])!,
+                  discountCode: row["Discount Code"] || null,
+                  partType,
+                  isActive: true,
+                },
+              });
+
+              if (row["Free Stock"] !== undefined && row["Free Stock"] !== null) {
+                await tx.productStock.upsert({
+                  where: { productId: product.id },
+                  update: {
+                    freeStock: row["Free Stock"],
+                    lastImportBatchId: batch.id,
+                  },
+                  create: {
+                    productId: product.id,
+                    freeStock: row["Free Stock"],
+                    lastImportBatchId: batch.id,
+                  },
+                });
+              }
+
+              await tx.productPriceReference.upsert({
+                where: { productId: product.id },
+                update: {
+                  costPrice: parseDecimal(row["Cost Price"]),
+                  retailPrice: parseDecimal(row["Retail Price"]),
+                  tradePrice: parseDecimal(row["Trade Price"]),
+                  listPrice: parseDecimal(row["List Price"]),
+                  minimumPrice: parseDecimal(row["Trade Price"])
+                    ? parseDecimal(row["Trade Price"])! * 0.9
+                    : null,
+                  lastImportBatchId: batch.id,
                 },
                 create: {
                   productId: product.id,
-                  bandCode: band.code,
-                  price: band.price,
+                  costPrice: parseDecimal(row["Cost Price"]),
+                  retailPrice: parseDecimal(row["Retail Price"]),
+                  tradePrice: parseDecimal(row["Trade Price"]),
+                  listPrice: parseDecimal(row["List Price"]),
+                  minimumPrice: parseDecimal(row["Trade Price"])
+                    ? parseDecimal(row["Trade Price"])! * 0.9
+                    : null,
+                  lastImportBatchId: batch.id,
                 },
               });
-            }
-          }
-        });
+
+              const bands = [
+                { code: "1", price: row["Band 1"] },
+                { code: "2", price: row["Band 2"] },
+                { code: "3", price: row["Band 3"] },
+                { code: "4", price: row["Band 4"] },
+              ];
+
+              for (const band of bands) {
+                if (band.price !== undefined && band.price !== null) {
+                  await tx.productPriceBand.upsert({
+                    where: {
+                      productId_bandCode: {
+                        productId: product.id,
+                        bandCode: band.code,
+                      },
+                    },
+                    update: {
+                      price: band.price,
+                    },
+                    create: {
+                      productId: product.id,
+                      bandCode: band.code,
+                      price: band.price,
+                    },
+                  });
+                }
+              }
+            }),
+          );
+        } else {
+          invalidCount++;
+          await db("DB-A-10-03", (p) =>
+            p.importError.create({
+              data: {
+                batchId: batch.id,
+                rowNumber,
+                errorMessage: validation.errors.join("; "),
+                rawRowJson: row as any,
+              },
+            }),
+          );
+        }
+
+        processedCount++;
+        if (processedCount % 100 === 0) {
+          console.log(
+            `Processed ${processedCount}/${rows.length} rows (${validCount} valid, ${invalidCount} invalid)`,
+          );
+        }
+      }
+
+      let finalStatus: ImportStatus;
+      if (invalidCount === 0) {
+        finalStatus = ImportStatus.SUCCEEDED;
+      } else if (validCount === 0) {
+        finalStatus = ImportStatus.FAILED;
       } else {
-        invalidCount++;
+        finalStatus = ImportStatus.SUCCEEDED_WITH_ERRORS;
+      }
 
-        // Log validation errors
-        await prisma.importError.create({
+      await db("DB-A-10-04", (p) =>
+        p.importBatch.update({
+          where: { id: batch.id },
           data: {
-            batchId: batch.id,
-            rowNumber,
-            errorMessage: validation.errors.join("; "),
-            rawRowJson: row as any,
+            validRows: validCount,
+            invalidRows: invalidCount,
+            status: finalStatus,
+            completedAt: new Date(),
           },
-        });
-      }
+        }),
+      );
 
-      processedCount++;
-
-      // Log progress every 100 rows
-      if (processedCount % 100 === 0) {
-        console.log(
-          `   Processed ${processedCount}/${rows.length} rows (${validCount} valid, ${invalidCount} invalid)`,
-        );
-      }
+      console.log(`Import batch ${batch.id} completed with status: ${finalStatus}`);
+    } catch (error) {
+      console.error("\nImport failed:", error);
+      await db("DB-A-10-04", (p) =>
+        p.importBatch.update({
+          where: { id: batch.id },
+          data: { status: ImportStatus.FAILED, completedAt: new Date() },
+        }),
+      );
+      throw error;
     }
+  },
+);
 
-    console.log(`\n✅ Processing complete!`);
-    console.log(`   Total: ${rows.length}`);
-    console.log(`   Valid: ${validCount}`);
-    console.log(`   Invalid: ${invalidCount}`);
-
-    // Determine final status
-    let finalStatus: ImportStatus;
-    if (invalidCount === 0) {
-      finalStatus = ImportStatus.SUCCEEDED;
-    } else if (validCount === 0) {
-      finalStatus = ImportStatus.FAILED;
-    } else {
-      finalStatus = ImportStatus.SUCCEEDED_WITH_ERRORS;
-    }
-
-    // Update batch with final counts and status
-    await prisma.importBatch.update({
-      where: { id: batch.id },
-      data: {
-        validRows: validCount,
-        invalidRows: invalidCount,
-        status: finalStatus,
-        completedAt: new Date(),
-      },
-    });
-
-    console.log(`\n📊 Import batch ${batch.id} completed with status: ${finalStatus}`);
-
-    // Generate Validation Report
-    const report = {
-      total: validCount,
-      genuine: partType === PartType.GENUINE ? validCount : 0,
-      aftermarket: partType === PartType.AFTERMARKET ? validCount : 0,
-      branded: partType === PartType.BRANDED ? validCount : 0,
-    };
-
-    console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("📊 FINAL IMPORT REPORT");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log(`Total Products: ${report.total}`);
-    console.log(`- GENUINE:     ${report.genuine}`);
-    console.log(`- AFTERMARKET: ${report.aftermarket}`);
-    console.log(`- BRANDED:     ${report.branded}`);
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-  } catch (error) {
-    console.error("\n❌ Import failed:", error);
-
-    // Update batch status to FAILED
-    await prisma.importBatch.update({
-      where: { id: batch.id },
-      data: {
-        status: ImportStatus.FAILED,
-        completedAt: new Date(),
-      },
-    });
-
-    throw error;
-  }
+async function main() {
+  const args = parseArgs();
+  await runImport(args);
 }
 
 main()
@@ -417,6 +374,5 @@ main()
     process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect();
-    await pool.end();
+    await disconnectWorkerPrisma();
   });

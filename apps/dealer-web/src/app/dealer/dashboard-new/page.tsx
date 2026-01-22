@@ -9,10 +9,8 @@ import {
   RecentOrdersTableSkeleton,
 } from "@/components/dealer/RecentOrdersTable";
 import { NewsFeed, NewsFeedSkeleton } from "@/components/dealer/NewsFeed";
-import { AppShellSection } from "@/components/layouts";
 import { showToast } from "@/components/global";
 import type { DashboardKPI, Order, NewsItem } from "@repo/lib";
-import { dashboardAPI, orderAPI } from "@/services/dealer-api";
 import { mockDashboardKPI, mockOrders, mockNewsItems } from "@/mocks/dealer-data";
 
 /**
@@ -129,7 +127,7 @@ export default function DealerDashboardPage() {
       </div>
 
       {/* KPI Cards Row */}
-      <AppShellSection spacing="medium">
+      <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isLoading ? (
             <>
@@ -185,7 +183,7 @@ export default function DealerDashboardPage() {
             </>
           ) : null}
         </div>
-      </AppShellSection>
+      </div>
 
       {/* Recent Orders + News Feed */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

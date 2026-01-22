@@ -82,3 +82,21 @@ async function createDealersFromBackorders() {
                 })
 
                 // Create band assignments
+                console.log(`  ✅ Created dealer: ${accountNo}`)
+                created++
+            } catch (err) {
+                console.error(`  ❌ Error creating dealer ${accountNo}:`, err)
+            }
+        }
+
+        console.log(`\n✅ Done! Created: ${created}, Skipped: ${skipped}`)
+    } catch (error) {
+        console.error('Error:', error)
+        throw error
+    } finally {
+        await prisma.$disconnect()
+    }
+}
+
+createDealersFromBackorders()
+    .catch(console.error)

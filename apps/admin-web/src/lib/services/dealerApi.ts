@@ -80,6 +80,7 @@ const convertApiCartItem = (apiItem: any): CartItem => ({
     description: apiItem.product.description,
     partType: apiItem.product.partType,
     price: apiItem.yourPrice || 0,
+    band: apiItem.tierCode || apiItem.priceSource || "Tier pricing",
     stockStatus: "In Stock" as const,
     stockQty: apiItem.product.freeStock ?? 0,
     supersededBy: apiItem.supersededBy || undefined,

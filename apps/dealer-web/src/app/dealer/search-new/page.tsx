@@ -7,7 +7,6 @@ import { SearchFilters } from "@/components/dealer/SearchFilters";
 import { ProductResultsTable } from "@/components/dealer/ProductResultsTable";
 import { CartPreview } from "@/components/dealer/CartPreview";
 import { showToast, commonToasts } from "@/components/global";
-import { productAPI } from "@/services/dealer-api";
 import { mockProducts } from "@/mocks/dealer-data";
 import { Skeleton } from "@repo/ui";
 

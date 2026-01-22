@@ -153,7 +153,10 @@ export function SearchFilters({
           {/* Sort Dropdown */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-slate-600">Sort:</span>
-            <Select value={filters.sortBy || "relevance"} onValueChange={handleSortChange}>
+            <Select
+              value={filters.sortBy || "relevance"}
+              onValueChange={(value) => handleSortChange(value as SearchFiltersType["sortBy"])}
+            >
               <SelectTrigger className="w-[180px] h-8">
                 <SelectValue />
               </SelectTrigger>

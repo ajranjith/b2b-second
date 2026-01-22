@@ -5,7 +5,7 @@
     "build": "turbo run build",
     "dev": "pnpm dev:deps && pnpm db:migrate && pnpm db:seed && concurrently \"pnpm -C apps/api dev\" \"pnpm -C apps/web dev\"",
     "lint": "turbo run lint",
-    "typecheck": "tsc -b tsconfig.base.json --noEmit",
+    "typecheck": "pnpm -r --filter ./apps/admin-web --filter ./apps/dealer-web --filter ./apps/api --filter ./apps/worker --filter ./packages/** typecheck",
     "prettier:check": "prettier --check .",
     "test": "pnpm --filter @repo/identity test",
     "test:e2e": "pnpm --dir apps/web exec playwright test",

@@ -28,7 +28,10 @@
       "Bash(FORCE_DB_CHECKS=1 pnpm worker:identity-proof:*)",
       "Bash(DATABASE_URL=\"postgresql://postgres:postgres@localhost:5432/hotbray\" pnpm tsx:*)",
       "Bash(export DATABASE_URL=\"postgresql://postgres:postgres@localhost:5432/hotbray?schema=public\")",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(set:*)",
+      "Bash(pnpm tsc:*)"
     ]
   }
 }

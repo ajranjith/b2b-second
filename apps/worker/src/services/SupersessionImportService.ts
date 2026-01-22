@@ -1,5 +1,5 @@
-import { PrismaClient, ImportType } from "@prisma/client";
 import { ImportService, ValidationResult } from "./ImportService";
+import { db } from "../lib/prisma";
 
 interface SupersessionRow {
   FROMPARTNO?: string;
@@ -26,9 +26,6 @@ interface ChainResolutionResult {
 }
 
 export class SupersessionImportService extends ImportService<SupersessionRow> {
-  constructor(prisma: PrismaClient) {
-    super(prisma);
-  }
 
   validateColumns(headers: string[]): { valid: boolean; missing: string[] } {
     const required = ["FROMPARTNO", "TOPARTNO"];
@@ -78,30 +75,34 @@ export class SupersessionImportService extends ImportService<SupersessionRow> {
   }
 
   async processValidRows(batchId: string): Promise<number> {
-    const validRows = await this.prisma.stgSupersessionRow.findMany({
-      where: { batchId, isValid: true },
-    });
+    const validRows = await db("DB-A-10-02", (p) =>
+      p.stgSupersessionRow.findMany({
+        where: { batchId, isValid: true },
+      }),
+    );
 
     let processedCount = 0;
 
     console.log("   Step 1/2: Upserting raw supersession links...");
     for (const row of validRows) {
-      await this.prisma.supersession.upsert({
-        where: {
-          originalPartCode_replacementPartCode: {
+      await db("DB-A-10-10", (p) =>
+        p.supersession.upsert({
+          where: {
+            originalPartCode_replacementPartCode: {
+              originalPartCode: row.originalPartCode!,
+              replacementPartCode: row.replacementPartCode!,
+            },
+          },
+          update: {
+            note: row.note ?? null,
+          },
+          create: {
             originalPartCode: row.originalPartCode!,
             replacementPartCode: row.replacementPartCode!,
+            note: row.note ?? null,
           },
-        },
-        update: {
-          note: row.note ?? null,
-        },
-        create: {
-          originalPartCode: row.originalPartCode!,
-          replacementPartCode: row.replacementPartCode!,
-          note: row.note ?? null,
-        },
-      });
+        }),
+      );
 
       processedCount++;
       if (processedCount % 100 === 0) {
@@ -116,9 +117,11 @@ export class SupersessionImportService extends ImportService<SupersessionRow> {
   }
 
   private async resolveAllChains(batchId: string): Promise<void> {
-    const allSupersessions = await this.prisma.supersession.findMany({
-      orderBy: { originalPartCode: "asc" },
-    });
+    const allSupersessions = await db("DB-A-10-10", (p) =>
+      p.supersession.findMany({
+        orderBy: { originalPartCode: "asc" },
+      }),
+    );
 
     const supersessionMap = new Map<string, string>();
     for (const link of allSupersessions) {
@@ -128,7 +131,7 @@ export class SupersessionImportService extends ImportService<SupersessionRow> {
     const uniqueStartingParts = new Set(allSupersessions.map((s) => s.originalPartCode));
     console.log(`      Found ${uniqueStartingParts.size} unique starting parts`);
 
-    await this.prisma.supersessionResolved.deleteMany({});
+    await db("DB-A-10-10", (p) => p.supersessionResolved.deleteMany({}));
 
     let resolvedCount = 0;
     let loopCount = 0;
@@ -136,14 +139,16 @@ export class SupersessionImportService extends ImportService<SupersessionRow> {
     for (const startingPart of uniqueStartingParts) {
       const result = this.resolveChain(startingPart, supersessionMap);
 
-      await this.prisma.supersessionResolved.create({
-        data: {
-          originalPartNo: result.originalPartNo,
-          latestPartNo: result.latestPartNo,
-          depth: result.depth,
-          sourceBatchId: batchId,
-        },
-      });
+      await db("DB-A-10-10", (p) =>
+        p.supersessionResolved.create({
+          data: {
+            originalPartNo: result.originalPartNo,
+            latestPartNo: result.latestPartNo,
+            depth: result.depth,
+            sourceBatchId: batchId,
+          },
+        }),
+      );
 
       resolvedCount++;
       if (result.hadLoop) {
@@ -210,15 +215,17 @@ export class SupersessionImportService extends ImportService<SupersessionRow> {
     const normalized = this.normalizePartNumber(partNo);
     if (!normalized) return partNo;
 
-    const resolved = await this.prisma.supersessionResolved.findFirst({
-      where: { originalPartNo: normalized },
-    });
+    const resolved = await db("DB-A-10-10", (p) =>
+      p.supersessionResolved.findFirst({
+        where: { originalPartNo: normalized },
+      }),
+    );
 
     if (resolved) {
       return resolved.latestPartNo;
     }
 
-    const allSupersessions = await this.prisma.supersession.findMany();
+    const allSupersessions = await db("DB-A-10-10", (p) => p.supersession.findMany());
     const supersessionMap = new Map<string, string>();
     for (const link of allSupersessions) {
       supersessionMap.set(link.originalPartCode, link.replacementPartCode);

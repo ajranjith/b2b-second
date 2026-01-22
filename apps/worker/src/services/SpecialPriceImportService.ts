@@ -1,5 +1,5 @@
-import { PrismaClient, ImportType } from "@prisma/client";
 import { ImportService, ValidationResult } from "./ImportService";
+import { db } from "../lib/prisma";
 
 interface SpecialPriceRow {
   "Part No"?: string;
@@ -28,8 +28,8 @@ interface SpecialPriceImportOptions {
 export class SpecialPriceImportService extends ImportService<SpecialPriceRow> {
   private importOptions: SpecialPriceImportOptions;
 
-  constructor(prisma: PrismaClient, options: SpecialPriceImportOptions) {
-    super(prisma);
+  constructor(options: SpecialPriceImportOptions) {
+    super();
     this.importOptions = options;
     this.validateDateRange(options.startDate, options.endDate);
   }
@@ -89,9 +89,11 @@ export class SpecialPriceImportService extends ImportService<SpecialPriceRow> {
   }
 
   async processValidRows(batchId: string): Promise<number> {
-    const validRows = await this.prisma.stgSpecialPriceRow.findMany({
-      where: { batchId, isValid: true },
-    });
+    const validRows = await db("DB-A-10-02", (p) =>
+      p.stgSpecialPriceRow.findMany({
+        where: { batchId, isValid: true },
+      }),
+    );
 
     let processedCount = 0;
 
@@ -100,7 +102,8 @@ export class SpecialPriceImportService extends ImportService<SpecialPriceRow> {
     );
 
     for (const row of validRows) {
-      await this.prisma.$transaction(async (tx) => {
+      await db("DB-A-10-11", (p) =>
+        p.$transaction(async (tx) => {
         const product = await tx.product.findUnique({
           where: { productCode: row.productCode! },
         });
@@ -153,7 +156,8 @@ export class SpecialPriceImportService extends ImportService<SpecialPriceRow> {
             },
           });
         }
-      });
+      }),
+      );
 
       processedCount++;
       if (processedCount % 50 === 0) {
@@ -168,37 +172,43 @@ export class SpecialPriceImportService extends ImportService<SpecialPriceRow> {
     productCode: string,
     asOfDate: Date = new Date(),
   ): Promise<number | null> {
-    const specialPrice = await this.prisma.specialPrice.findFirst({
-      where: {
-        productCode,
-        startsAt: { lte: asOfDate },
-        endsAt: { gte: asOfDate },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const specialPrice = await db("DB-A-10-11", (p) =>
+      p.specialPrice.findFirst({
+        where: {
+          productCode,
+          startsAt: { lte: asOfDate },
+          endsAt: { gte: asOfDate },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+    );
 
     return specialPrice ? Number(specialPrice.discountPrice) : null;
   }
 
   async getActiveSpecialPrices(startDate: Date, endDate: Date): Promise<any[]> {
-    return await this.prisma.specialPrice.findMany({
-      where: {
-        OR: [
-          { startsAt: { gte: startDate, lte: endDate } },
-          { endsAt: { gte: startDate, lte: endDate } },
-          { startsAt: { lte: startDate }, endsAt: { gte: endDate } },
-        ],
-      },
-      orderBy: { startsAt: "asc" },
-    });
+    return await db("DB-A-10-11", (p) =>
+      p.specialPrice.findMany({
+        where: {
+          OR: [
+            { startsAt: { gte: startDate, lte: endDate } },
+            { endsAt: { gte: startDate, lte: endDate } },
+            { startsAt: { lte: startDate }, endsAt: { gte: endDate } },
+          ],
+        },
+        orderBy: { startsAt: "asc" },
+      }),
+    );
   }
 
   async cleanupExpiredPrices(beforeDate: Date = new Date()): Promise<number> {
-    const result = await this.prisma.specialPrice.deleteMany({
-      where: {
-        endsAt: { lt: beforeDate },
-      },
-    });
+    const result = await db("DB-A-10-11", (p) =>
+      p.specialPrice.deleteMany({
+        where: {
+          endsAt: { lt: beforeDate },
+        },
+      }),
+    );
 
     return result.count;
   }

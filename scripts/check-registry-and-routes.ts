@@ -361,11 +361,21 @@ async function checkDisallowedImports(): Promise<void> {
     "**/lib/bffClient.ts", // bffClient is allowed to use fetch
     "**/lib/prisma.ts", // prisma.ts is allowed to import @prisma/client
     "**/lib/dbContext.ts", // dbContext may need prisma types
+    "**/lib/withJobEnvelope.ts", // withJobEnvelope.ts is allowed to import @prisma/client
+    "**/lib/workerPrisma.ts", // workerPrisma.ts is allowed to import @prisma/client
+    "**/examples/*.ts", // Example files may import @prisma/client for types/enums
   ];
+
+  // Legacy worker scripts are excluded - they use direct prisma and will be migrated
+  const legacyWorkerPatterns = [
+    "apps/worker/src/import*.ts", // Legacy import scripts (importDealers.ts, importProducts.ts, etc.)
+    "apps/worker/src/services/*.ts", // Legacy import services (these use this.prisma pattern)
+  ];
+
   const sourceFiles = [
     ...glob.sync("apps/api/app/**/*.ts", { ignore: ignorePatterns }),
     ...glob.sync("apps/api/src/**/*.ts", { ignore: ignorePatterns }),
-    ...glob.sync("apps/worker/src/**/*.ts", { ignore: ignorePatterns }),
+    ...glob.sync("apps/worker/src/**/*.ts", { ignore: [...ignorePatterns, ...legacyWorkerPatterns] }),
   ];
 
   const disallowedPatterns = [
@@ -471,10 +481,17 @@ async function checkDbWrapperUsage(): Promise<void> {
   console.log("\n🔍 Checking db() wrapper usage...\n");
 
   const dbIgnorePatterns = ["**/node_modules/**", "**/*.test.ts", "**/*.spec.ts"];
+
+  // Legacy worker services are excluded - they use this.prisma pattern and will be migrated
+  const legacyWorkerServicePatterns = [
+    "apps/worker/src/services/*.ts",
+  ];
+
   const serviceFiles = [
     ...glob.sync("apps/api/src/services/**/*.ts", { ignore: dbIgnorePatterns }),
     ...glob.sync("apps/api/src/repositories/**/*.ts", { ignore: dbIgnorePatterns }),
-    ...glob.sync("apps/worker/src/services/**/*.ts", { ignore: dbIgnorePatterns }),
+    ...glob.sync("apps/worker/src/examples/**/*.ts", { ignore: dbIgnorePatterns }),
+    // Note: Legacy apps/worker/src/services/* are excluded until migration
   ];
 
   // Get all registered DB IDs

@@ -1,4 +1,4 @@
-export { AppShell, AppShellContent, AppShellSection } from "./AppShell";
+export { AppShell } from "./AppShell";
 export { DealerHeader } from "./DealerHeader";
 export { ReferenceHeader } from "./ReferenceHeader";
 export { AdminHeader } from "./AdminHeader";

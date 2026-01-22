@@ -1,5 +1,5 @@
-import { PrismaClient, ImportType } from "@prisma/client";
 import { ImportService, ValidationResult } from "./ImportService";
+import { db } from "../lib/prisma";
 import * as bcrypt from "bcrypt";
 import * as crypto from "crypto";
 
@@ -41,10 +41,6 @@ export class DealerImportService extends ImportService<DealerAccountRow> {
   private readonly VALID_TIERS = ["Net1", "Net2", "Net3", "Net4", "Net5", "Net6", "Net7"];
   private readonly VALID_STATUSES = ["ACTIVE", "INACTIVE", "SUSPENDED"];
   private readonly SALT_ROUNDS = 10;
-
-  constructor(prisma: PrismaClient) {
-    super(prisma);
-  }
 
   validateColumns(headers: string[]): { valid: boolean; missing: string[] } {
     const required = [
@@ -153,154 +149,152 @@ export class DealerImportService extends ImportService<DealerAccountRow> {
   }
 
   async processValidRows(batchId: string): Promise<number> {
-    const validRows = await this.prisma.stgDealerAccountRow.findMany({
-      where: { batchId, isValid: true },
-    });
+    const validRows = await db("DB-A-10-02", (p) =>
+      p.stgDealerAccountRow.findMany({
+        where: { batchId, isValid: true },
+      }),
+    );
 
     let processedCount = 0;
 
     for (const row of validRows) {
-      await this.prisma.$transaction(async (tx) => {
-        // 1. UPSERT DealerAccount
-        const normalizedEmail = this.normalizeEmail(row.email) ?? row.email ?? "";
-        const dealerAccount = await tx.dealerAccount.upsert({
-          where: { accountNo: row.accountNo! },
-          update: {
-            companyName: row.companyName!,
-            status: row.status as any,
-            notes: row.shippingNotes,
-            shippingNotes: row.shippingNotes,
-            mainEmail: normalizedEmail || undefined,
-            defaultShippingMethod: row.defaultShippingMethod,
-            updatedAt: new Date(),
-          },
-          create: {
-            accountNo: row.accountNo!,
-            companyName: row.companyName!,
-            status: row.status as any,
-            notes: row.shippingNotes,
-            shippingNotes: row.shippingNotes,
-            mainEmail: normalizedEmail || undefined,
-            defaultShippingMethod: row.defaultShippingMethod,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-        });
-
-        // 2. UPSERT AppUser (by email)
-        let appUser = await tx.appUser.findUnique({
-          where: { email: normalizedEmail },
-        });
-
-        // Generate or use provided temp password
-        const rawRow = row.rawRowJson as Record<string, unknown> | null;
-        const providedPassword = rawRow
-          ? this.trimString(this.getColumnValue(rawRow, "Temp password"))
-          : null;
-        const tempPassword = providedPassword || this.generateTempPassword();
-        const passwordHash = await bcrypt.hash(tempPassword, this.SALT_ROUNDS);
-
-        if (!appUser) {
-          // Create new AppUser
-          appUser = await tx.appUser.create({
-            data: {
-              email: normalizedEmail,
-              emailNormalized: normalizedEmail,
-              passwordHash,
-              role: "DEALER",
-              mustChangePassword: true,
-              isActive: row.status === "ACTIVE",
+      await db("DB-A-10-05", (p) =>
+        p.$transaction(async (tx) => {
+          const normalizedEmail = this.normalizeEmail(row.email) ?? row.email ?? "";
+          const dealerAccount = await tx.dealerAccount.upsert({
+            where: { accountNo: row.accountNo! },
+            update: {
+              companyName: row.companyName!,
+              status: row.status as any,
+              notes: row.shippingNotes,
+              shippingNotes: row.shippingNotes,
+              mainEmail: normalizedEmail || undefined,
+              defaultShippingMethod: row.defaultShippingMethod,
+              updatedAt: new Date(),
+            },
+            create: {
+              accountNo: row.accountNo!,
+              companyName: row.companyName!,
+              status: row.status as any,
+              notes: row.shippingNotes,
+              shippingNotes: row.shippingNotes,
+              mainEmail: normalizedEmail || undefined,
+              defaultShippingMethod: row.defaultShippingMethod,
               createdAt: new Date(),
               updatedAt: new Date(),
             },
           });
-        } else {
-          // Update existing AppUser (only if creating new dealer link)
-          const existingDealerUser = await tx.dealerUser.findUnique({
-            where: { userId: appUser.id },
+
+          let appUser = await tx.appUser.findUnique({
+            where: { email: normalizedEmail },
           });
 
-          if (!existingDealerUser) {
-            // Update password for new dealer assignment
-            await tx.appUser.update({
-              where: { id: appUser.id },
+          const rawRow = row.rawRowJson as Record<string, unknown> | null;
+          const providedPassword = rawRow
+            ? this.trimString(this.getColumnValue(rawRow, "Temp password"))
+            : null;
+          const tempPassword = providedPassword || this.generateTempPassword();
+          const passwordHash = await bcrypt.hash(tempPassword, this.SALT_ROUNDS);
+
+          if (!appUser) {
+            appUser = await tx.appUser.create({
               data: {
+                email: normalizedEmail,
+                emailNormalized: normalizedEmail,
                 passwordHash,
-                mustChangePassword: true,
                 role: "DEALER",
+                mustChangePassword: true,
+                isActive: row.status === "ACTIVE",
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              },
+            });
+          } else {
+            const existingDealerUser = await tx.dealerUser.findUnique({
+              where: { userId: appUser.id },
+            });
+
+            if (!existingDealerUser) {
+              await tx.appUser.update({
+                where: { id: appUser.id },
+                data: {
+                  passwordHash,
+                  mustChangePassword: true,
+                  role: "DEALER",
+                  updatedAt: new Date(),
+                },
+              });
+            }
+          }
+
+          await tx.dealerUser.upsert({
+            where: { userId: appUser.id },
+            update: {
+              dealerAccountId: dealerAccount.id,
+              firstName: row.firstName!,
+              lastName: row.lastName!,
+            },
+            create: {
+              userId: appUser.id,
+              dealerAccountId: dealerAccount.id,
+              firstName: row.firstName!,
+              lastName: row.lastName!,
+            },
+          });
+
+          const tierAssignments = [
+            { categoryCode: "gn", netTier: row.genuineTier! },
+            { categoryCode: "es", netTier: row.aftermarketEsTier! },
+            { categoryCode: "br", netTier: row.aftermarketBrTier! },
+          ];
+
+          for (const assignment of tierAssignments) {
+            await tx.dealerPriceTierAssignment.upsert({
+              where: {
+                accountNo_categoryCode: {
+                  accountNo: dealerAccount.accountNo,
+                  categoryCode: assignment.categoryCode,
+                },
+              },
+              update: {
+                netTier: assignment.netTier,
+                updatedAt: new Date(),
+              },
+              create: {
+                accountNo: dealerAccount.accountNo,
+                categoryCode: assignment.categoryCode,
+                netTier: assignment.netTier,
+                updatedAt: new Date(),
+              },
+            });
+            await tx.dealerDiscountTier.upsert({
+              where: {
+                dealerAccountId_discountCode: {
+                  dealerAccountId: dealerAccount.id,
+                  discountCode: assignment.categoryCode,
+                },
+              },
+              update: {
+                tierCode: assignment.netTier,
+                updatedAt: new Date(),
+              },
+              create: {
+                dealerAccountId: dealerAccount.id,
+                discountCode: assignment.categoryCode,
+                tierCode: assignment.netTier,
                 updatedAt: new Date(),
               },
             });
           }
-        }
 
-        // 3. UPSERT DealerUser (link AppUser to DealerAccount)
-        await tx.dealerUser.upsert({
-          where: { userId: appUser.id },
-          update: {
-            dealerAccountId: dealerAccount.id,
-            firstName: row.firstName!,
-            lastName: row.lastName!,
-          },
-          create: {
-            userId: appUser.id,
-            dealerAccountId: dealerAccount.id,
-            firstName: row.firstName!,
-            lastName: row.lastName!,
-          },
-        });
-
-        // 4. UPSERT tier assignments (gn/es/br)
-        const tierAssignments = [
-          { categoryCode: "gn", netTier: row.genuineTier! },
-          { categoryCode: "es", netTier: row.aftermarketEsTier! },
-          { categoryCode: "br", netTier: row.aftermarketBrTier! },
-        ];
-
-        for (const assignment of tierAssignments) {
-          await tx.dealerPriceTierAssignment.upsert({
-            where: {
-              accountNo_categoryCode: {
-                accountNo: dealerAccount.accountNo,
-                categoryCode: assignment.categoryCode,
-              },
-            },
-            update: {
-              netTier: assignment.netTier,
-              updatedAt: new Date(),
-            },
-            create: {
-              accountNo: dealerAccount.accountNo,
-              categoryCode: assignment.categoryCode,
-              netTier: assignment.netTier,
-              updatedAt: new Date(),
-            },
-          });
-          await tx.dealerDiscountTier.upsert({
-            where: {
-              dealerAccountId_discountCode: {
-                dealerAccountId: dealerAccount.id,
-                discountCode: assignment.categoryCode,
-              },
-            },
-            update: {
-              tierCode: assignment.netTier,
-              updatedAt: new Date(),
-            },
-            create: {
-              dealerAccountId: dealerAccount.id,
-              discountCode: assignment.categoryCode,
-              tierCode: assignment.netTier,
-              updatedAt: new Date(),
-            },
-          });
-        }
-
-        // 5. Trigger welcome email (store temp password for email sending)
-        // In production, this would send an actual email
-        // For now, we'll log it or store in a queue table
-        await this.logWelcomeEmail(dealerAccount.id, normalizedEmail, row.accountNo!, tempPassword);
-      });
+          await this.logWelcomeEmail(
+            dealerAccount.id,
+            normalizedEmail,
+            row.accountNo!,
+            tempPassword,
+          );
+        }),
+      );
 
       processedCount++;
     }
