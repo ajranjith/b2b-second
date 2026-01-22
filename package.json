@@ -1,29 +1,47 @@
 {
-    "name": "hotbray-portal-phase1",
-    "private": true,
-    "scripts": {
-        "build": "turbo run build",
-        "dev": "pnpm dev:deps && pnpm db:migrate && pnpm db:seed && concurrently \"pnpm -C apps/api dev\" \"pnpm -C apps/web dev\"",
-        "lint": "turbo run lint",
-        "dev:deps": "docker compose -f infra/docker/docker-compose.yml up -d",
-        "dev:deps:down": "docker compose -f infra/docker/docker-compose.yml down",
-        "db:migrate": "pnpm --filter db prisma migrate dev",
-        "db:seed": "pnpm --filter db prisma db seed",
-        "imports:all": "pnpm --filter worker run import:genuine && pnpm --filter worker run import:aftermarket && pnpm --filter worker run import:backorders",
-        "format": "prettier -w ."
-    },
-    "devDependencies": {
-        "@types/node": "^20.0.0",
-        "concurrently": "^9.2.1",
-        "eslint": "^8.57.1",
-        "eslint-config-next": "14.2.35",
-        "prettier": "^3.7.4",
-        "turbo": "^2.0.0",
-        "typescript": "^5.0.0"
-    },
-    "packageManager": "pnpm@9.0.0",
-    "dependencies": {
-        "next": "14.2.35",
-        "xlsx": "^0.18.5"
-    }
+  "name": "hotbray-portal-phase1",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "pnpm dev:deps && pnpm db:migrate && pnpm db:seed && concurrently \"pnpm -C apps/api dev\" \"pnpm -C apps/web dev\"",
+    "lint": "turbo run lint",
+    "typecheck": "tsc -b tsconfig.base.json --noEmit",
+    "prettier:check": "prettier --check .",
+    "test": "pnpm --filter @repo/identity test",
+    "test:e2e": "pnpm --dir apps/web exec playwright test",
+    "identity:verify": "pnpm --filter api exec tsx src/scripts/identity-enforcement.ts",
+    "worker:identity-proof": "pnpm --filter worker run identity:proof",
+    "verify:identity": "pnpm identity:verify && pnpm worker:identity-proof",
+    "dev:deps": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "dev:deps:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "dev:reset-db": "pnpm --filter db exec tsx scripts/dev-reset-db.ts",
+    "dev:seed-admin-dealer": "pnpm --filter db exec tsx scripts/dev-seed-admin-dealer.ts",
+    "db:migrate": "pnpm --filter db prisma migrate dev",
+    "db:seed": "pnpm --filter db prisma db seed",
+    "import:dealers": "pnpm --filter worker run import:dealers",
+    "import:products": "pnpm --filter worker run import:products",
+    "import:supersession": "pnpm --filter worker run import:supersession",
+    "import:specialprices": "pnpm --filter worker run import:specialprices",
+    "imports:all": "pnpm --filter worker run import:genuine && pnpm --filter worker run import:aftermarket && pnpm --filter worker run import:backorders",
+    "format": "prettier -w ."
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "16.1.3",
+    "playwright": "^1.57.0",
+    "prettier": "^3.7.4",
+    "turbo": "^2.0.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.0.0",
+    "pg": "^8.16.3",
+    "@types/pg": "^8.16.0"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "dependencies": {
+    "ulid": "^3.0.2",
+    "next": "16.1.3",
+    "xlsx": "^0.18.5"
+  }
 }

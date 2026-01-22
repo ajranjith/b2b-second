@@ -15,6 +15,10 @@ export async function GET(request: NextRequest) {
     return fail({ message: auth.message }, auth.status);
   }
 
-  const data = await listImports();
+  const url = new URL(request.url);
+  const status = url.searchParams.get("status") ?? undefined;
+  const importType = url.searchParams.get("importType") ?? undefined;
+
+  const data = await listImports({ status, importType });
   return ok(data);
 }

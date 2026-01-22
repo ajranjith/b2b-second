@@ -33,9 +33,17 @@ const mapBatch = (batch: ImportBatchRecord) =>
     uploadedBy: batch.uploadedByEmail ? { email: batch.uploadedByEmail } : null,
   });
 
-export async function listImports(): Promise<AdminImportsResponseDTO> {
+export async function listImports(options?: {
+  status?: string;
+  importType?: string;
+}): Promise<AdminImportsResponseDTO> {
   const rows = await fetchImportBatches();
-  const batches = rows.map(mapBatch);
+  const filtered = rows.filter((batch) => {
+    const matchesStatus = options?.status ? batch.status === options.status : true;
+    const matchesType = options?.importType ? batch.importType === options.importType : true;
+    return matchesStatus && matchesType;
+  });
+  const batches = filtered.map(mapBatch);
   return AdminImportsResponseSchema.parse({ batches });
 }
 
