@@ -4,11 +4,16 @@ import crypto from "crypto";
 
 import { cacheLife, cacheTag, revalidateTag } from "next/cache";
 
-import { AdminBannerResponseSchema, AdminBannerUpsertSchema, AdminBannersListResponseSchema } from "@repo/lib";
+import {
+  AdminBannerResponseSchema,
+  AdminBannerUpsertSchema,
+  AdminBannersListResponseSchema,
+} from "@repo/lib";
 
 import { requireRole } from "@/auth/requireRole";
 import { fail, ok } from "@/lib/response";
 import { createBannerRecord, getActiveBanners } from "@/services/bannerService";
+import { withEnvelope } from "@/lib/withEnvelope";
 
 const toNullableString = (value: unknown) => {
   if (value === null || value === undefined) {
@@ -49,7 +54,7 @@ const normalizePayload = (payload: Record<string, any>) => ({
   isActive: toOptionalBoolean(payload.isActive),
 });
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   cacheTag("dealer-banners");
   cacheLife("long");
 
@@ -58,7 +63,7 @@ export async function GET(request: NextRequest) {
   return ok(response);
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const auth = requireRole(request, "ADMIN");
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);
@@ -104,3 +109,6 @@ export async function POST(request: NextRequest) {
   const response = AdminBannerResponseSchema.parse({ banner });
   return ok(response);
 }
+
+export const GET = withEnvelope({ namespace: "A" }, handleGET);
+export const POST = withEnvelope({ namespace: "A" }, handlePOST);

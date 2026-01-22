@@ -14,15 +14,17 @@ Updated the checkout page to use the correct cart context that's available in th
 ### Changes Made:
 
 1. **Changed import:**
+
    ```tsx
    // Before
-   import { useDealerCart } from '@/context/DealerCartContext';
+   import { useDealerCart } from "@/context/DealerCartContext";
 
    // After
-   import { useCart } from '@/hooks/useCart';
+   import { useCart } from "@/hooks/useCart";
    ```
 
 2. **Updated hook usage:**
+
    ```tsx
    // Before
    const { items, subtotal } = useDealerCart();
@@ -33,28 +35,33 @@ Updated the checkout page to use the correct cart context that's available in th
 
 3. **Fixed cart item structure:**
    The `useCart` hook returns items with a different structure:
+
    ```tsx
    // Before
-   item.part.sku
-   item.part.name
-   item.part.price
+   item.part.sku;
+   item.part.name;
+   item.part.price;
 
    // After
-   item.product.productCode
-   item.product.description
-   item.yourPrice
+   item.product.productCode;
+   item.product.description;
+   item.yourPrice;
    ```
 
 ### Full Item Mapping:
 
 ```tsx
-{items.map((item) => (
-  <div key={item.id}>
-    <div>{item.product.productCode}</div>
-    <div>{item.product.description}</div>
-    <div>x{item.qty} • GBP {((item.yourPrice || 0) * item.qty).toFixed(2)}</div>
-  </div>
-))}
+{
+  items.map((item) => (
+    <div key={item.id}>
+      <div>{item.product.productCode}</div>
+      <div>{item.product.description}</div>
+      <div>
+        x{item.qty} • GBP {((item.yourPrice || 0) * item.qty).toFixed(2)}
+      </div>
+    </div>
+  ));
+}
 ```
 
 ## Cart Item Structure
@@ -85,6 +92,7 @@ interface CartItem {
 Navigate to http://localhost:3000/dealer/checkout to verify the fix.
 
 The 3-step checkout flow should now work:
+
 1. **Step 1:** Dispatch method selection
 2. **Step 2:** Review order with cart items
 3. **Step 3:** Order confirmation

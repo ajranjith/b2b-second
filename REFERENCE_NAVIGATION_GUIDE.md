@@ -10,6 +10,7 @@
 ### **Reference Video Style Header (2-Row + Utility Strip)**
 
 #### ✅ **Row 1: Utility Strip** (32px height)
+
 - **Left:** Support links (Support, Live Chat, Call Support with phone icon)
 - **Center:** Promo text ("Dealer Portal Updates - Check our latest stock additions")
 - **Right:** Shipping message ("Free shipping on orders over £500")
@@ -17,6 +18,7 @@
 - **Text:** Small (12px), subtle slate-600 color
 
 #### ✅ **Row 2: Main Header** (72px height)
+
 - **Left:** Logo (HB badge + "Dealer Portal" text)
 - **Center:** Prominent search bar
   - Full-width input with "Search Products" placeholder
@@ -28,6 +30,7 @@
   - Phone number display
 
 #### ✅ **Row 3: Secondary Nav** (56px height)
+
 - **Left:** BLACK pill button ("All Categories")
   - Includes: Menu icon + label + dropdown chevron
   - Click toggles side menu (mobile) or dropdown (desktop)
@@ -46,6 +49,7 @@
   - User icon with dropdown menu
 
 ### ✅ **Announcement Ticker**
+
 - Positioned BELOW all header rows
 - Sticky at top + header heights
 - 40px height
@@ -53,6 +57,7 @@
 - Click opens message drawer
 
 ### ✅ **Global Loading State**
+
 - **LoadingProvider** component wrapping entire app
 - **Top progress bar** (blue gradient, 1px height)
 - **Cursor change** to progress/wait
@@ -101,11 +106,13 @@ pnpm dev
 ```
 
 **Step 3:** Navigate to dealer pages:
+
 - http://localhost:3000/dealer/dashboard
 - http://localhost:3000/dealer/search
 - http://localhost:3000/dealer/cart
 
 **You should see:**
+
 - ✅ 3-row header (utility + main + nav)
 - ✅ Black "All Categories" pill button
 - ✅ Horizontal nav links in center
@@ -123,11 +130,11 @@ If you want to integrate piece by piece, update your existing layout:
 **apps/web/src/app/dealer/layout.tsx:**
 
 ```tsx
-'use client';
+"use client";
 
-import { ReferenceHeader } from '@/components/layouts';
-import { AnnouncementTicker, MessageDrawer, LoadingProvider } from '@/components/global';
-import { useState } from 'react';
+import { ReferenceHeader } from "@/components/layouts";
+import { AnnouncementTicker, MessageDrawer, LoadingProvider } from "@/components/global";
+import { useState } from "react";
 
 function DealerLayoutContent({ children }) {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
@@ -144,7 +151,7 @@ function DealerLayoutContent({ children }) {
       </div>
 
       {/* Announcement Ticker (Required) */}
-      <div className="sticky z-[1050]" style={{ top: 'calc(32px + 72px + 56px)' }}>
+      <div className="sticky z-[1050]" style={{ top: "calc(32px + 72px + 56px)" }}>
         <AnnouncementTicker
           announcements={mockAnnouncements}
           onAnnouncementClick={(a) => {
@@ -155,9 +162,7 @@ function DealerLayoutContent({ children }) {
       </div>
 
       {/* Content */}
-      <main className="max-w-[1440px] mx-auto px-6 py-8">
-        {children}
-      </main>
+      <main className="max-w-[1440px] mx-auto px-6 py-8">{children}</main>
 
       {/* Message Drawer */}
       <MessageDrawer
@@ -187,18 +192,20 @@ export default function DealerLayout({ children }) {
 ### **ReferenceHeader Component**
 
 **Props:**
+
 ```tsx
 interface ReferenceHeaderProps {
-  cartItemCount?: number;        // Badge count on cart icon
-  dealerName?: string;            // Displayed in user dropdown
-  onCartClick?: () => void;       // Custom cart handler
-  onMenuToggle?: () => void;      // Custom menu toggle handler
-  onSearchSubmit?: (query: string) => void;  // Custom search handler
-  className?: string;             // Additional CSS classes
+  cartItemCount?: number; // Badge count on cart icon
+  dealerName?: string; // Displayed in user dropdown
+  onCartClick?: () => void; // Custom cart handler
+  onMenuToggle?: () => void; // Custom menu toggle handler
+  onSearchSubmit?: (query: string) => void; // Custom search handler
+  className?: string; // Additional CSS classes
 }
 ```
 
 **Usage:**
+
 ```tsx
 <ReferenceHeader
   cartItemCount={5}
@@ -212,6 +219,7 @@ interface ReferenceHeaderProps {
 ### **LoadingProvider Component**
 
 **Features:**
+
 - Wraps entire app
 - Auto-detects route changes
 - Shows progress bar
@@ -219,18 +227,15 @@ interface ReferenceHeaderProps {
 - Provides manual control via hook
 
 **Usage:**
+
 ```tsx
 // In root layout
 export default function RootLayout({ children }) {
-  return (
-    <LoadingProvider>
-      {children}
-    </LoadingProvider>
-  );
+  return <LoadingProvider>{children}</LoadingProvider>;
 }
 
 // In any component - manual loading control
-import { useLoading } from '@/components/global';
+import { useLoading } from "@/components/global";
 
 function MyComponent() {
   const { isLoading, setIsLoading } = useLoading();
@@ -255,7 +260,7 @@ function MyComponent() {
 **Automatic loading state button:**
 
 ```tsx
-import { LoadingButton } from '@/components/global';
+import { LoadingButton } from "@/components/global";
 
 <LoadingButton
   onClick={async () => {
@@ -263,7 +268,7 @@ import { LoadingButton } from '@/components/global';
   }}
 >
   Place Order
-</LoadingButton>
+</LoadingButton>;
 ```
 
 ---
@@ -271,12 +276,14 @@ import { LoadingButton } from '@/components/global';
 ## 🎯 Features Matching Reference Video
 
 ### ✅ **Header Structure**
+
 - [x] 3-row layout (utility + main + nav)
 - [x] White background
 - [x] Subtle borders between rows
 - [x] Sticky positioning
 
 ### ✅ **Utility Strip**
+
 - [x] Support links (left)
 - [x] Promo text (center)
 - [x] Shipping info (right)
@@ -284,6 +291,7 @@ import { LoadingButton } from '@/components/global';
 - [x] Small text size
 
 ### ✅ **Main Header**
+
 - [x] Logo on left
 - [x] Prominent search bar (center)
 - [x] Search button (blue, right-aligned in search)
@@ -291,6 +299,7 @@ import { LoadingButton } from '@/components/global';
 - [x] Phone icon with number
 
 ### ✅ **Secondary Nav**
+
 - [x] BLACK pill button (left) with:
   - Menu icon
   - "All Categories" label
@@ -304,6 +313,7 @@ import { LoadingButton } from '@/components/global';
   - User with dropdown
 
 ### ✅ **Loading States**
+
 - [x] Top progress bar (blue)
 - [x] Cursor changes to progress
 - [x] Auto route change detection
@@ -311,6 +321,7 @@ import { LoadingButton } from '@/components/global';
 - [x] Smooth animations
 
 ### ✅ **Responsive Behavior**
+
 - [x] Mobile: Menu button toggles side drawer
 - [x] Mobile: Nav links hidden, accessible via menu
 - [x] Desktop: All elements visible
@@ -322,6 +333,7 @@ import { LoadingButton } from '@/components/global';
 ## 🧪 Testing Checklist
 
 ### **Visual Testing**
+
 - [ ] Header has 3 distinct rows
 - [ ] Black category button on left
 - [ ] Nav links centered with proper spacing
@@ -331,6 +343,7 @@ import { LoadingButton } from '@/components/global';
 - [ ] Colors match reference (black button, blue accents)
 
 ### **Functional Testing**
+
 - [ ] Search submit works (Enter key + button click)
 - [ ] Cart icon navigates to cart
 - [ ] User dropdown opens
@@ -341,6 +354,7 @@ import { LoadingButton } from '@/components/global';
 - [ ] Support links are clickable
 
 ### **Loading States**
+
 - [ ] Top progress bar appears on navigation
 - [ ] Cursor changes to progress
 - [ ] Progress bar animates smoothly
@@ -349,6 +363,7 @@ import { LoadingButton } from '@/components/global';
 - [ ] No double-loading on fast clicks
 
 ### **Announcement Ticker**
+
 - [ ] Visible on all pages
 - [ ] Auto-rotates every 8 seconds
 - [ ] Pauses on hover
@@ -357,6 +372,7 @@ import { LoadingButton } from '@/components/global';
 - [ ] Dismiss button works
 
 ### **Responsive Testing**
+
 - [ ] Mobile (< 768px): Menu button visible
 - [ ] Mobile: Side drawer slides in
 - [ ] Mobile: Overlay closes drawer
@@ -371,47 +387,61 @@ import { LoadingButton } from '@/components/global';
 ### **Change Colors**
 
 **Black button to different color:**
+
 ```tsx
 // In ReferenceHeader.tsx, find:
-className="bg-slate-900 hover:bg-slate-800"
+className = "bg-slate-900 hover:bg-slate-800";
 
 // Change to orange (reference video):
-className="bg-orange-600 hover:bg-orange-700"
+className = "bg-orange-600 hover:bg-orange-700";
 ```
 
 **Search button color:**
+
 ```tsx
 // Find:
-className="... bg-blue-600 hover:bg-blue-700"
+className = "... bg-blue-600 hover:bg-blue-700";
 
 // Change to:
-className="... bg-orange-600 hover:bg-orange-700"
+className = "... bg-orange-600 hover:bg-orange-700";
 ```
 
 ### **Remove Optional Elements**
 
 **Remove utility strip:**
+
 ```tsx
 // In ReferenceHeader.tsx, comment out Row 1:
-{/* Row 1: Utility Strip (Optional) */}
-{/* <div className="bg-slate-50 ...">...</div> */}
+{
+  /* Row 1: Utility Strip (Optional) */
+}
+{
+  /* <div className="bg-slate-50 ...">...</div> */
+}
 ```
 
 **Remove heart icon:**
+
 ```tsx
 // In ReferenceHeader.tsx, comment out heart button:
-{/* <Button variant="ghost" ... ><HeartIcon ... /></Button> */}
+{
+  /* <Button variant="ghost" ... ><HeartIcon ... /></Button> */
+}
 ```
 
 **Remove hotline section:**
+
 ```tsx
 // Comment out hotline div:
-{/* <div className="hidden lg:flex ...">...</div> */}
+{
+  /* <div className="hidden lg:flex ...">...</div> */
+}
 ```
 
 ### **Adjust Heights**
 
 **Update sticky position if removing utility strip:**
+
 ```tsx
 // In layout-reference.tsx:
 style={{ top: 'calc(72px + 56px)' }}  // Remove + 32px
@@ -422,11 +452,13 @@ style={{ top: 'calc(72px + 56px)' }}  // Remove + 32px
 ## 📊 Performance
 
 **Header Components:**
+
 - ReferenceHeader: ~12KB (includes all 3 rows)
 - LoadingProvider: ~3KB
 - Total overhead: ~15KB (minimal)
 
 **Loading Performance:**
+
 - Progress bar: CSS animation (60fps)
 - Cursor change: Instant (CSS class toggle)
 - Route detection: React hooks (< 1ms)
@@ -438,19 +470,17 @@ style={{ top: 'calc(72px + 56px)' }}  // Remove + 32px
 ### **Issue: Loading bar doesn't appear**
 
 **Solution:** Ensure LoadingProvider wraps your app:
+
 ```tsx
 export default function RootLayout({ children }) {
-  return (
-    <LoadingProvider>
-      {children}
-    </LoadingProvider>
-  );
+  return <LoadingProvider>{children}</LoadingProvider>;
 }
 ```
 
 ### **Issue: Cursor doesn't change**
 
 **Solution:** Check globals.css has the loading styles:
+
 ```css
 body.app-loading,
 body.app-loading * {
@@ -461,6 +491,7 @@ body.app-loading * {
 ### **Issue: Menu button doesn't work**
 
 **Solution:** Check if side menu overlay is rendering:
+
 - Inspect element in browser
 - Look for overlay div
 - Verify onClick handler is attached
@@ -468,6 +499,7 @@ body.app-loading * {
 ### **Issue: Header not sticky**
 
 **Solution:** Verify sticky wrapper:
+
 ```tsx
 <div className="sticky top-0 z-[1100]">
   <ReferenceHeader ... />
@@ -488,6 +520,7 @@ body.app-loading * {
 ## ✅ Acceptance Criteria
 
 ### **All Met:**
+
 - ✅ Navigation resembles reference video
 - ✅ Black category pill button (left)
 - ✅ Horizontal menu (center)

@@ -1,8 +1,8 @@
-import { LucideIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DashboardKPICardProps {
   title: string;
@@ -37,20 +37,18 @@ export function DashboardKPICard({
   value,
   subtitle,
   icon: Icon,
-  iconColor = 'text-blue-600',
-  iconBgColor = 'bg-blue-100',
+  iconColor = "text-blue-600",
+  iconBgColor = "bg-blue-100",
   action,
   trend,
   className,
 }: DashboardKPICardProps) {
   return (
-    <Card className={cn('hover:shadow-md transition-shadow', className)}>
+    <Card className={cn("hover:shadow-md transition-shadow", className)}>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-slate-600">
-          {title}
-        </CardTitle>
-        <div className={cn('p-2 rounded-lg', iconBgColor)}>
-          <Icon className={cn('w-5 h-5', iconColor)} />
+        <CardTitle className="text-sm font-medium text-slate-600">{title}</CardTitle>
+        <div className={cn("p-2 rounded-lg", iconBgColor)}>
+          <Icon className={cn("w-5 h-5", iconColor)} />
         </div>
       </CardHeader>
       <CardContent>
@@ -61,29 +59,22 @@ export function DashboardKPICard({
             {trend && (
               <span
                 className={cn(
-                  'text-sm font-medium',
-                  trend.isPositive ? 'text-green-600' : 'text-red-600'
+                  "text-sm font-medium",
+                  trend.isPositive ? "text-green-600" : "text-red-600",
                 )}
               >
-                {trend.isPositive ? '+' : ''}
+                {trend.isPositive ? "+" : ""}
                 {trend.value}%
               </span>
             )}
           </div>
 
           {/* Subtitle */}
-          {subtitle && (
-            <p className="text-sm text-slate-500">{subtitle}</p>
-          )}
+          {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
 
           {/* Action Button */}
           {action && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full mt-2"
-              onClick={action.onClick}
-            >
+            <Button variant="outline" size="sm" className="w-full mt-2" onClick={action.onClick}>
               {action.label}
             </Button>
           )}

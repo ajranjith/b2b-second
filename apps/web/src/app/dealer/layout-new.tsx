@@ -1,22 +1,17 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { CartProvider } from '@/context/CartContext';
-import { AppShell, DealerHeader, SideNav, BottomNav } from '@/components/layouts';
-import {
-  AnnouncementTicker,
-  MessageDrawer,
-} from '@/components/global';
-import type { Announcement } from '@/types/dealer';
-import { mockAnnouncements } from '@/mocks/dealer-data';
-import { Toaster } from '@/components/ui/sonner';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { CartProvider } from "@/context/CartContext";
+import { AppShell, DealerHeader, SideNav, BottomNav } from "@/components/layouts";
+import { AnnouncementTicker, MessageDrawer } from "@/components/global";
+import type { Announcement } from "@/types/dealer";
+import { mockAnnouncements } from "@/mocks/dealer-data";
+import { Toaster } from "@/components/ui/sonner";
 
 function DealerLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(
-    null
-  );
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
   const [isMessageDrawerOpen, setIsMessageDrawerOpen] = useState(false);
 
   // TODO: Get cart count from context

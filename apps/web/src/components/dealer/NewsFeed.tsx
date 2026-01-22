@@ -1,10 +1,10 @@
-import { formatDistanceToNow } from 'date-fns';
-import { Newspaper, Package, Bell } from 'lucide-react';
-import type { NewsItem } from '@/types/dealer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
+import { formatDistanceToNow } from "date-fns";
+import { Newspaper, Package, Bell } from "lucide-react";
+import type { NewsItem } from "@/types/dealer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface NewsFeedProps {
   news: NewsItem[];
@@ -15,21 +15,21 @@ interface NewsFeedProps {
 const categoryConfig = {
   product: {
     icon: Package,
-    label: 'Product',
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
+    label: "Product",
+    color: "text-blue-600",
+    bgColor: "bg-blue-50",
   },
   service: {
     icon: Bell,
-    label: 'Service',
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
+    label: "Service",
+    color: "text-green-600",
+    bgColor: "bg-green-50",
   },
   general: {
     icon: Newspaper,
-    label: 'General',
-    color: 'text-slate-600',
-    bgColor: 'bg-slate-50',
+    label: "General",
+    color: "text-slate-600",
+    bgColor: "bg-slate-50",
   },
 };
 
@@ -74,24 +74,21 @@ export function NewsFeed({ news, onNewsClick, className }: NewsFeedProps) {
             <div
               key={item.id}
               className={cn(
-                'p-4 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors',
-                onNewsClick && 'cursor-pointer'
+                "p-4 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors",
+                onNewsClick && "cursor-pointer",
               )}
               onClick={() => onNewsClick?.(item)}
             >
               <div className="flex items-start gap-3">
                 {/* Icon */}
-                <div className={cn('p-2 rounded-lg flex-shrink-0', config.bgColor)}>
-                  <Icon className={cn('w-5 h-5', config.color)} />
+                <div className={cn("p-2 rounded-lg flex-shrink-0", config.bgColor)}>
+                  <Icon className={cn("w-5 h-5", config.color)} />
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <Badge
-                      variant="outline"
-                      className={cn('text-xs', config.color)}
-                    >
+                    <Badge variant="outline" className={cn("text-xs", config.color)}>
                       {config.label}
                     </Badge>
                     <span className="text-xs text-slate-500 flex-shrink-0">
@@ -101,13 +98,9 @@ export function NewsFeed({ news, onNewsClick, className }: NewsFeedProps) {
                     </span>
                   </div>
 
-                  <h3 className="font-semibold text-slate-900 mb-1 line-clamp-1">
-                    {item.title}
-                  </h3>
+                  <h3 className="font-semibold text-slate-900 mb-1 line-clamp-1">{item.title}</h3>
 
-                  <p className="text-sm text-slate-600 line-clamp-2">
-                    {item.summary}
-                  </p>
+                  <p className="text-sm text-slate-600 line-clamp-2">{item.summary}</p>
                 </div>
               </div>
             </div>

@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { cn } from '@/lib/utils';
-import type { TableDensity } from '@/types/dealer';
-import { Button } from '@/components/ui/button';
-import { List, LayoutGrid } from 'lucide-react';
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import type { TableDensity } from "@/types/dealer";
+import { Button } from "@/components/ui/button";
+import { List, LayoutGrid } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -12,7 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 
 interface DataTableColumn<T> {
   key: string;
@@ -53,42 +53,37 @@ export function DataTable<T>({
   allowDensityToggle = true,
   onDensityChange,
   onRowClick,
-  emptyMessage = 'No data available',
+  emptyMessage = "No data available",
   className,
   headerClassName,
 }: DataTableProps<T>) {
-  const [localDensity, setLocalDensity] = useState<TableDensity>('comfortable');
+  const [localDensity, setLocalDensity] = useState<TableDensity>("comfortable");
 
   const density = controlledDensity || localDensity;
 
   const handleDensityToggle = () => {
-    const newDensity = density === 'comfortable' ? 'dense' : 'comfortable';
+    const newDensity = density === "comfortable" ? "dense" : "comfortable";
     setLocalDensity(newDensity);
     onDensityChange?.(newDensity);
   };
 
   const densityStyles = {
-    comfortable: 'py-4 px-4',
-    dense: 'py-2 px-3',
+    comfortable: "py-4 px-4",
+    dense: "py-2 px-3",
   };
 
   const headerDensityStyles = {
-    comfortable: 'py-3 px-4',
-    dense: 'py-2 px-3',
+    comfortable: "py-3 px-4",
+    dense: "py-2 px-3",
   };
 
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={cn("space-y-4", className)}>
       {/* Density Toggle */}
       {allowDensityToggle && (
         <div className="flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDensityToggle}
-            className="gap-2"
-          >
-            {density === 'comfortable' ? (
+          <Button variant="outline" size="sm" onClick={handleDensityToggle} className="gap-2">
+            {density === "comfortable" ? (
               <>
                 <List className="w-4 h-4" />
                 Dense View
@@ -107,14 +102,14 @@ export function DataTable<T>({
       <div className="rounded-lg border border-slate-200 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className={cn('bg-slate-50', headerClassName)}>
+            <TableRow className={cn("bg-slate-50", headerClassName)}>
               {columns.map((column) => (
                 <TableHead
                   key={column.key}
                   className={cn(
                     headerDensityStyles[density],
-                    'font-semibold text-slate-900',
-                    column.headerClassName
+                    "font-semibold text-slate-900",
+                    column.headerClassName,
                   )}
                 >
                   {column.header}
@@ -125,10 +120,7 @@ export function DataTable<T>({
           <TableBody>
             {data.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="text-center py-12 text-slate-500"
-                >
+                <TableCell colSpan={columns.length} className="text-center py-12 text-slate-500">
                   {emptyMessage}
                 </TableCell>
               </TableRow>
@@ -138,17 +130,14 @@ export function DataTable<T>({
                   key={keyExtractor(item)}
                   onClick={() => onRowClick?.(item)}
                   className={cn(
-                    'hover:bg-slate-50 transition-colors',
-                    onRowClick && 'cursor-pointer'
+                    "hover:bg-slate-50 transition-colors",
+                    onRowClick && "cursor-pointer",
                   )}
                 >
                   {columns.map((column) => (
                     <TableCell
                       key={column.key}
-                      className={cn(
-                        densityStyles[density],
-                        column.className
-                      )}
+                      className={cn(densityStyles[density], column.className)}
                     >
                       {column.render(item)}
                     </TableCell>
@@ -175,11 +164,11 @@ interface DataTableSkeletonProps {
 export function DataTableSkeleton({
   columns,
   rows = 5,
-  density = 'comfortable',
+  density = "comfortable",
 }: DataTableSkeletonProps) {
   const densityStyles = {
-    comfortable: 'h-16',
-    dense: 'h-12',
+    comfortable: "h-16",
+    dense: "h-12",
   };
 
   return (

@@ -15,9 +15,11 @@ The Admin Panel UI has been enhanced to match the Dealer Portal design system, e
 ## ✅ What's Been Implemented
 
 ### 1. AdminHeader Component
+
 **File:** [apps/web/src/components/layouts/AdminHeader.tsx](apps/web/src/components/layouts/AdminHeader.tsx)
 
 **Matches ReferenceHeader style with:**
+
 - ✅ 3-row header structure (utility strip, main header, secondary nav)
 - ✅ Black "All Sections" pill button on left
 - ✅ Horizontal navigation links in center (Dashboard, Orders, Dealers, Users, Templates)
@@ -27,9 +29,11 @@ The Admin Panel UI has been enhanced to match the Dealer Portal design system, e
 - ✅ Responsive mobile behavior with side menu
 
 ### 2. Admin Layout (New)
+
 **File:** [apps/web/src/app/admin/layout-new.tsx](apps/web/src/app/admin/layout-new.tsx)
 
 **Features:**
+
 - ✅ AdminHeader integrated at top (sticky)
 - ✅ AnnouncementTicker on EVERY admin page
 - ✅ MessageDrawer for announcement details
@@ -39,7 +43,9 @@ The Admin Panel UI has been enhanced to match the Dealer Portal design system, e
 - ✅ Consistent spacing and layout
 
 ### 3. Shared Design System
+
 **Components Used:**
+
 - ✅ AnnouncementTicker (from dealer portal)
 - ✅ MessageDrawer (from dealer portal)
 - ✅ LoadingProvider (from dealer portal)
@@ -53,33 +59,37 @@ The Admin Panel UI has been enhanced to match the Dealer Portal design system, e
 ## 📋 Design System Alignment
 
 ### Color Palette
-| Element | Color | Usage |
-|---------|-------|-------|
-| Primary | Blue 600 | Buttons, links, active states |
-| Success | Green 600 | Success messages, completed states |
-| Warning | Amber 600 | Warnings, pending actions |
-| Error | Red 600 | Errors, critical alerts |
-| Neutral | Slate 50-900 | Backgrounds, text, borders |
+
+| Element | Color        | Usage                              |
+| ------- | ------------ | ---------------------------------- |
+| Primary | Blue 600     | Buttons, links, active states      |
+| Success | Green 600    | Success messages, completed states |
+| Warning | Amber 600    | Warnings, pending actions          |
+| Error   | Red 600      | Errors, critical alerts            |
+| Neutral | Slate 50-900 | Backgrounds, text, borders         |
 
 ### Typography
-| Element | Style |
-|---------|-------|
-| H1 | 3xl, font-bold |
-| H2 | 2xl, font-semibold |
-| H3 | xl, font-semibold |
-| Body | base, font-medium |
-| Small | sm, font-medium |
+
+| Element | Style              |
+| ------- | ------------------ |
+| H1      | 3xl, font-bold     |
+| H2      | 2xl, font-semibold |
+| H3      | xl, font-semibold  |
+| Body    | base, font-medium  |
+| Small   | sm, font-medium    |
 
 ### Spacing
-| Size | Value | Usage |
-|------|-------|-------|
-| XS | 0.25rem (4px) | Tight spacing |
-| SM | 0.5rem (8px) | Component padding |
-| MD | 1rem (16px) | Default spacing |
-| LG | 1.5rem (24px) | Section spacing |
-| XL | 2rem (32px) | Page margins |
+
+| Size | Value         | Usage             |
+| ---- | ------------- | ----------------- |
+| XS   | 0.25rem (4px) | Tight spacing     |
+| SM   | 0.5rem (8px)  | Component padding |
+| MD   | 1rem (16px)   | Default spacing   |
+| LG   | 1.5rem (24px) | Section spacing   |
+| XL   | 2rem (32px)   | Page margins      |
 
 ### Component Patterns
+
 - **Cards**: `rounded-lg border border-slate-200 bg-white shadow-sm`
 - **Buttons**: Primary (blue-600), Outline, Ghost variants
 - **Inputs**: `rounded-lg border-slate-300 focus:border-blue-500`
@@ -90,24 +100,26 @@ The Admin Panel UI has been enhanced to match the Dealer Portal design system, e
 ## 🎨 AdminHeader vs ReferenceHeader Comparison
 
 ### Similarities
-| Feature | AdminHeader | ReferenceHeader |
-|---------|-------------|-----------------|
-| Structure | 3 rows | 3 rows |
-| Utility Strip | ✅ Yes | ✅ Yes |
-| Search Bar | ✅ Yes | ✅ Yes |
-| Black Pill Button | ✅ Yes | ✅ Yes |
-| Horizontal Nav | ✅ Yes | ✅ Yes |
-| Icon Group | ✅ Yes | ✅ Yes |
-| Sticky | ✅ Yes | ✅ Yes |
+
+| Feature           | AdminHeader | ReferenceHeader |
+| ----------------- | ----------- | --------------- |
+| Structure         | 3 rows      | 3 rows          |
+| Utility Strip     | ✅ Yes      | ✅ Yes          |
+| Search Bar        | ✅ Yes      | ✅ Yes          |
+| Black Pill Button | ✅ Yes      | ✅ Yes          |
+| Horizontal Nav    | ✅ Yes      | ✅ Yes          |
+| Icon Group        | ✅ Yes      | ✅ Yes          |
+| Sticky            | ✅ Yes      | ✅ Yes          |
 
 ### Differences
-| Feature | AdminHeader | ReferenceHeader |
-|---------|-------------|-----------------|
-| Logo Text | "Admin Portal" | "Dealer Portal" |
-| Nav Links | Dashboard, Orders, Dealers, Users, Templates | Dashboard, Search Parts, Orders, Account |
-| Icons | Bell, Settings, User | Heart, Cart, User |
-| Button Text | "All Sections" | "All Categories" |
-| Routes | /admin/* | /dealer/* |
+
+| Feature     | AdminHeader                                  | ReferenceHeader                          |
+| ----------- | -------------------------------------------- | ---------------------------------------- |
+| Logo Text   | "Admin Portal"                               | "Dealer Portal"                          |
+| Nav Links   | Dashboard, Orders, Dealers, Users, Templates | Dashboard, Search Parts, Orders, Account |
+| Icons       | Bell, Settings, User                         | Heart, Cart, User                        |
+| Button Text | "All Sections"                               | "All Categories"                         |
+| Routes      | /admin/\*                                    | /dealer/\*                               |
 
 ---
 
@@ -137,26 +149,31 @@ apps/web/src/
 ### Option 1: Replace Existing Layout (Recommended)
 
 **Step 1:** Backup the old layout
+
 ```bash
 mv apps/web/src/app/admin/layout.tsx apps/web/src/app/admin/layout-old.tsx
 ```
 
 **Step 2:** Use the new layout
+
 ```bash
 mv apps/web/src/app/admin/layout-new.tsx apps/web/src/app/admin/layout.tsx
 ```
 
 **Step 3:** Start dev server
+
 ```bash
 pnpm dev
 ```
 
 **Step 4:** Navigate to admin pages
+
 - http://localhost:3000/admin/dashboard
 - http://localhost:3000/admin/orders
 - http://localhost:3000/admin/dealers
 
 **You should see:**
+
 - ✅ 3-row header matching dealer portal
 - ✅ Black "All Sections" pill button
 - ✅ Horizontal nav links
@@ -183,28 +200,28 @@ The admin layout includes custom announcements relevant to administrators:
 ```typescript
 const adminAnnouncements: Announcement[] = [
   {
-    id: 'admin-1',
-    type: 'urgent',
-    title: 'System Maintenance Scheduled',
-    message: 'Scheduled maintenance will occur on Sunday...',
+    id: "admin-1",
+    type: "urgent",
+    title: "System Maintenance Scheduled",
+    message: "Scheduled maintenance will occur on Sunday...",
   },
   {
-    id: 'admin-2',
-    type: 'info',
-    title: 'New Dealer Registration',
-    message: '3 new dealer applications pending review...',
+    id: "admin-2",
+    type: "info",
+    title: "New Dealer Registration",
+    message: "3 new dealer applications pending review...",
   },
   {
-    id: 'admin-3',
-    type: 'promo',
-    title: 'Q1 Performance Report Available',
-    message: 'Q1 2026 performance report is now available...',
+    id: "admin-3",
+    type: "promo",
+    title: "Q1 Performance Report Available",
+    message: "Q1 2026 performance report is now available...",
   },
   {
-    id: 'admin-4',
-    type: 'warning',
-    title: 'High Volume Alert',
-    message: 'Order volume is 45% above normal...',
+    id: "admin-4",
+    type: "warning",
+    title: "High Volume Alert",
+    message: "Order volume is 45% above normal...",
   },
 ];
 ```
@@ -214,29 +231,31 @@ const adminAnnouncements: Announcement[] = [
 ## 🔄 Admin Navigation Links
 
 ### Current Links
+
 ```typescript
 const navLinks = [
-  { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-  { label: 'Orders', href: '/admin/orders', icon: Package },
-  { label: 'Dealers', href: '/admin/dealers', icon: Users },
-  { label: 'Users', href: '/admin/users', icon: User },
-  { label: 'Templates', href: '/admin/templates', icon: FileText },
+  { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+  { label: "Orders", href: "/admin/orders", icon: Package },
+  { label: "Dealers", href: "/admin/dealers", icon: Users },
+  { label: "Users", href: "/admin/users", icon: User },
+  { label: "Templates", href: "/admin/templates", icon: FileText },
 ];
 ```
 
 ### Customization
+
 To add/remove links, edit [AdminHeader.tsx:77-82](apps/web/src/components/layouts/AdminHeader.tsx:77):
 
 ```typescript
 const navLinks = [
-  { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-  { label: 'Orders', href: '/admin/orders', icon: Package },
-  { label: 'Dealers', href: '/admin/dealers', icon: Users },
-  { label: 'Users', href: '/admin/users', icon: User },
-  { label: 'Templates', href: '/admin/templates', icon: FileText },
+  { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+  { label: "Orders", href: "/admin/orders", icon: Package },
+  { label: "Dealers", href: "/admin/dealers", icon: Users },
+  { label: "Users", href: "/admin/users", icon: User },
+  { label: "Templates", href: "/admin/templates", icon: FileText },
   // Add more:
-  { label: 'Reports', href: '/admin/reports', icon: BarChart3 },
-  { label: 'Settings', href: '/admin/settings', icon: Settings },
+  { label: "Reports", href: "/admin/reports", icon: BarChart3 },
+  { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 ```
 
@@ -244,18 +263,18 @@ const navLinks = [
 
 ## 📊 Admin vs Dealer Feature Comparison
 
-| Feature | Admin Portal | Dealer Portal |
-|---------|-------------|---------------|
-| **Header** | AdminHeader | ReferenceHeader |
-| **AnnouncementTicker** | ✅ Yes | ✅ Yes |
-| **MessageDrawer** | ✅ Yes | ✅ Yes |
-| **LoadingProvider** | ✅ Yes | ✅ Yes |
-| **DensityToggle** | ✅ Orders page | ✅ Cart, Orders pages |
-| **StatusChip** | ✅ Yes | ✅ Yes |
-| **DataTable** | ✅ Yes | ✅ Yes |
-| **Sticky Header** | ✅ Yes | ✅ Yes |
-| **Mobile Menu** | ✅ Yes | ✅ Yes |
-| **Toast Notifications** | ✅ Yes | ✅ Yes |
+| Feature                 | Admin Portal   | Dealer Portal         |
+| ----------------------- | -------------- | --------------------- |
+| **Header**              | AdminHeader    | ReferenceHeader       |
+| **AnnouncementTicker**  | ✅ Yes         | ✅ Yes                |
+| **MessageDrawer**       | ✅ Yes         | ✅ Yes                |
+| **LoadingProvider**     | ✅ Yes         | ✅ Yes                |
+| **DensityToggle**       | ✅ Orders page | ✅ Cart, Orders pages |
+| **StatusChip**          | ✅ Yes         | ✅ Yes                |
+| **DataTable**           | ✅ Yes         | ✅ Yes                |
+| **Sticky Header**       | ✅ Yes         | ✅ Yes                |
+| **Mobile Menu**         | ✅ Yes         | ✅ Yes                |
+| **Toast Notifications** | ✅ Yes         | ✅ Yes                |
 
 ---
 
@@ -263,15 +282,16 @@ const navLinks = [
 
 ```typescript
 interface AdminHeaderProps {
-  notificationCount?: number;    // Badge count on bell icon
-  adminName?: string;             // Displayed in user dropdown
-  onMenuToggle?: () => void;      // Custom menu toggle handler
-  onSearchSubmit?: (query: string) => void;  // Custom search handler
-  className?: string;             // Additional CSS classes
+  notificationCount?: number; // Badge count on bell icon
+  adminName?: string; // Displayed in user dropdown
+  onMenuToggle?: () => void; // Custom menu toggle handler
+  onSearchSubmit?: (query: string) => void; // Custom search handler
+  className?: string; // Additional CSS classes
 }
 ```
 
 **Usage:**
+
 ```typescript
 <AdminHeader
   notificationCount={5}
@@ -285,6 +305,7 @@ interface AdminHeaderProps {
 ## 🧪 Testing Checklist
 
 ### Visual Testing
+
 - [ ] Header has 3 distinct rows
 - [ ] Black "All Sections" pill button on left
 - [ ] Nav links centered with proper spacing
@@ -294,6 +315,7 @@ interface AdminHeaderProps {
 - [ ] Colors match dealer portal
 
 ### Functional Testing
+
 - [ ] Search submit works (Enter key + button click)
 - [ ] Notifications icon displays badge count
 - [ ] Settings icon clickable
@@ -304,6 +326,7 @@ interface AdminHeaderProps {
 - [ ] Active link highlights properly
 
 ### AnnouncementTicker
+
 - [ ] Visible on all admin pages
 - [ ] Auto-rotates every 8 seconds
 - [ ] Pauses on hover
@@ -312,6 +335,7 @@ interface AdminHeaderProps {
 - [ ] Dismiss button works
 
 ### Loading States
+
 - [ ] Top progress bar appears on navigation
 - [ ] Cursor changes to progress
 - [ ] Progress bar animates smoothly
@@ -319,6 +343,7 @@ interface AdminHeaderProps {
 - [ ] Works on all route transitions
 
 ### Responsive Testing
+
 - [ ] Mobile (< 768px): Menu button visible
 - [ ] Mobile: Side drawer slides in
 - [ ] Mobile: Overlay closes drawer
@@ -371,6 +396,7 @@ import { Bell, Settings, User, HelpCircle } from 'lucide-react';
 **Cause:** Layout not using new AdminHeader
 
 **Solution:**
+
 1. Check you've renamed layout-new.tsx to layout.tsx
 2. Verify AdminHeader is imported correctly
 3. Clear `.next` cache: `rm -rf .next && pnpm dev`
@@ -380,6 +406,7 @@ import { Bell, Settings, User, HelpCircle } from 'lucide-react';
 **Cause:** Ticker component not rendered or hidden
 
 **Solution:**
+
 1. Verify AnnouncementTicker is in layout
 2. Check sticky position calculation
 3. Ensure announcements array has items
@@ -390,8 +417,10 @@ import { Bell, Settings, User, HelpCircle } from 'lucide-react';
 **Cause:** LoadingProvider not wrapping app
 
 **Solution:**
+
 1. Verify LoadingProvider wraps layout content
 2. Check globals.css has loading styles:
+
 ```css
 body.app-loading,
 body.app-loading * {
@@ -404,6 +433,7 @@ body.app-loading * {
 **Cause:** Side menu state not updating
 
 **Solution:**
+
 1. Check onMenuToggle is called
 2. Verify isSideMenuOpen state is working
 3. Check z-index values (should be 1200+)
@@ -422,6 +452,7 @@ body.app-loading * {
 ## 🎉 Benefits of Unified Design
 
 ### For Users
+
 - ✅ Consistent experience across portals
 - ✅ Familiar navigation patterns
 - ✅ Same keyboard shortcuts
@@ -429,6 +460,7 @@ body.app-loading * {
 - ✅ Professional appearance
 
 ### For Developers
+
 - ✅ Shared component library
 - ✅ Single design system to maintain
 - ✅ Reusable code across portals
@@ -436,6 +468,7 @@ body.app-loading * {
 - ✅ Consistent bug fixes
 
 ### For Business
+
 - ✅ Stronger brand identity
 - ✅ Lower training costs
 - ✅ Faster development
@@ -447,18 +480,21 @@ body.app-loading * {
 ## 🚀 Next Steps
 
 ### Immediate
+
 1. **Test the new layout:** Rename and start dev server
 2. **Review admin pages:** Ensure all pages look correct
 3. **Test mobile:** Check responsive behavior
 4. **Verify loading:** Test navigation transitions
 
 ### Short Term
+
 1. **Update admin dashboard:** Match dealer dashboard KPI cards
 2. **Add density toggle:** To dealers and users pages
 3. **Implement search:** Connect search bar to actual search
 4. **Add real notifications:** Connect to notification system
 
 ### Long Term
+
 1. **Backend integration:** Connect to real APIs
 2. **Performance optimization:** Lazy loading, code splitting
 3. **Advanced features:** Real-time updates, WebSocket
@@ -471,6 +507,7 @@ body.app-loading * {
 All enhancements have been implemented. The Admin Panel now uses the same design system as the Dealer Portal.
 
 **To activate:**
+
 1. Rename `layout-new.tsx` to `layout.tsx`
 2. Start dev server: `pnpm dev`
 3. Navigate to `/admin/dashboard`

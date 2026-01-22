@@ -3,12 +3,14 @@
 This index tracks all files and packages that depend on the Prisma Client or the `db` workspace. If you update `packages/db/prisma/schema.prisma`, all the following areas may need verification or updates.
 
 ## Source of Truth
+
 - **Schema File**: [schema.prisma](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/packages/db/prisma/schema.prisma)
 - **Client Definition**: [packages/db/src/index.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/packages/db/src/index.ts)
 
 ## Consumers by Package
 
 ### apps/api
+
 - [index.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/apps/api/src/index.ts)
 - [server.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/apps/api/src/server.ts)
 - [routes/admin.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/apps/api/src/routes/admin.ts)
@@ -21,6 +23,7 @@ This index tracks all files and packages that depend on the Prisma Client or the
 - [lib/ruleEngine.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/apps/api/src/lib/ruleEngine.ts)
 
 ### apps/web
+
 - [app/admin/orders/page.tsx](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/apps/web/src/app/admin/orders/page.tsx)
 - [app/dealer/orders/page.tsx](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/apps/web/src/app/dealer/orders/page.tsx)
 - [app/dealer/backorders/page.tsx](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/apps/web/src/app/dealer/backorders/page.tsx)
@@ -28,13 +31,16 @@ This index tracks all files and packages that depend on the Prisma Client or the
 - [services/OrderEngine.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/apps/web/src/services/OrderEngine.ts)
 
 ### apps/worker
+
 - [importProducts.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/apps/worker/src/importProducts.ts)
 - [importBackorders.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/apps/worker/src/importBackorders.ts)
 
 ### apps/api-experience
+
 - [index.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/apps/api-experience/src/index.ts)
 
 ### packages/rules
+
 - [engine/RuleEngine.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/packages/rules/src/engine/RuleEngine.ts)
 - [engine/RuleContext.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/packages/rules/src/engine/RuleContext.ts)
 - [PricingService.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/packages/rules/src/PricingService.ts)
@@ -47,7 +53,8 @@ This index tracks all files and packages that depend on the Prisma Client or the
 - [validators/ProductValidator.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/packages/rules/src/validators/ProductValidator.ts)
 - [types.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/packages/rules/src/types.ts)
 
-### Domain Packages (packages/domain-*)
+### Domain Packages (packages/domain-\*)
+
 - [domain-admin/src/AdminService.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/packages/domain-admin/src/AdminService.ts)
 - [domain-auth/src/AuthService.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/packages/domain-auth/src/AuthService.ts)
 - [domain-orders/src/OrderService.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/packages/domain-orders/src/OrderService.ts)
@@ -55,9 +62,11 @@ This index tracks all files and packages that depend on the Prisma Client or the
 - [domain-pricing/src/PricingService.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/packages/domain-pricing/src/PricingService.ts)
 
 ### packages/shared
+
 - [src/email.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/packages/shared/src/email.ts)
 
 ### Scripts & Utilities
+
 - [packages/db/seed-products.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/packages/db/seed-products.ts)
 - [packages/db/prisma/seed.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/packages/db/prisma/seed.ts)
 - [packages/db/prisma/seed-sample-data.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/packages/db/prisma/seed-sample-data.ts)

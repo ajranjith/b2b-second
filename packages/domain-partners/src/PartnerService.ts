@@ -30,10 +30,7 @@ export class PartnerService {
 
     async getDealerInfo(dealerAccountId: string) {
         const dealer = await this.prisma.dealerAccount.findUnique({
-            where: { id: dealerAccountId },
-            include: {
-                bandAssignments: true
-            }
+            where: { id: dealerAccountId }
         });
         if (!dealer) throw new Error('Dealer not found');
         return dealer;

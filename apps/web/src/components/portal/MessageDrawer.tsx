@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/ui';
-import { type Announcement } from '@/lib/mock/dealerData';
-import { Paperclip } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/ui";
+import { type Announcement } from "@/lib/mock/dealerData";
+import { Paperclip } from "lucide-react";
 
 type MessageDrawerProps = {
   open: boolean;
@@ -23,7 +23,9 @@ export function MessageDrawer({ open, announcement, onClose }: MessageDrawerProp
         {announcement ? (
           <div className="mt-6 space-y-6">
             <div>
-              <div className="text-xs uppercase tracking-wide text-slate-400">{announcement.date}</div>
+              <div className="text-xs uppercase tracking-wide text-slate-400">
+                {announcement.date}
+              </div>
               <h2 className="text-lg font-semibold text-slate-900 mt-2">{announcement.title}</h2>
               <p className="text-slate-600 mt-3 leading-relaxed">{announcement.body}</p>
             </div>
@@ -47,7 +49,9 @@ export function MessageDrawer({ open, announcement, onClose }: MessageDrawerProp
             </div>
           </div>
         ) : (
-          <div className="mt-10 text-slate-500 text-sm">Select an announcement to view details.</div>
+          <div className="mt-10 text-slate-500 text-sm">
+            Select an announcement to view details.
+          </div>
         )}
       </DialogContent>
     </Dialog>

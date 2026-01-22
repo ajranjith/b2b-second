@@ -6,8 +6,9 @@ import { requireRole } from "@/auth/requireRole";
 import { fail, ok } from "@/lib/response";
 import { AdminImportRunSchema } from "@repo/lib";
 import { runImport } from "@/services/adminImportsService";
+import { withEnvelope } from "@/lib/withEnvelope";
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const auth = requireRole(request, "ADMIN");
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);
@@ -24,3 +25,5 @@ export async function POST(request: NextRequest) {
     throw error;
   }
 }
+
+export const POST = withEnvelope({ namespace: "A" }, handlePOST);

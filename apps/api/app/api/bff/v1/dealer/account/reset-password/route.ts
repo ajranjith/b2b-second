@@ -11,8 +11,9 @@ import {
   type DealerAccountResetPasswordDTO,
 } from "@repo/lib";
 import { resetDealerAccountPassword } from "@/services/dealerAccountService";
+import { withEnvelope } from "@/lib/withEnvelope";
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const auth = requireRole(request, "DEALER");
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);
@@ -46,3 +47,5 @@ export async function POST(request: NextRequest) {
     throw error;
   }
 }
+
+export const POST = withEnvelope({ namespace: "D" }, handlePOST);

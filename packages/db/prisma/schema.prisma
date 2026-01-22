@@ -56,6 +56,14 @@ enum ImportStatus {
   SUCCEEDED_WITH_ERRORS
 }
 
+enum NewsType {
+  SPECIAL_PRICE_LIST
+  NEW_TO_RANGE
+  ACCESSORIES
+  DISPATCH_UPDATE
+  GENERAL
+}
+
 enum OrderStatus {
   SUSPENDED
   PROCESSING
@@ -99,8 +107,6 @@ model DealerAccount {
   entitlement Entitlement  @default(SHOW_ALL)
   mainEmail   String?
   phone       String?
-
-  erpAccountNo     String? @unique
   contactFirstName String?
   contactLastName  String?
 
@@ -118,12 +124,10 @@ model DealerAccount {
 
   // BUSINESS RULES (enforced at application level):
   // 1. Every DealerAccount MUST have at least one DealerUser (mandatory user association)
-  // 2. Every DealerAccount MUST have exactly 3 DealerBandAssignments (GENUINE, AFTERMARKET, BRANDED)
   // 3. User email must be unique system-wide (enforced via AppUser.email @unique)
   // 4. One user can only be associated with one dealer account (enforced via DealerUser.userId @unique)
 
   users           DealerUser[]
-  bandAssignments DealerBandAssignment[]
   discountTiers   DealerDiscountTier[]
   carts           Cart[]
   orders          OrderHeader[]
@@ -164,22 +168,6 @@ model DealerDiscountTier {
 
   @@unique([dealerAccountId, discountCode])
   @@index([dealerAccountId, discountCode])
-}
-
-model DealerBandAssignment {
-  id              String   @id @default(uuid())
-  dealerAccountId String
-  partType        PartType
-  bandCode        String
-  updatedAt       DateTime @updatedAt
-
-  dealerAccount DealerAccount @relation(fields: [dealerAccountId], references: [id], onDelete: Cascade)
-
-  // All dealers MUST have exactly 3 band assignments (GENUINE, AFTERMARKET, BRANDED)
-  // This is enforced at the application level in seed scripts and dealer creation logic
-
-  @@unique([dealerAccountId, partType])
-  @@index([dealerAccountId, partType])
 }
 
 model Product {
@@ -459,6 +447,7 @@ model BackorderDataset {
 model BackorderLine {
   id        String @id @default(uuid())
   datasetId String
+  sessionId String? @map("session_id") // Identity Framework: SID-A-* or SID-D-*
 
   accountNo    String
   customerName String?
@@ -478,6 +467,7 @@ model BackorderLine {
 
   @@index([accountNo])
   @@index([datasetId])
+  @@index([sessionId])
 }
 
 model BackorderUpdateLine {
@@ -506,12 +496,16 @@ model Cart {
   id              String   @id @default(uuid())
   dealerAccountId String
   dealerUserId    String   @unique
+  sessionId       String?  @map("session_id") // Identity Framework: SID-A-* or SID-D-*
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   dealerAccount DealerAccount @relation(fields: [dealerAccountId], references: [id])
   dealerUser    DealerUser    @relation(fields: [dealerUserId], references: [id], onDelete: Cascade)
   items         CartItem[]
+
+  @@index([dealerAccountId])
+  @@index([sessionId])
 }
 
 model CartItem {
@@ -534,6 +528,7 @@ model OrderHeader {
   dealerAccountId String
   dealerUserId    String
   status          OrderStatus @default(SUSPENDED)
+  sessionId       String?     @map("session_id") // Identity Framework: SID-A-* or SID-D-*
 
   dispatchMethod String?
   shippingMethod String?
@@ -557,9 +552,11 @@ model OrderHeader {
   dealerUser    DealerUser    @relation(fields: [dealerUserId], references: [id])
   lines         OrderLine[]
   exportLines   OrderExportLine[]
-  // @@index([status, createdAt])
 
   @@index([dealerAccountId, createdAt])
+  @@index([dealerUserId])
+  @@index([sessionId])
+  @@index([status, createdAt])
 }
 
 model OrderLine {
@@ -671,6 +668,8 @@ model SpecialPrice {
   isActive        Boolean  @default(true)
   dealerAccountId String?
   importBatchId   String?
+  newsArticleId   String?
+  source          String   @default("IMPORT")
   sourceBatchId   String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -680,6 +679,8 @@ model SpecialPrice {
   @@index([discountCode])
   @@index([dealerAccountId])
   @@index([startsAt, endsAt])
+  @@index([newsArticleId])
+  @@index([source])
 }
 
 model CartHeader {
@@ -722,14 +723,22 @@ model BackorderLineContract {
 
 model NewsArticle {
   id          String   @id @default(uuid())
+  type        NewsType @default(GENERAL)
   title       String
   bodyMd      String
   isPublished Boolean  @default(false)
   publishedAt DateTime?
+  startsAt    DateTime?
+  endsAt      DateTime?
+  isArchived  Boolean  @default(false)
+  archivedAt  DateTime?
+  sessionId   String?  @map("session_id") // Identity Framework: SID-A-* or SID-D-*
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   attachments NewsAttachment[]
+
+  @@index([sessionId])
 }
 
 model NewsAttachment {
@@ -823,12 +832,15 @@ model AuditLog {
   beforeJson  Json?
   afterJson   Json?
   ipAddress   String?
+  sessionId   String?   @map("session_id") // Identity Framework: SID-A-* or SID-D-*
   createdAt   DateTime  @default(now())
 
   actorUser AppUser? @relation(fields: [actorUserId], references: [id])
 
   @@index([createdAt])
   @@index([entityType, entityId])
+  @@index([actorUserId])
+  @@index([sessionId])
 }
 
 model EmailLog {

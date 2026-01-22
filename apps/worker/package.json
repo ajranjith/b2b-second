@@ -1,28 +1,36 @@
 {
-    "name": "worker",
-    "version": "0.0.0",
-    "private": true,
-    "scripts": {
-        "dev": "node src/index.js",
-        "start": "node src/index.js",
-        "import:genuine": "ts-node src/importProducts.ts --type GENUINE --file ../../samples/Genuine_parts_real.xlsx",
-        "import:aftermarket": "ts-node src/importProducts.ts --type AFTERMARKET --file ../../samples/Aftermarket_parts_real.xlsx",
-        "import:branded": "ts-node src/importProducts.ts --type BRANDED --file ../../samples/Branded_parts.xlsx",
-        "import:backorders": "ts-node src/importBackorders.ts --file=../../samples/backorders.csv"
-    },
-    "dependencies": {
-        "@prisma/adapter-pg": "^7.2.0",
-        "@prisma/client": "^7.2.0",
-        "csv-parse": "^6.1.0",
-        "dotenv": "^17.2.3",
-        "pg": "^8.16.3",
-        "xlsx": "^0.18.5",
-        "zod": "^4.3.5"
-    },
-    "devDependencies": {
-        "@types/node": "^20.19.28",
-        "@types/pg": "^8.16.0",
-        "ts-node": "^10.9.2",
-        "typescript": "^5.0.0"
-    }
+  "name": "worker",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node src/index.js",
+    "start": "node src/index.js",
+    "identity:proof": "ts-node src/examples/envelopeJobProof.ts",
+    "import:dealers": "ts-node src/importDealers.ts --file \"../../samples/New folder/Dealer_Accounts.xlsx\"",
+    "import:genuine": "ts-node src/importProducts.ts --type GENUINE --file ../../samples/Genuine_parts_real.xlsx",
+    "import:aftermarket": "ts-node src/importProducts.ts --type AFTERMARKET --file ../../samples/Aftermarket_parts_real.xlsx",
+    "import:branded": "ts-node src/importProducts.ts --type BRANDED --file ../../samples/Branded_parts.xlsx",
+    "import:backorders": "ts-node src/importBackorders.ts --file=../../samples/backorders.csv",
+    "import:products": "pnpm run import:genuine && pnpm run import:aftermarket && pnpm run import:branded",
+    "import:supersession": "ts-node src/importSupersessions.ts --file \"../../samples/New folder/Supersession.xlsx\"",
+    "import:specialprices": "ts-node src/importSpecialPrices.ts --file \"../../samples/special_prices_generated.xlsx\" --start-date 2026-01-01 --end-date 2026-12-31"
+  },
+  "dependencies": {
+    "@repo/identity": "workspace:*",
+    "@prisma/adapter-pg": "^6.11.0",
+    "@prisma/client": "^6.11.0",
+    "bcrypt": "^6.0.0",
+    "csv-parse": "^6.1.0",
+    "dotenv": "^17.2.3",
+    "pg": "^8.16.3",
+    "xlsx": "^0.18.5",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/node": "^20.19.28",
+    "@types/pg": "^8.16.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0"
+  }
 }

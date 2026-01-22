@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
-import type { Product, SearchFilters as SearchFiltersType, CartItem } from '@/types/dealer';
-import { SearchFilters } from '@/components/dealer/SearchFilters';
-import { ProductResultsTable } from '@/components/dealer/ProductResultsTable';
-import { CartPreview } from '@/components/dealer/CartPreview';
-import { showToast, commonToasts } from '@/components/global';
-import { productAPI } from '@/services/dealer-api';
-import { mockProducts } from '@/mocks/dealer-data';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import type { Product, SearchFilters as SearchFiltersType, CartItem } from "@/types/dealer";
+import { SearchFilters } from "@/components/dealer/SearchFilters";
+import { ProductResultsTable } from "@/components/dealer/ProductResultsTable";
+import { CartPreview } from "@/components/dealer/CartPreview";
+import { showToast, commonToasts } from "@/components/global";
+import { productAPI } from "@/services/dealer-api";
+import { mockProducts } from "@/mocks/dealer-data";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Search Parts Page
@@ -22,12 +22,12 @@ import { Skeleton } from '@/components/ui/skeleton';
  */
 export default function SearchPartsPage() {
   const searchParams = useSearchParams();
-  const initialQuery = searchParams.get('q') || '';
+  const initialQuery = searchParams.get("q") || "";
 
   const [filters, setFilters] = useState<SearchFiltersType>({
     query: initialQuery,
     availability: [],
-    sortBy: 'relevance',
+    sortBy: "relevance",
   });
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -72,12 +72,12 @@ export default function SearchPartsPage() {
         });
 
         // Apply sorting
-        let sorted = [...filtered];
-        if (filters.sortBy === 'price_asc') {
+        const sorted = [...filtered];
+        if (filters.sortBy === "price_asc") {
           sorted.sort((a, b) => a.dealerPrice - b.dealerPrice);
-        } else if (filters.sortBy === 'price_desc') {
+        } else if (filters.sortBy === "price_desc") {
           sorted.sort((a, b) => b.dealerPrice - a.dealerPrice);
-        } else if (filters.sortBy === 'part_number') {
+        } else if (filters.sortBy === "part_number") {
           sorted.sort((a, b) => a.lrNo.localeCompare(b.lrNo));
         }
 
@@ -87,9 +87,9 @@ export default function SearchPartsPage() {
         // const response = await productAPI.search(filters, 1, 50);
         // setProducts(response.data);
       } catch (err) {
-        console.error('Failed to fetch products:', err);
-        setError('Failed to load products');
-        showToast.error('Search failed', 'Please try again');
+        console.error("Failed to fetch products:", err);
+        setError("Failed to load products");
+        showToast.error("Search failed", "Please try again");
       } finally {
         setIsLoading(false);
       }
@@ -151,9 +151,7 @@ export default function SearchPartsPage() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-slate-900">Search Parts</h1>
-        <p className="text-slate-600 mt-1">
-          Find parts by part number, JagAlt, or description
-        </p>
+        <p className="text-slate-600 mt-1">Find parts by part number, JagAlt, or description</p>
       </div>
 
       {/* Search Filters (Sticky) */}
@@ -196,10 +194,7 @@ export default function SearchPartsPage() {
               </p>
             </div>
           ) : (
-            <ProductResultsTable
-              products={products}
-              onAddToCart={handleAddToCart}
-            />
+            <ProductResultsTable products={products} onAddToCart={handleAddToCart} />
           )}
         </div>
 

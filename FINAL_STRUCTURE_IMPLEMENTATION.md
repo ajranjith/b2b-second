@@ -68,11 +68,11 @@ apps/web/src/
 ### 1. components/global/Header.tsx
 
 ```tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Search,
   ShoppingCart,
@@ -84,30 +84,30 @@ import {
   Settings,
   Package,
   LayoutDashboard,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useCart } from '@/hooks/useCart';
-import { Badge } from '@/components/ui/badge';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useCart } from "@/hooks/useCart";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { itemCount } = useCart();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   const navLinks = [
-    { label: 'Dashboard', href: '/dealer/dashboard', icon: LayoutDashboard },
-    { label: 'Search Parts', href: '/dealer/search', icon: Search },
-    { label: 'Orders', href: '/dealer/orders', icon: Package },
-    { label: 'Account', href: '/dealer/account', icon: User },
+    { label: "Dashboard", href: "/dealer/dashboard", icon: LayoutDashboard },
+    { label: "Search Parts", href: "/dealer/search", icon: Search },
+    { label: "Orders", href: "/dealer/orders", icon: Package },
+    { label: "Account", href: "/dealer/account", icon: User },
   ];
 
   const isActive = (href: string) => pathname === href;
@@ -120,8 +120,8 @@ export function Header() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('auth');
-    router.push('/dealer/login');
+    localStorage.removeItem("auth");
+    router.push("/dealer/login");
   };
 
   return (
@@ -130,7 +130,10 @@ export function Header() {
       <div className="bg-slate-50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 h-8 flex items-center justify-between text-xs">
           <div className="flex items-center gap-4">
-            <a href="tel:+441234567890" className="text-slate-600 hover:text-blue-600 transition-colors">
+            <a
+              href="tel:+441234567890"
+              className="text-slate-600 hover:text-blue-600 transition-colors"
+            >
               📞 Call Support: +44 1234 567890
             </a>
             <span className="text-slate-400">|</span>
@@ -151,7 +154,10 @@ export function Header() {
             <h1 className="text-2xl font-bold text-slate-900">Hotbray Portal</h1>
           </Link>
 
-          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-2xl items-center gap-2">
+          <form
+            onSubmit={handleSearch}
+            className="hidden md:flex flex-1 max-w-2xl items-center gap-2"
+          >
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
               <input
@@ -204,8 +210,8 @@ export function Header() {
                     <Link
                       href={link.href}
                       className={cn(
-                        'flex items-center gap-3 cursor-pointer',
-                        isActive(link.href) && 'bg-blue-50 text-blue-600'
+                        "flex items-center gap-3 cursor-pointer",
+                        isActive(link.href) && "bg-blue-50 text-blue-600",
                       )}
                     >
                       <Icon className="h-4 w-4" />
@@ -221,7 +227,10 @@ export function Header() {
                   <span>Settings</span>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-3 cursor-pointer text-red-600">
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="flex items-center gap-3 cursor-pointer text-red-600"
+              >
                 <LogOut className="h-4 w-4" />
                 <span>Logout</span>
               </DropdownMenuItem>
@@ -234,21 +243,29 @@ export function Header() {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  'text-sm font-medium transition-colors relative pb-1',
-                  isActive(link.href) ? 'text-blue-600' : 'text-slate-600 hover:text-slate-900'
+                  "text-sm font-medium transition-colors relative pb-1",
+                  isActive(link.href) ? "text-blue-600" : "text-slate-600 hover:text-slate-900",
                 )}
               >
                 {link.label}
-                {isActive(link.href) && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />}
+                {isActive(link.href) && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+                )}
               </Link>
             ))}
           </nav>
 
           <div className="flex items-center gap-4">
-            <Link href="/dealer/cart" className="relative p-2 hover:bg-slate-100 rounded-lg transition-colors">
+            <Link
+              href="/dealer/cart"
+              className="relative p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            >
               <ShoppingCart className="h-6 w-6 text-slate-700" />
               {itemCount > 0 && (
-                <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-blue-600 hover:bg-blue-600">
+                <Badge
+                  variant="destructive"
+                  className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-blue-600 hover:bg-blue-600"
+                >
                   {itemCount}
                 </Badge>
               )}
@@ -268,7 +285,10 @@ export function Header() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-3 cursor-pointer text-red-600">
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 cursor-pointer text-red-600"
+                >
                   <LogOut className="h-4 w-4" />
                   <span>Logout</span>
                 </DropdownMenuItem>
@@ -290,7 +310,10 @@ export function Header() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1 h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <button type="submit" className="h-10 px-4 bg-blue-600 text-white rounded-lg font-medium">
+              <button
+                type="submit"
+                className="h-10 px-4 bg-blue-600 text-white rounded-lg font-medium"
+              >
                 <Search className="h-4 w-4" />
               </button>
             </form>
@@ -303,8 +326,10 @@ export function Header() {
                   href={link.href}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={cn(
-                    'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
-                    isActive(link.href) ? 'bg-blue-50 text-blue-600' : 'hover:bg-slate-50 text-slate-700'
+                    "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                    isActive(link.href)
+                      ? "bg-blue-50 text-blue-600"
+                      : "hover:bg-slate-50 text-slate-700",
                   )}
                 >
                   <Icon className="h-5 w-5" />
@@ -331,19 +356,19 @@ export function Header() {
 ### 2. components/data/StatusChip.tsx
 
 ```tsx
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 
 export type StatusVariant =
-  | 'neutral'
-  | 'info'
-  | 'success'
-  | 'warning'
-  | 'error'
-  | 'urgent'
-  | 'in_stock'
-  | 'low_stock'
-  | 'backorder'
-  | 'out_of_stock';
+  | "neutral"
+  | "info"
+  | "success"
+  | "warning"
+  | "error"
+  | "urgent"
+  | "in_stock"
+  | "low_stock"
+  | "backorder"
+  | "out_of_stock";
 
 interface StatusChipProps {
   variant: StatusVariant;
@@ -352,25 +377,25 @@ interface StatusChipProps {
 }
 
 const variantStyles: Record<StatusVariant, string> = {
-  neutral: 'bg-slate-100 text-slate-700 border-slate-200',
-  info: 'bg-blue-50 text-blue-700 border-blue-200',
-  success: 'bg-green-50 text-green-700 border-green-200',
-  warning: 'bg-amber-50 text-amber-700 border-amber-200',
-  error: 'bg-red-50 text-red-700 border-red-200',
-  urgent: 'bg-red-100 text-red-800 border-red-300 font-semibold',
-  in_stock: 'bg-green-50 text-green-700 border-green-200',
-  low_stock: 'bg-amber-50 text-amber-700 border-amber-200',
-  backorder: 'bg-blue-50 text-blue-700 border-blue-200',
-  out_of_stock: 'bg-red-50 text-red-700 border-red-200',
+  neutral: "bg-slate-100 text-slate-700 border-slate-200",
+  info: "bg-blue-50 text-blue-700 border-blue-200",
+  success: "bg-green-50 text-green-700 border-green-200",
+  warning: "bg-amber-50 text-amber-700 border-amber-200",
+  error: "bg-red-50 text-red-700 border-red-200",
+  urgent: "bg-red-100 text-red-800 border-red-300 font-semibold",
+  in_stock: "bg-green-50 text-green-700 border-green-200",
+  low_stock: "bg-amber-50 text-amber-700 border-amber-200",
+  backorder: "bg-blue-50 text-blue-700 border-blue-200",
+  out_of_stock: "bg-red-50 text-red-700 border-red-200",
 };
 
 export function StatusChip({ variant, children, className }: StatusChipProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border',
+        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
         variantStyles[variant],
-        className
+        className,
       )}
     >
       {children}
@@ -382,11 +407,11 @@ export function StatusChip({ variant, children, className }: StatusChipProps) {
 ### 3. components/controls/SearchInput.tsx
 
 ```tsx
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Search, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from "react";
+import { Search, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface SearchInputProps {
   value?: string;
@@ -401,11 +426,11 @@ export function SearchInput({
   value: controlledValue,
   onChange,
   onSearch,
-  placeholder = 'Search...',
+  placeholder = "Search...",
   debounceMs = 300,
   className,
 }: SearchInputProps) {
-  const [internalValue, setInternalValue] = useState(controlledValue || '');
+  const [internalValue, setInternalValue] = useState(controlledValue || "");
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -416,8 +441,8 @@ export function SearchInput({
   }, [internalValue, debounceMs, onChange]);
 
   const handleClear = () => {
-    setInternalValue('');
-    onChange('');
+    setInternalValue("");
+    onChange("");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -426,7 +451,7 @@ export function SearchInput({
   };
 
   return (
-    <form onSubmit={handleSubmit} className={cn('relative', className)}>
+    <form onSubmit={handleSubmit} className={cn("relative", className)}>
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
       <input
         type="text"
@@ -453,10 +478,10 @@ export function SearchInput({
 ### 4. components/controls/QtyStepper.tsx
 
 ```tsx
-'use client';
+"use client";
 
-import { Minus, Plus } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Minus, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface QtyStepperProps {
   value: number;
@@ -493,7 +518,7 @@ export function QtyStepper({
   };
 
   return (
-    <div className={cn('inline-flex items-center border border-slate-200 rounded-lg', className)}>
+    <div className={cn("inline-flex items-center border border-slate-200 rounded-lg", className)}>
       <button
         type="button"
         onClick={handleDecrement}
@@ -531,10 +556,12 @@ export function QtyStepper({
 ## 📋 Summary of Action Items
 
 ### Files to Move:
+
 1. Move `components/layouts/SideNav.tsx` → `components/nav/SideNav.tsx`
 2. Move `components/layouts/BottomNav.tsx` → `components/nav/BottomNav.tsx`
 
 ### Files to Create:
+
 1. `components/global/Header.tsx` (consolidate ReferenceHeader)
 2. `components/data/StatusChip.tsx`
 3. `components/data/Table.tsx`
@@ -542,17 +569,20 @@ export function QtyStepper({
 5. `components/controls/QtyStepper.tsx`
 
 ### Services to Create:
+
 1. `services/catalogService.ts`
 2. `services/orderService.ts`
 3. `services/announcementService.ts`
 
 ### Mocks to Create:
+
 1. `mocks/announcements.json`
 2. `mocks/products.json`
 3. `mocks/orders.json`
 4. `mocks/kpis.json`
 
 ### Pages to Create/Enhance:
+
 1. Enhance `app/dealer/dashboard/page.tsx`
 2. Enhance `app/dealer/search/page.tsx`
 3. Create `app/dealer/checkout/page.tsx`
@@ -561,6 +591,7 @@ export function QtyStepper({
 6. Create `app/dealer/account/page.tsx`
 
 ### Update AppShell:
+
 - Change imports to use new component locations
 - Import Header from `components/global/Header`
 - Import SideNav from `components/nav/SideNav`
@@ -570,6 +601,7 @@ export function QtyStepper({
 
 **Next Steps:**
 Would you like me to:
+
 1. Create all the remaining component files?
 2. Create the service layer files?
 3. Create the mock JSON files?

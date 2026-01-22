@@ -1,41 +1,43 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { getOrders } from '@/lib/services/dealerApi';
-import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { DataTable } from '@/components/portal/DataTable';
-import { DensityToggle } from '@/components/portal/DensityToggle';
-import { StatusChip } from '@/components/portal/StatusChip';
-import { Card, CardContent, Button } from '@/ui';
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { getOrders } from "@/lib/services/dealerApi";
+import api from "@/lib/api";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { DataTable } from "@/components/portal/DataTable";
+import { DensityToggle } from "@/components/portal/DensityToggle";
+import { StatusChip } from "@/components/portal/StatusChip";
+import { Card, CardContent, Button } from "@/ui";
 
-const statusTone: Record<string, 'blue' | 'green' | 'amber' | 'red' | 'slate'> = {
-  Processing: 'blue',
-  Ready: 'amber',
-  Shipped: 'green',
-  Backorder: 'red',
+const statusTone: Record<string, "blue" | "green" | "amber" | "red" | "slate"> = {
+  Processing: "blue",
+  Ready: "amber",
+  Shipped: "green",
+  Backorder: "red",
 };
 
 const datePresets = [
-  { label: '7 days', value: 7 },
-  { label: '30 days', value: 30 },
-  { label: '90 days', value: 90 },
+  { label: "7 days", value: 7 },
+  { label: "30 days", value: 30 },
+  { label: "90 days", value: 90 },
 ];
 
 export default function DealerOrdersPage() {
   const [orders, setOrders] = useState<Awaited<ReturnType<typeof getOrders>>>([]);
-  const [status, setStatus] = useState('All');
-  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState("All");
+  const [search, setSearch] = useState("");
   const [days, setDays] = useState(30);
-  const [density, setDensity] = useState<'comfortable' | 'dense'>('comfortable');
+  const [density, setDensity] = useState<"comfortable" | "dense">("comfortable");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const debouncedSearch = useDebouncedValue(search, 300);
 
   useEffect(() => {
     getOrders()
       .then(setOrders)
-      .catch(() => setError('Failed to load orders.'))
+      .catch(() => setError("Failed to load orders."))
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -44,7 +46,7 @@ export default function DealerOrdersPage() {
     cutoff.setDate(cutoff.getDate() - days);
     return orders.filter((order) => {
       const inWindow = new Date(order.createdAt) >= cutoff;
-      const statusMatch = status === 'All' || order.status === status;
+      const statusMatch = status === "All" || order.status === status;
       const query = debouncedSearch.trim().toLowerCase();
       const queryMatch =
         !query ||
@@ -56,10 +58,10 @@ export default function DealerOrdersPage() {
   }, [orders, status, debouncedSearch, days]);
 
   const columns = [
-    { key: 'order', label: 'Order' },
-    { key: 'status', label: 'Status' },
-    { key: 'total', label: 'Total', align: 'right' as const },
-    { key: 'action', label: '', align: 'right' as const },
+    { key: "order", label: "Order" },
+    { key: "status", label: "Status" },
+    { key: "total", label: "Total", align: "right" as const },
+    { key: "action", label: "", align: "right" as const },
   ];
 
   const rows = useMemo(
@@ -69,10 +71,19 @@ export default function DealerOrdersPage() {
         cells: [
           <div key={`${order.id}-order`}>
             <div className="text-sm font-semibold text-slate-900">{order.orderNo}</div>
-            <div className="text-xs text-slate-500">{order.createdAt} • PO {order.poRef}</div>
+            <div className="text-xs text-slate-500">
+              {order.createdAt} • PO {order.poRef}
+            </div>
           </div>,
-          <StatusChip key={`${order.id}-status`} label={order.status} tone={statusTone[order.status]} />,
-          <div key={`${order.id}-total`} className="text-right text-sm font-semibold text-slate-900">
+          <StatusChip
+            key={`${order.id}-status`}
+            label={order.status}
+            tone={statusTone[order.status]}
+          />,
+          <div
+            key={`${order.id}-total`}
+            className="text-right text-sm font-semibold text-slate-900"
+          >
             GBP {order.lines.reduce((sum, line) => sum + line.qty * line.unitPrice, 0).toFixed(2)}
           </div>,
           <div key={`${order.id}-action`} className="text-right">
@@ -85,7 +96,7 @@ export default function DealerOrdersPage() {
           </div>,
         ],
       })),
-    [filteredOrders]
+    [filteredOrders],
   );
 
   if (isLoading) {
@@ -112,7 +123,32 @@ export default function DealerOrdersPage() {
             <h1 className="text-3xl font-semibold text-slate-900">Orders</h1>
             <p className="text-slate-500 mt-1">Track, filter, and manage all dealer orders.</p>
           </div>
-          <DensityToggle value={density} onChange={setDensity} />
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              disabled={isExporting || orders.length === 0}
+              onClick={async () => {
+                setIsExporting(true);
+                try {
+                  const response = await api.get("/dealer/orders/export", { responseType: "blob" });
+                  const url = window.URL.createObjectURL(new Blob([response.data]));
+                  const link = document.createElement("a");
+                  link.href = url;
+                  link.download = `orders-export-${Date.now()}.csv`;
+                  link.click();
+                  window.URL.revokeObjectURL(url);
+                } catch (err) {
+                  console.error("Failed to export orders:", err);
+                  alert("Failed to export orders. Please try again.");
+                } finally {
+                  setIsExporting(false);
+                }
+              }}
+            >
+              {isExporting ? "Exporting..." : "Export Orders"}
+            </Button>
+            <DensityToggle value={density} onChange={setDensity} />
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex gap-2">
@@ -123,15 +159,17 @@ export default function DealerOrdersPage() {
                 onClick={() => setDays(preset.value)}
                 className={`rounded-full border px-3 py-1 text-xs font-semibold ${
                   days === preset.value
-                    ? 'border-blue-600 bg-blue-50 text-blue-700'
-                    : 'border-slate-200 text-slate-500 hover:text-slate-700'
+                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                    : "border-slate-200 text-slate-500 hover:text-slate-700"
                 }`}
               >
                 {preset.label}
               </button>
             ))}
           </div>
-          <label className="sr-only" htmlFor="order-status">Order status</label>
+          <label className="sr-only" htmlFor="order-status">
+            Order status
+          </label>
           <select
             id="order-status"
             value={status}
@@ -144,7 +182,9 @@ export default function DealerOrdersPage() {
             <option value="Shipped">Shipped</option>
             <option value="Backorder">Backorder</option>
           </select>
-          <label className="sr-only" htmlFor="order-search">Search orders</label>
+          <label className="sr-only" htmlFor="order-search">
+            Search orders
+          </label>
           <input
             id="order-search"
             value={search}
@@ -155,9 +195,40 @@ export default function DealerOrdersPage() {
         </div>
       </div>
 
-      {filteredOrders.length === 0 ? (
+      {orders.length === 0 ? (
         <Card>
-          <CardContent className="py-16 text-center text-slate-500">No orders match this filter.</CardContent>
+          <CardContent className="py-16 text-center">
+            <div className="text-slate-400 mb-4">
+              <svg
+                className="mx-auto h-12 w-12"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-slate-700 mb-1">No orders yet</h3>
+            <p className="text-slate-500 mb-4">
+              Your order history will appear here once you place your first order.
+            </p>
+            <Link href="/dealer/search">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                Start Shopping
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      ) : filteredOrders.length === 0 ? (
+        <Card>
+          <CardContent className="py-16 text-center text-slate-500">
+            No orders match this filter. Try adjusting your search or date range.
+          </CardContent>
         </Card>
       ) : (
         <DataTable columns={columns} rows={rows} density={density} />

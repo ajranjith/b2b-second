@@ -16,6 +16,7 @@ This document provides a comprehensive test plan for the dealer journey from log
    - Optional: Special prices for testing price override
 
 2. **Services Running**:
+
    ```bash
    # Terminal 1: API Server
    cd apps/api
@@ -42,22 +43,26 @@ This document provides a comprehensive test plan for the dealer journey from log
 **URL**: `http://localhost:3000/dealer/login`
 
 **Actions**:
+
 1. Enter dealer email
 2. Enter password
 3. Click "Login"
 
 **Expected Result**:
+
 - ✅ Redirected to `/dealer/dashboard` or `/dealer/search`
 - ✅ JWT token stored in localStorage
 - ✅ Auth header included in API requests
 
 **Verification**:
+
 ```javascript
 // Open browser console
-localStorage.getItem('token') // Should return JWT token
+localStorage.getItem("token"); // Should return JWT token
 ```
 
 **API Call**:
+
 ```
 POST /auth/login
 Body: { email, password }
@@ -71,6 +76,7 @@ Response: { token, user: { role: 'DEALER', dealerAccountId, dealerUserId } }
 **URL**: `http://localhost:3000/dealer/search`
 
 **Actions**:
+
 1. Enter search query (e.g., "brake")
 2. Select filters (optional):
    - Part Type: All / GENUINE / AFTERMARKET / BRANDED
@@ -78,12 +84,14 @@ Response: { token, user: { role: 'DEALER', dealerAccountId, dealerUserId } }
 3. View results table
 
 **Expected Result**:
+
 - ✅ Products displayed in table
 - ✅ Columns: Code, Description, Part Type, Stock, Price, Actions
 - ✅ Prices calculated using PricingService (special price → net tier → fallback)
 - ✅ "Add to Cart" button enabled for priced products
 
 **Verification**:
+
 ```
 Products should show:
 - yourPrice: number (from PricingService)
@@ -91,6 +99,7 @@ Products should show:
 ```
 
 **API Call**:
+
 ```
 GET /dealer/search?q=brake&limit=20
 Response: {
@@ -111,22 +120,26 @@ Response: {
 ### Step 3: Add Product to Cart
 
 **Actions**:
+
 1. Click "Add to Cart" on a product
 2. Observe toast notification
 3. Check cart icon badge (item count)
 
 **Expected Result**:
+
 - ✅ Toast: "Item added to cart"
 - ✅ Cart badge shows item count
 - ✅ Product added to dealer's cart in database
 
 **Verification**:
+
 ```
 Cart should contain:
 - CartItem with productId, qty, yourPrice (current price)
 ```
 
 **API Call**:
+
 ```
 POST /dealer/cart/items
 Body: { productId: "uuid", qty: 1 }
@@ -147,11 +160,13 @@ Response: {
 **URL**: `http://localhost:3000/dealer/cart`
 
 **Actions**:
+
 1. Navigate to cart page
 2. Observe cart items
 3. Check prices are current (refreshed)
 
 **Expected Result**:
+
 - ✅ Cart items displayed
 - ✅ Prices refreshed with current pricing (special prices, tier changes)
 - ✅ Quantity is editable
@@ -159,6 +174,7 @@ Response: {
 - ✅ Subtotal calculates correctly
 
 **Verification**:
+
 ```
 On cart load:
 1. GET /dealer/cart called
@@ -168,6 +184,7 @@ On cart load:
 ```
 
 **API Call**:
+
 ```
 GET /dealer/cart
 Response: {
@@ -190,17 +207,20 @@ Response: {
 ### Step 5: Update Cart Item Quantity
 
 **Actions**:
+
 1. Change quantity in cart (e.g., 1 → 3)
 2. Observe optimistic update
 3. Wait for API confirmation
 
 **Expected Result**:
+
 - ✅ Quantity updates immediately (optimistic)
 - ✅ Line total recalculates
 - ✅ Subtotal updates
 - ✅ If API fails, rollback to previous value
 
 **API Call**:
+
 ```
 PATCH /dealer/cart/items/:itemId
 Body: { qty: 3 }
@@ -214,16 +234,19 @@ Response: { cart: {...} } (updated cart)
 ### Step 6: Remove Cart Item
 
 **Actions**:
+
 1. Click "Remove" on cart item
 2. Observe optimistic removal
 3. Confirm API success
 
 **Expected Result**:
+
 - ✅ Item removed immediately (optimistic)
 - ✅ Subtotal recalculates
 - ✅ Toast: "Item removed from cart"
 
 **API Call**:
+
 ```
 DELETE /dealer/cart/items/:itemId
 Response: { cart: {...} } (updated cart)
@@ -238,6 +261,7 @@ Response: { cart: {...} } (updated cart)
 **URL**: `http://localhost:3000/dealer/checkout`
 
 **Actions**:
+
 1. Click "Checkout" from cart
 2. Observe cart summary
 3. Select shipping method (DELIVERY / COLLECTION)
@@ -246,6 +270,7 @@ Response: { cart: {...} } (updated cart)
 6. Click "Place Order"
 
 **Expected Result**:
+
 - ✅ Cart items displayed in checkout summary
 - ✅ Prices shown (current prices at checkout time)
 - ✅ Shipping method selector works
@@ -253,6 +278,7 @@ Response: { cart: {...} } (updated cart)
 - ✅ Order created with SUSPENDED status
 
 **Verification**:
+
 ```
 Order creation should:
 1. Snapshot prices at checkout time
@@ -264,6 +290,7 @@ Order creation should:
 ```
 
 **API Call**:
+
 ```
 POST /dealer/checkout
 Body: {
@@ -292,6 +319,7 @@ Response: {
 **URL**: `http://localhost:3000/dealer/orders/:orderId` (or confirmation page)
 
 **Expected Result**:
+
 - ✅ Order number displayed
 - ✅ Order status: SUSPENDED
 - ✅ Order lines with snapshotted prices
@@ -300,6 +328,7 @@ Response: {
 - ✅ Shipping method
 
 **Verification**:
+
 ```
 OrderLine.unitPriceSnapshot should:
 - Match price at checkout time
@@ -316,12 +345,14 @@ OrderLine.unitPriceSnapshot should:
 **URL**: `http://localhost:3000/dealer/orders`
 
 **Actions**:
+
 1. Navigate to orders page
 2. View order list
 3. Filter by status (optional)
 4. Click order to view details
 
 **Expected Result**:
+
 - ✅ Orders displayed in table
 - ✅ Columns: Order No, Status, Total, Date, Line Count
 - ✅ Can filter by status
@@ -329,6 +360,7 @@ OrderLine.unitPriceSnapshot should:
 - ✅ Click to view details
 
 **API Call**:
+
 ```
 GET /dealer/orders?limit=20&offset=0&status=SUSPENDED
 Response: {
@@ -348,15 +380,18 @@ Response: {
 ### Step 10: Export Orders to CSV
 
 **Actions**:
+
 1. Click "Export Orders" button
 2. Observe file download
 
 **Expected Result**:
+
 - ✅ CSV file downloads
 - ✅ Filename: `orders-export-{timestamp}.csv`
 - ✅ Contains: Order No, Account No, Line Type, Product Code, Description, Part Type, Qty, Unit Price, Created At, Status
 
 **API Call**:
+
 ```
 GET /dealer/orders/export
 Response: CSV file (Content-Type: text/csv)
@@ -373,17 +408,20 @@ Response: CSV file (Content-Type: text/csv)
 **URL**: `http://localhost:3000/dealer/backorders`
 
 **Actions**:
+
 1. Navigate to backorders page
 2. View backorder list
 3. Click "Export" button (if available)
 
 **Expected Result**:
+
 - ✅ Backorders displayed in table
 - ✅ Columns: Order No, Part Code, Description, Qty Ordered, Qty Outstanding, Order Value
 - ✅ Filtered by dealer's account number
 - ✅ Shows active dataset only
 
 **API Call**:
+
 ```
 GET /dealer/backorders
 Response: {
@@ -402,14 +440,17 @@ Response: {
 ### Step 12: Export Backorders to CSV
 
 **Actions**:
+
 1. Click "Export Backorders" button
 2. Observe file download
 
 **Expected Result**:
+
 - ✅ CSV file downloads
 - ✅ Filename: `backorders-export-{timestamp}.csv`
 
 **API Call**:
+
 ```
 GET /dealer/backorders/export
 Response: CSV file (Content-Type: text/csv)
@@ -424,17 +465,20 @@ Response: CSV file (Content-Type: text/csv)
 ### Scenario 1: Price Changes Don't Affect Historical Orders
 
 **Setup**:
+
 1. Add product to cart (price: £100, Net3 tier)
 2. Place order → OrderLine.unitPriceSnapshot = £100
 3. Admin changes dealer tier: Net3 → Net5 (new price: £80)
 4. View historical order
 
 **Expected Result**:
+
 - ✅ Historical order still shows £100 (unitPriceSnapshot)
 - ✅ New cart items show £80 (current Net5 price)
 - ✅ Order total never changes
 
 **Verification**:
+
 ```sql
 SELECT
   oh."orderNo",
@@ -454,11 +498,13 @@ WHERE oh."dealerAccountId" = '<dealer-id>';
 ### Scenario 2: Special Price Overrides Tier Price
 
 **Setup**:
+
 1. Product has Net3 price: £100
 2. Admin uploads special price: £75 (active 2026-02-01 to 2026-02-28)
 3. Dealer searches product in February 2026
 
 **Expected Result**:
+
 - ✅ Search shows £75 (priceSource: 'SPECIAL_PRICE')
 - ✅ Add to cart → yourPrice = £75
 - ✅ Checkout → unitPriceSnapshot = £75
@@ -469,11 +515,13 @@ WHERE oh."dealerAccountId" = '<dealer-id>';
 ### Scenario 3: Cart Price Refresh on Reload
 
 **Setup**:
+
 1. Add product to cart (current price: £100)
 2. Admin uploads special price: £80 (active today)
 3. Reload cart page
 
 **Expected Result**:
+
 - ✅ Cart shows updated price: £80
 - ✅ priceSource updated to 'SPECIAL_PRICE'
 - ✅ Subtotal recalculates with new price
@@ -483,10 +531,12 @@ WHERE oh."dealerAccountId" = '<dealer-id>';
 ### Scenario 4: Superseded Part Search
 
 **Setup**:
+
 1. Admin uploads supersession: PART-OLD → PART-NEW
 2. Dealer searches for "PART-OLD"
 
 **Expected Result**:
+
 - ✅ Search returns PART-NEW
 - ✅ Supersession banner: "Part PART-OLD has been superseded by PART-NEW"
 - ✅ Pricing shown for PART-NEW

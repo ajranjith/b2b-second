@@ -1,13 +1,13 @@
-import * as dotenv from 'dotenv';
-import * as path from 'path';
-dotenv.config({ path: path.resolve(__dirname, '../../../packages/db/.env') });
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient, ImportType } from '@prisma/client';
-import * as XLSX from 'xlsx';
-import * as crypto from 'crypto';
-import * as fs from 'fs';
-import { ProductImportService } from './services/ProductImportService';
+import * as dotenv from "dotenv";
+import * as path from "path";
+dotenv.config({ path: path.resolve(__dirname, "../../../packages/db/.env") });
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient, ImportType } from "@prisma/client";
+import * as XLSX from "xlsx";
+import * as crypto from "crypto";
+import * as fs from "fs";
+import { ProductImportService } from "./services/ProductImportService";
 
 const connectionString = process.env.DATABASE_URL!;
 const pool = new Pool({ connectionString });
@@ -20,18 +20,20 @@ interface ImportArgs {
 
 function parseArgs(): ImportArgs {
   const args = process.argv.slice(2);
-  const fileIndex = args.indexOf('--file');
+  const fileIndex = args.indexOf("--file");
 
   if (fileIndex === -1) {
-    console.error('❌ Usage: ts-node importProductsDGS.ts --file <path-to-xlsx>');
-    console.error('   Example: ts-node importProductsDGS.ts --file /mnt/data/DGS_Sample_150_GN_ES_BR.xlsx');
+    console.error("❌ Usage: ts-node importProductsDGS.ts --file <path-to-xlsx>");
+    console.error(
+      "   Example: ts-node importProductsDGS.ts --file /mnt/data/DGS_Sample_150_GN_ES_BR.xlsx",
+    );
     process.exit(1);
   }
 
   const file = args[fileIndex + 1];
 
   if (!file) {
-    console.error('❌ File path is required');
+    console.error("❌ File path is required");
     process.exit(1);
   }
 
@@ -40,17 +42,17 @@ function parseArgs(): ImportArgs {
 
 function calculateFileHash(filePath: string): string {
   const fileBuffer = fs.readFileSync(filePath);
-  const hashSum = crypto.createHash('sha256');
+  const hashSum = crypto.createHash("sha256");
   hashSum.update(fileBuffer);
-  return hashSum.digest('hex');
+  return hashSum.digest("hex");
 }
 
 async function main() {
   const { file } = parseArgs();
 
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('📦 DGS PRODUCT/PRICING/STOCK IMPORTER');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("📦 DGS PRODUCT/PRICING/STOCK IMPORTER");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log(`   File: ${file}\n`);
 
   // Resolve file path
@@ -69,18 +71,18 @@ async function main() {
   const importService = new ProductImportService(prisma);
 
   // Create import batch
-  console.log('\n📝 Creating import batch...');
+  console.log("\n📝 Creating import batch...");
   const batch = await importService.createBatch(
     ImportType.PRODUCTS_MIXED,
     path.basename(filePath),
     fileHash,
-    filePath
+    filePath,
   );
   console.log(`✅ Import batch created: ${batch.id}`);
 
   try {
     // Read Excel file
-    console.log('\n📊 Parsing Excel file...');
+    console.log("\n📊 Parsing Excel file...");
     const workbook = XLSX.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
@@ -89,34 +91,34 @@ async function main() {
     console.log(`   Found ${rows.length} rows`);
 
     // Validate columns
-    console.log('\n🔍 Validating columns...');
+    console.log("\n🔍 Validating columns...");
     const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
     const columnValidation = importService.validateColumns(headers);
 
     if (!columnValidation.valid) {
-      console.error('❌ Missing required columns:');
-      columnValidation.missing.forEach(col => console.error(`   - ${col}`));
+      console.error("❌ Missing required columns:");
+      columnValidation.missing.forEach((col) => console.error(`   - ${col}`));
 
       await importService.markBatchFailed(
         batch.id,
-        new Error(`Missing required columns: ${columnValidation.missing.join(', ')}`)
+        new Error(`Missing required columns: ${columnValidation.missing.join(", ")}`),
       );
 
       process.exit(1);
     }
 
-    console.log('✅ All required columns present');
+    console.log("✅ All required columns present");
 
     // Update total rows
     await prisma.importBatch.update({
       where: { id: batch.id },
-      data: { totalRows: rows.length }
+      data: { totalRows: rows.length },
     });
 
     let validCount = 0;
     let invalidCount = 0;
 
-    console.log('\n📋 Processing rows...');
+    console.log("\n📋 Processing rows...");
 
     // Process each row
     for (let i = 0; i < rows.length; i++) {
@@ -144,8 +146,8 @@ async function main() {
           // Note: Net5-Net7 would need schema extension
           isValid: parsedRow.isValid,
           validationErrors: parsedRow.validationErrors,
-          rawRowJson: parsedRow.rawRowJson
-        }
+          rawRowJson: parsedRow.rawRowJson,
+        },
       });
 
       if (parsedRow.isValid) {
@@ -157,16 +159,18 @@ async function main() {
         await importService.logError(
           batch.id,
           rowNumber,
-          parsedRow.validationErrors || 'Validation failed',
+          parsedRow.validationErrors || "Validation failed",
           undefined,
-          'VALIDATION_ERROR',
-          row
+          "VALIDATION_ERROR",
+          row,
         );
       }
 
       // Progress indicator
       if ((i + 1) % 25 === 0) {
-        console.log(`   Processed ${i + 1}/${rows.length} rows (${validCount} valid, ${invalidCount} invalid)`);
+        console.log(
+          `   Processed ${i + 1}/${rows.length} rows (${validCount} valid, ${invalidCount} invalid)`,
+        );
       }
     }
 
@@ -176,30 +180,30 @@ async function main() {
     console.log(`   Invalid: ${invalidCount}`);
 
     if (validCount === 0) {
-      console.error('\n❌ No valid rows to process');
+      console.error("\n❌ No valid rows to process");
       await importService.finishBatch(batch.id, {
         total: rows.length,
         valid: validCount,
-        invalid: invalidCount
+        invalid: invalidCount,
       });
       process.exit(1);
     }
 
     // Process valid rows (UPSERT into main tables)
-    console.log('\n🔄 Upserting products into database...');
+    console.log("\n🔄 Upserting products into database...");
     const processedCount = await importService.processValidRows(batch.id);
 
     // Finish batch
     await importService.finishBatch(batch.id, {
       total: rows.length,
       valid: validCount,
-      invalid: invalidCount
+      invalid: invalidCount,
     });
 
     // Generate final report
-    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📊 FINAL IMPORT REPORT');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("📊 FINAL IMPORT REPORT");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log(`Import Batch ID: ${batch.id}`);
     console.log(`Total Rows:      ${rows.length}`);
     console.log(`Valid Rows:      ${validCount}`);
@@ -207,21 +211,20 @@ async function main() {
     console.log(`Processed:       ${processedCount}`);
 
     const finalBatch = await prisma.importBatch.findUnique({
-      where: { id: batch.id }
+      where: { id: batch.id },
     });
     console.log(`Final Status:    ${finalBatch?.status}`);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
     if (invalidCount > 0) {
-      console.log('⚠️  Some rows had validation errors. Check ImportError table for details.');
+      console.log("⚠️  Some rows had validation errors. Check ImportError table for details.");
       console.log(`   Query: SELECT * FROM "ImportError" WHERE "batchId" = '${batch.id}';\n`);
     }
 
-    console.log('✅ Import completed successfully!');
-    console.log('   Portal search should now show these products.\n');
-
+    console.log("✅ Import completed successfully!");
+    console.log("   Portal search should now show these products.\n");
   } catch (error) {
-    console.error('\n❌ Import failed:', error);
+    console.error("\n❌ Import failed:", error);
 
     await importService.markBatchFailed(batch.id, error as Error);
 

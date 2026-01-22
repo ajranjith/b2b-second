@@ -5,16 +5,11 @@ import { ZodError } from "zod";
 
 import { requireRole } from "@/auth/requireRole";
 import { fail, ok } from "@/lib/response";
-import {
-  DealerAccountUpdateSchema,
-  type DealerAccountUpdateDTO,
-} from "@repo/lib";
-import {
-  getDealerAccount,
-  updateDealerAccount,
-} from "@/services/dealerAccountService";
+import { DealerAccountUpdateSchema, type DealerAccountUpdateDTO } from "@repo/lib";
+import { getDealerAccount, updateDealerAccount } from "@/services/dealerAccountService";
+import { withEnvelope } from "@/lib/withEnvelope";
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   cacheTag("dealer-account");
   cacheLife("short");
 
@@ -28,7 +23,7 @@ export async function GET(request: NextRequest) {
   return ok(data);
 }
 
-export async function PATCH(request: NextRequest) {
+async function handlePATCH(request: NextRequest) {
   const auth = requireRole(request, "DEALER");
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);
@@ -58,3 +53,6 @@ export async function PATCH(request: NextRequest) {
     throw error;
   }
 }
+
+export const GET = withEnvelope({ namespace: "D" }, handleGET);
+export const PATCH = withEnvelope({ namespace: "D" }, handlePATCH);

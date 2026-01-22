@@ -3,12 +3,14 @@
 This index maps API endpoints (Fastify) to their implementation files. If the API interface changes, both these files and their web application consumers (React Query or Server Actions) must be verified.
 
 ## API Application
+
 - **Main Entry**: [apps/api/src/index.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/apps/api/src/index.ts)
 - **Base URL**: `http://localhost:3001`
 
 ## Route Definitions
 
 ### Authentication (`/auth`)
+
 - **File**: [routes/auth.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/apps/api/src/routes/auth.ts)
 - **Endpoints**:
   - `POST /auth/login`
@@ -16,6 +18,7 @@ This index maps API endpoints (Fastify) to their implementation files. If the AP
   - `GET /auth/me`
 
 ### Dealer Portal (`/dealer`)
+
 - **File**: [routes/dealer.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/apps/api/src/routes/dealer.ts)
 - **Endpoints**:
   - `GET /dealer/orders`
@@ -24,6 +27,7 @@ This index maps API endpoints (Fastify) to their implementation files. If the AP
   - `GET /dealer/pricing/:partNumber`
 
 ### Admin Portal (`/admin`)
+
 - **File**: [routes/admin.ts](file:///c:/Users/ajran/.gemini/antigravity/scratch/hotbray-portal-phase1/apps/api/src/routes/admin.ts)
 - **Endpoints**:
   - `GET /admin/users`

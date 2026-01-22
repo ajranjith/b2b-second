@@ -5,8 +5,9 @@ import { cacheLife, cacheTag } from "next/cache";
 import { requireRole } from "@/auth/requireRole";
 import { fail, ok } from "@/lib/response";
 import { listDealerNews } from "@/services/newsService";
+import { withEnvelope } from "@/lib/withEnvelope";
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   cacheTag("dealer-news");
   cacheLife("short");
 
@@ -18,3 +19,5 @@ export async function GET(request: NextRequest) {
   const data = await listDealerNews(10);
   return ok(data);
 }
+
+export const GET = withEnvelope({ namespace: "D" }, handleGET);

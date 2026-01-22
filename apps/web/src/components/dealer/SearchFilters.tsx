@@ -1,26 +1,22 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Search, Filter, X, SlidersHorizontal } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useState } from "react";
+import { Search, Filter, X, SlidersHorizontal } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import type { SearchFilters as SearchFiltersType, StockStatus } from '@/types/dealer';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import type { SearchFilters as SearchFiltersType, StockStatus } from "@/types/dealer";
+import { cn } from "@/lib/utils";
 
 interface SearchFiltersProps {
   filters: SearchFiltersType;
@@ -32,16 +28,16 @@ interface SearchFiltersProps {
 }
 
 const availabilityOptions: { value: StockStatus; label: string }[] = [
-  { value: 'in_stock', label: 'In Stock' },
-  { value: 'low_stock', label: 'Low Stock' },
-  { value: 'backorder', label: 'Backorder' },
+  { value: "in_stock", label: "In Stock" },
+  { value: "low_stock", label: "Low Stock" },
+  { value: "backorder", label: "Backorder" },
 ];
 
 const sortOptions = [
-  { value: 'relevance', label: 'Relevance' },
-  { value: 'price_asc', label: 'Price: Low to High' },
-  { value: 'price_desc', label: 'Price: High to Low' },
-  { value: 'part_number', label: 'Part Number' },
+  { value: "relevance", label: "Relevance" },
+  { value: "price_asc", label: "Price: Low to High" },
+  { value: "price_desc", label: "Price: High to Low" },
+  { value: "part_number", label: "Part Number" },
 ];
 
 /**
@@ -83,17 +79,17 @@ export function SearchFilters({
     onFiltersChange({ ...filters, availability: updated });
   };
 
-  const handleSortChange = (sortBy: SearchFiltersType['sortBy']) => {
+  const handleSortChange = (sortBy: SearchFiltersType["sortBy"]) => {
     onFiltersChange({ ...filters, sortBy });
   };
 
   const handleClearFilters = () => {
-    setLocalQuery('');
+    setLocalQuery("");
     onFiltersChange({
-      query: '',
+      query: "",
       availability: [],
       priceRange: undefined,
-      sortBy: 'relevance',
+      sortBy: "relevance",
     });
   };
 
@@ -103,7 +99,7 @@ export function SearchFilters({
       count += filters.availability.length;
     }
     if (filters.priceRange) count += 1;
-    if (filters.sortBy && filters.sortBy !== 'relevance') count += 1;
+    if (filters.sortBy && filters.sortBy !== "relevance") count += 1;
     return count;
   };
 
@@ -112,8 +108,8 @@ export function SearchFilters({
   return (
     <div
       className={cn(
-        'sticky top-[112px] z-[1040] bg-white border-b border-slate-200 shadow-sm',
-        className
+        "sticky top-[112px] z-[1040] bg-white border-b border-slate-200 shadow-sm",
+        className,
       )}
     >
       <div className="px-6 py-4">
@@ -130,7 +126,7 @@ export function SearchFilters({
             />
           </div>
           <Button type="submit" size="lg" disabled={isLoading}>
-            {isLoading ? 'Searching...' : 'Search'}
+            {isLoading ? "Searching..." : "Search"}
           </Button>
         </form>
 
@@ -144,10 +140,10 @@ export function SearchFilters({
               return (
                 <Badge
                   key={option.value}
-                  variant={isActive ? 'default' : 'outline'}
+                  variant={isActive ? "default" : "outline"}
                   className={cn(
-                    'cursor-pointer hover:opacity-80 transition-opacity',
-                    isActive && 'bg-primary text-white'
+                    "cursor-pointer hover:opacity-80 transition-opacity",
+                    isActive && "bg-primary text-white",
                   )}
                   onClick={() => handleAvailabilityToggle(option.value)}
                 >
@@ -163,10 +159,7 @@ export function SearchFilters({
           {/* Sort Dropdown */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-slate-600">Sort:</span>
-            <Select
-              value={filters.sortBy || 'relevance'}
-              onValueChange={handleSortChange}
-            >
+            <Select value={filters.sortBy || "relevance"} onValueChange={handleSortChange}>
               <SelectTrigger className="w-[180px] h-8">
                 <SelectValue />
               </SelectTrigger>
@@ -209,7 +202,7 @@ export function SearchFilters({
                     <Input
                       type="number"
                       placeholder="Min"
-                      value={filters.priceRange?.min || ''}
+                      value={filters.priceRange?.min || ""}
                       onChange={(e) => {
                         const min = parseFloat(e.target.value) || undefined;
                         onFiltersChange({
@@ -226,7 +219,7 @@ export function SearchFilters({
                     <Input
                       type="number"
                       placeholder="Max"
-                      value={filters.priceRange?.max || ''}
+                      value={filters.priceRange?.max || ""}
                       onChange={(e) => {
                         const max = parseFloat(e.target.value) || undefined;
                         onFiltersChange({
@@ -280,7 +273,7 @@ export function SearchFilters({
             <>
               <Separator orientation="vertical" className="h-6" />
               <span className="text-sm text-slate-600">
-                {resultCount} {resultCount === 1 ? 'result' : 'results'}
+                {resultCount} {resultCount === 1 ? "result" : "results"}
               </span>
             </>
           )}

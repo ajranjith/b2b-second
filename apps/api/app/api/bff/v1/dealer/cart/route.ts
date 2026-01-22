@@ -3,8 +3,9 @@ import type { NextRequest } from "next/server";
 import { requireRole } from "@/auth/requireRole";
 import { fail, ok } from "@/lib/response";
 import { getDealerCart } from "@/services/cartService";
+import { withEnvelope } from "@/lib/withEnvelope";
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   const auth = requireRole(request, "DEALER");
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);
@@ -19,3 +20,5 @@ export async function GET(request: NextRequest) {
   const cart = await getDealerCart(accountId, dealerUserId);
   return ok(cart);
 }
+
+export const GET = withEnvelope({ namespace: "D" }, handleGET);

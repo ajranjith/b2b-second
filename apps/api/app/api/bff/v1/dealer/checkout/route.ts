@@ -6,8 +6,9 @@ import { requireRole } from "@/auth/requireRole";
 import { fail, ok } from "@/lib/response";
 import { DealerCheckoutRequestSchema } from "@repo/lib";
 import { checkoutDealerCart } from "@/services/checkoutService";
+import { withEnvelope } from "@/lib/withEnvelope";
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const auth = requireRole(request, "DEALER");
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);
@@ -33,3 +34,5 @@ export async function POST(request: NextRequest) {
     throw error;
   }
 }
+
+export const POST = withEnvelope({ namespace: "D" }, handlePOST);

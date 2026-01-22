@@ -3,7 +3,7 @@ import { z } from 'zod'
 const TierCodeSchema = z.enum(['NET1', 'NET2', 'NET3', 'NET4', 'NET5', 'NET6', 'NET7']);
 
 export const DealerCreateSchema = z.object({
-    accountNo: z.string().min(1).max(50).regex(/^[A-Z0-9]+$/),
+    accountNo: z.string().min(1).max(50).regex(/^[A-Za-z0-9]+$/),
     companyName: z.string().max(200).optional(),
     firstName: z.string().min(1).max(100),
     lastName: z.string().min(1).max(100),
@@ -13,11 +13,6 @@ export const DealerCreateSchema = z.object({
     defaultShippingMethod: z.enum(['Air', 'Sea', 'FedEx', 'DHL', 'Others']).optional(),
     shippingNotes: z.string().max(500).optional(),
     entitlement: z.enum(['GENUINE_ONLY', 'AFTERMARKET_ONLY', 'SHOW_ALL']).optional(),
-    bands: z.object({
-        genuine: z.string().regex(/^[1-4]$/).optional(),
-        aftermarket: z.string().regex(/^[1-4]$/).optional(),
-        branded: z.string().regex(/^[1-4]$/).optional(),
-    }).optional(),
     tiers: z.object({
         genuine: TierCodeSchema,
         aftermarketEs: TierCodeSchema,

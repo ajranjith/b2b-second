@@ -28,7 +28,6 @@ async function main() {
         const dealers: any[] = [];
         for (let i = 1; i <= 55; i++) {
             const accountNo = `D-${i.toString().padStart(3, '0')}`;
-            const erpAccountNo = `E-${i.toString().padStart(3, '0')}`;
             const email = `u-${i}@dealer.com`;
 
             const appUser = await (prisma as any).appUser.upsert({
@@ -44,11 +43,15 @@ async function main() {
 
             const dealer = await (prisma as any).dealerAccount.upsert({
                 where: { accountNo },
-                update: { companyName: `Dealer ${i}`, erpAccountNo },
+                update: {
+                    companyName: `Dealer ${i}`,
+                    status: DealerStatus.ACTIVE,
+                    entitlement: Entitlement.SHOW_ALL,
+                    mainEmail: email
+                },
                 create: {
                     accountNo,
                     companyName: `Dealer ${i}`,
-                    erpAccountNo,
                     status: DealerStatus.ACTIVE,
                     entitlement: Entitlement.SHOW_ALL,
                     mainEmail: email
@@ -68,23 +71,6 @@ async function main() {
                 }
             });
 
-            // Handle Band Assignments
-            for (const type of [PartType.GENUINE, PartType.AFTERMARKET, PartType.BRANDED]) {
-                await (prisma as any).dealerBandAssignment.upsert({
-                    where: {
-                        dealerAccountId_partType: {
-                            dealerAccountId: dealer.id,
-                            partType: type
-                        }
-                    },
-                    update: { bandCode: '1' },
-                    create: {
-                        dealerAccountId: dealer.id,
-                        partType: type,
-                        bandCode: '1'
-                    }
-                });
-            }
             dealers.push(dealer);
             if (i % 10 === 0) console.log(`  → Processed ${i} dealers...`);
         }
@@ -122,7 +108,7 @@ async function main() {
             const dealerUser = await (prisma as any).dealerUser.findFirst({ where: { dealerAccountId: dealer.id } });
             await (prisma as any).orderHeader.create({
                 data: {
-                    orderNo: `O-SEED-${Date.now()}-${i}`,
+                    orderNo: `ORD-SEED-${Date.now()}-${i}`,
                     dealerAccountId: dealer.id,
                     dealerUserId: dealerUser!.id,
                     status: OrderStatus.PROCESSING,

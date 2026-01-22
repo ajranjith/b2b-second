@@ -5,8 +5,9 @@ import { cacheLife, cacheTag } from "next/cache";
 import { requireRole } from "@/auth/requireRole";
 import { fail, ok } from "@/lib/response";
 import { listImports } from "@/services/adminImportsService";
+import { withEnvelope } from "@/lib/withEnvelope";
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   cacheTag("admin-imports");
   cacheLife("short");
 
@@ -22,3 +23,5 @@ export async function GET(request: NextRequest) {
   const data = await listImports({ status, importType });
   return ok(data);
 }
+
+export const GET = withEnvelope({ namespace: "A" }, handleGET);

@@ -200,8 +200,8 @@ importers:
   apps/api:
     dependencies:
       '@prisma/client':
-        specifier: ^7.2.0
-        version: 7.2.0(prisma@6.11.0(typescript@5.9.3))(typescript@5.9.3)
+        specifier: ^6.11.0
+        version: 6.11.0(prisma@6.11.0(typescript@5.9.3))(typescript@5.9.3)
       '@repo/identity':
         specifier: workspace:*
         version: link:../../packages/identity
@@ -697,6 +697,9 @@ importers:
       '@prisma/client':
         specifier: ^6.11.0
         version: 6.11.0(prisma@6.11.0(typescript@5.9.3))(typescript@5.9.3)
+      '@repo/identity':
+        specifier: workspace:*
+        version: link:../../packages/identity
       bcrypt:
         specifier: ^6.0.0
         version: 6.0.0

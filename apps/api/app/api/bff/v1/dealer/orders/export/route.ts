@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { requireRole } from "@/auth/requireRole";
 import { fail } from "@/lib/response";
 import { getDealerOrdersExport } from "@/services/dealerOrdersService";
+import { withEnvelope } from "@/lib/withEnvelope";
 
 const toCsv = (rows: Array<Record<string, any>>) => {
   const headers = ["orderNo", "createdAt", "status", "total", "dispatchMethod", "poRef", "notes"];
@@ -23,7 +24,7 @@ const toCsv = (rows: Array<Record<string, any>>) => {
   return lines.join("\n");
 };
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   const auth = requireRole(request, "DEALER");
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);
@@ -45,3 +46,5 @@ export async function GET(request: NextRequest) {
     },
   });
 }
+
+export const GET = withEnvelope({ namespace: "D" }, handleGET);

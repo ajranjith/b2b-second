@@ -6,7 +6,29 @@
       "Bash(taskkill /F /PID 136476)",
       "Bash(taskkill //F //PID 136476)",
       "Bash(pnpm dev)",
-      "Bash(ping:*)"
+      "Bash(ping:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm list:*)",
+      "Bash(curl:*)",
+      "Bash(pnpm --filter web exec next info:*)",
+      "Bash(npx tsc:*)",
+      "Bash(tasklist:*)",
+      "Bash(PGPASSWORD=postgres psql:*)",
+      "Bash(docker exec:*)",
+      "Bash(npx prisma db push:*)",
+      "Bash(npx prisma:*)",
+      "Bash(pnpm --filter db prisma migrate:*)",
+      "Bash(pnpm db:seed:*)",
+      "Bash(pnpm --filter @repo/identity build:*)",
+      "Bash(FORCE_DB_CHECKS=1 pnpm identity:verify:*)",
+      "Bash(FORCE_DB_CHECKS=1 pnpm exec tsx:*)",
+      "Bash(pnpm --filter db prisma generate:*)",
+      "Bash(pnpm tsx:*)",
+      "Bash(pnpm exec tsx:*)",
+      "Bash(FORCE_DB_CHECKS=1 pnpm worker:identity-proof:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:postgres@localhost:5432/hotbray\" pnpm tsx:*)",
+      "Bash(export DATABASE_URL=\"postgresql://postgres:postgres@localhost:5432/hotbray?schema=public\")",
+      "Bash(git add:*)"
     ]
   }
 }

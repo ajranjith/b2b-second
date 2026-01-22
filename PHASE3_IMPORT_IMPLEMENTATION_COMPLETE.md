@@ -13,6 +13,7 @@ Phase 3 import framework has been successfully implemented with **5 specialized 
 **File**: `apps/worker/src/services/ImportService.ts`
 
 Abstract base class providing:
+
 - Import lifecycle management (CreateBatch → Validate → Parse → Stage → Process → Finish)
 - Validation helpers (validateRequired, validateEnum, validateNonNegative)
 - Normalization helpers (normalizePartNumber, normalizeEmail, parseDecimal)
@@ -20,6 +21,7 @@ Abstract base class providing:
 - Column validation framework
 
 **Key Methods**:
+
 ```typescript
 abstract validateColumns(headers: string[]): { valid: boolean; missing: string[] }
 abstract validateRow(row: TRow, rowNumber: number): ValidationResult
@@ -38,12 +40,14 @@ abstract processValidRows(batchId: string): Promise<number>
 **Input File**: `/mnt/data/DGS_Sample_150_GN_ES_BR.xlsx`
 
 **Required Columns**:
+
 - Product Code, Full Description, Free Stock
 - Net 1 Price, Net 2 Price, Net 3 Price, Net 4 Price, Net 5 Price, Net 6 Price, Net 7 Price
 - Discount code (gn=GENUINE, es=AFTERMARKET, br=BRANDED)
 - Supplier (optional)
 
 **Business Rules**:
+
 - Normalize Product Code: `trim().toUpperCase().replace(/\s+/g, '')`
 - Validate Free Stock ≥ 0
 - Validate Net prices ≥ 0
@@ -53,12 +57,14 @@ abstract processValidRows(batchId: string): Promise<number>
 - UPSERT ProductNetPrice for each tier (Net1..Net7)
 
 **Usage**:
+
 ```bash
 cd apps/worker
 ts-node src/importProductsDGS.ts --file /mnt/data/DGS_Sample_150_GN_ES_BR.xlsx
 ```
 
 **Tables Updated**:
+
 - `Product` - Main product catalog
 - `ProductStock` - Stock levels
 - `ProductNetPrice` - Tier-based pricing (Net1-Net7)
@@ -74,6 +80,7 @@ ts-node src/importProductsDGS.ts --file /mnt/data/DGS_Sample_150_GN_ES_BR.xlsx
 **Input File**: `/mnt/data/Dealer_Accounts_Sample_30_NetTiers.xlsx`
 
 **Required Columns**:
+
 - Account Number, Company Name, First Name, Last Name, Email
 - Status (ACTIVE, INACTIVE, SUSPENDED)
 - Genuine Tier, Aftermarket ES Tier, Aftermarket B Tier (Net1..Net7)
@@ -82,6 +89,7 @@ ts-node src/importProductsDGS.ts --file /mnt/data/DGS_Sample_150_GN_ES_BR.xlsx
 - Temp password (optional)
 
 **Business Rules**:
+
 - Normalize AccountNumber: `trim()`
 - Normalize Email: `toLowerCase().trim()`
 - Validate email format (regex)
@@ -97,12 +105,14 @@ ts-node src/importProductsDGS.ts --file /mnt/data/DGS_Sample_150_GN_ES_BR.xlsx
 - Trigger welcome email (logged to console for dev)
 
 **Usage**:
+
 ```bash
 cd apps/worker
 ts-node src/importDealers.ts --file /mnt/data/Dealer_Accounts_Sample_30_NetTiers.xlsx
 ```
 
 **Tables Updated**:
+
 - `DealerAccount` - Dealer companies
 - `AppUser` - User authentication
 - `DealerUser` - User profile linked to account
@@ -111,6 +121,7 @@ ts-node src/importDealers.ts --file /mnt/data/Dealer_Accounts_Sample_30_NetTiers
 - `ImportBatch`, `ImportError` - Tracking
 
 **Security**:
+
 - Passwords hashed with bcrypt (SALT_ROUNDS=10)
 - mustChangePassword flag set to true for all imports
 - Email validation with regex
@@ -124,10 +135,12 @@ ts-node src/importDealers.ts --file /mnt/data/Dealer_Accounts_Sample_30_NetTiers
 **Input File**: `/mnt/data/Supercessions_Master_Kerridge.xlsx`
 
 **Required Columns**:
+
 - FROMPARTNO
 - TOPARTNO
 
 **Business Rules**:
+
 - Normalize part numbers: `trim().toUpperCase().replace(/\s+/g, '')`
 - Validate not self-referencing (FROMPARTNO ≠ TOPARTNO)
 - UPSERT Supersession links
@@ -139,42 +152,46 @@ ts-node src/importDealers.ts --file /mnt/data/Dealer_Accounts_Sample_30_NetTiers
 - Safety limit: Max 1000 hops per chain
 
 **Chain Resolution Algorithm**:
+
 ```typescript
 function resolveChain(startingPartNo, supersessionMap) {
-  visited = new Set()
-  currentPartNo = startingPartNo
+  visited = new Set();
+  currentPartNo = startingPartNo;
 
   while (true) {
     if (visited.has(currentPartNo)) {
       // Loop detected
-      return { originalPartNo, latestPartNo: originalPartNo, hasLoop: true }
+      return { originalPartNo, latestPartNo: originalPartNo, hasLoop: true };
     }
 
-    visited.add(currentPartNo)
-    nextPartNo = supersessionMap.get(currentPartNo)
+    visited.add(currentPartNo);
+    nextPartNo = supersessionMap.get(currentPartNo);
 
-    if (!nextPartNo) break  // End of chain
+    if (!nextPartNo) break; // End of chain
 
-    currentPartNo = nextPartNo
+    currentPartNo = nextPartNo;
   }
 
-  return { originalPartNo: startingPartNo, latestPartNo: currentPartNo, hasLoop: false }
+  return { originalPartNo: startingPartNo, latestPartNo: currentPartNo, hasLoop: false };
 }
 ```
 
 **Usage**:
+
 ```bash
 cd apps/worker
 ts-node src/importSupersessions.ts --file /mnt/data/Supercessions_Master_Kerridge.xlsx
 ```
 
 **Tables Updated**:
+
 - `Supersession` - Raw FROMPARTNO → TOPARTNO links
 - `SupersessionResolved` - Resolved chains (rebuilt on each import)
 - `StgSupersessionRow` - Staging table
 - `ImportBatch`, `ImportError` - Tracking
 
 **UI Integration**:
+
 - Search results should show "Superseded by [LatestPartNo]" for superseded parts
 - Price resolver should use latestPartNo for pricing lookups
 - Loop-detected parts return original part number
@@ -188,16 +205,19 @@ ts-node src/importSupersessions.ts --file /mnt/data/Supercessions_Master_Kerridg
 **Input File**: `/mnt/data/Aftermarket_ES_10_DiscountPrice_4cols.xlsx`
 
 **Required Columns**:
+
 - Part No
 - Discount Code
 - Description
 - Discount Price
 
 **CLI Arguments** (Date Range):
+
 - `--start-date YYYY-MM-DD`
 - `--end-date YYYY-MM-DD`
 
 **Business Rules**:
+
 - Normalize Part No: `trim().toUpperCase().replace(/\s+/g, '')`
 - Validate Discount Price > 0
 - Validate Start Date < End Date
@@ -208,11 +228,13 @@ ts-node src/importSupersessions.ts --file /mnt/data/Supercessions_Master_Kerridg
 - Allow overlapping date ranges (most recent wins in resolver)
 
 **Price Resolution Priority**:
+
 1. **SpecialPrice** (if today in [startDate, endDate])
 2. ProductNetPrice (dealer's assigned tier)
 3. ProductPriceBand (fallback)
 
 **Usage**:
+
 ```bash
 cd apps/worker
 ts-node src/importSpecialPrices.ts \
@@ -222,20 +244,22 @@ ts-node src/importSpecialPrices.ts \
 ```
 
 **Tables Updated**:
+
 - `SpecialPrice` - Date-ranged special pricing
 - `StgSpecialPriceRow` - Staging table
 - `ImportBatch`, `ImportError` - Tracking
 
 **Helper Methods**:
+
 ```typescript
 // Get active special price for a product today
-await specialPriceService.getActiveSpecialPrice(productId)
+await specialPriceService.getActiveSpecialPrice(productId);
 
 // Get all active special prices in a date range
-await specialPriceService.getActiveSpecialPrices(startDate, endDate)
+await specialPriceService.getActiveSpecialPrices(startDate, endDate);
 
 // Cleanup expired special prices (optional maintenance)
-await specialPriceService.cleanupExpiredPrices()
+await specialPriceService.cleanupExpiredPrices();
 ```
 
 ---
@@ -306,6 +330,7 @@ Each importer has a dedicated staging table for data validation:
 - `StgBackorderRow` - Backorder staging (already existed)
 
 **Benefits**:
+
 - Isolates validation errors
 - Allows reprocessing without re-reading file
 - Provides audit trail of raw data
@@ -318,28 +343,32 @@ Each importer has a dedicated staging table for data validation:
 All importers use consistent error handling:
 
 **Error Logging**:
+
 ```typescript
 await importService.logError(
   batchId,
   rowNumber,
   errorMessage,
-  columnName,   // optional
-  errorCode,    // optional
-  rawRowJson    // optional
-)
+  columnName, // optional
+  errorCode, // optional
+  rawRowJson, // optional
+);
 ```
 
 **Error Codes**:
+
 - `VALIDATION_ERROR` - Row validation failed
 - `PRODUCT_NOT_FOUND` - Referenced product doesn't exist
 - `MISSING_COLUMNS` - Required columns missing from file
 
 **Error Storage**:
+
 ```sql
 SELECT * FROM "ImportError" WHERE "batchId" = '<batch-id>';
 ```
 
 **Batch Status**:
+
 - `PROCESSING` - Import in progress
 - `SUCCEEDED` - All rows valid and processed
 - `SUCCEEDED_WITH_ERRORS` - Some rows valid, some invalid
@@ -350,6 +379,7 @@ SELECT * FROM "ImportError" WHERE "batchId" = '<batch-id>';
 ## Testing Checklist
 
 ### Product Importer
+
 - [ ] Import sample file with 150 products
 - [ ] Verify Product table has 150 rows
 - [ ] Verify ProductStock has stock levels
@@ -358,6 +388,7 @@ SELECT * FROM "ImportError" WHERE "batchId" = '<batch-id>';
 - [ ] Test invalid data (negative prices, missing columns)
 
 ### Dealer Importer
+
 - [ ] Import 30 dealers
 - [ ] Verify DealerAccount has 30 rows
 - [ ] Verify each dealer has 3 tier assignments (gn/es/br)
@@ -366,6 +397,7 @@ SELECT * FROM "ImportError" WHERE "batchId" = '<batch-id>';
 - [ ] Check console for welcome email logs
 
 ### Supersession Importer
+
 - [ ] Import supersession file
 - [ ] Verify Supersession table has raw links
 - [ ] Verify SupersessionResolved has resolved chains
@@ -374,6 +406,7 @@ SELECT * FROM "ImportError" WHERE "batchId" = '<batch-id>';
 - [ ] Verify search shows "Superseded by..." message
 
 ### Special Price Importer
+
 - [ ] Import special prices with date range
 - [ ] Verify SpecialPrice table has prices
 - [ ] Test active price query (today in range)
@@ -388,6 +421,7 @@ SELECT * FROM "ImportError" WHERE "batchId" = '<batch-id>';
 ### Phase 3.6 - Web Upload Endpoints (In Progress)
 
 **Admin UI Requirements**:
+
 1. File upload form with drag-drop
 2. Import type selector (Product, Dealer, Supersession, Special Price)
 3. Date range picker for Special Prices
@@ -397,6 +431,7 @@ SELECT * FROM "ImportError" WHERE "batchId" = '<batch-id>';
 7. Batch detail view
 
 **API Endpoints Needed**:
+
 ```typescript
 POST   /api/admin/imports/products        - Upload product file
 POST   /api/admin/imports/dealers         - Upload dealer file
@@ -409,6 +444,7 @@ DELETE /api/admin/imports/:id             - Cancel import (if PROCESSING)
 ```
 
 **Implementation Plan**:
+
 1. Create multer middleware for file uploads
 2. Create admin import routes
 3. Create background job queue (Bull or pg-boss)
@@ -470,6 +506,7 @@ ts-node src/importBackorders.ts --file backorders.csv
 ## Database Schema Notes
 
 **Key Tables**:
+
 - `Product` - Main catalog (productCode is unique key)
 - `ProductNetPrice` - Tier-based pricing (Net1-Net7)
 - `ProductPriceBand` - Band-based pricing (Band 1-4, legacy)
@@ -481,6 +518,7 @@ ts-node src/importBackorders.ts --file backorders.csv
 - `ImportError` - Validation error log
 
 **Normalization**:
+
 - Part numbers: UPPERCASE, trimmed, no spaces
 - Emails: lowercase, trimmed
 - All strings: trimmed
@@ -490,17 +528,20 @@ ts-node src/importBackorders.ts --file backorders.csv
 ## Performance Considerations
 
 **Batch Processing**:
+
 - Products: Process every 25 rows (progress log)
 - Dealers: Process every 10 rows (progress log)
 - Supersessions: Process every 100 rows (progress log)
 - Special Prices: Process every 50 rows (progress log)
 
 **Transaction Safety**:
+
 - All UPSERT operations wrapped in Prisma transactions
 - Rollback on error
 - Prevents partial updates
 
 **Chain Resolution**:
+
 - Supersession chain resolution uses in-memory map for O(1) lookups
 - Rebuilds SupersessionResolved table on each import
 - Safety limit: 1000 hops per chain (prevents infinite loops)
@@ -553,6 +594,7 @@ pnpm prisma migrate deploy
 ## Appendix: Import Service Methods
 
 **ImportService Base Class**:
+
 ```typescript
 // Lifecycle
 createBatch(importType, fileName, fileHash, filePath): Promise<ImportBatch>
@@ -581,6 +623,7 @@ getColumnValue(row, columnName): any
 ```
 
 **Importer-Specific Methods**:
+
 ```typescript
 // All importers must implement
 validateColumns(headers): { valid: boolean; missing: string[] }

@@ -1,15 +1,16 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { CartProvider } from '@/context/CartContext';
-import { ReferenceHeader } from '@/components/layouts/ReferenceHeader';
-import { AnnouncementTicker, MessageDrawer } from '@/components/global';
-import { LoadingProvider } from '@/components/global/LoadingProvider';
-import type { Announcement } from '@/types/dealer';
-import { mockAnnouncements } from '@/mocks/dealer-data';
-import { Toaster } from '@/components/ui/sonner';
-import { cn } from '@/lib/utils';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { CartProvider } from "@/context/CartContext";
+import { ReferenceHeader } from "@/components/layouts/ReferenceHeader";
+import { AnnouncementTicker, MessageDrawer } from "@/components/global";
+import { LoadingProvider } from "@/components/global/LoadingProvider";
+import type { Announcement } from "@/types/dealer";
+import { mockAnnouncements } from "@/mocks/dealer-data";
+import { Toaster } from "@/components/ui/sonner";
+import { cn } from "@/lib/utils";
 
 function DealerLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -49,7 +50,7 @@ function DealerLayoutContent({ children }: { children: React.ReactNode }) {
       <div
         className="sticky z-[1050] bg-slate-100 border-b border-slate-200"
         style={{
-          top: 'calc(32px + 72px + 56px)', // Utility + Main + Nav heights
+          top: "calc(32px + 72px + 56px)", // Utility + Main + Nav heights
         }}
       >
         <div className="h-10">
@@ -69,31 +70,46 @@ function DealerLayoutContent({ children }: { children: React.ReactNode }) {
           />
           <div
             className={cn(
-              'fixed left-0 top-0 bottom-0 w-72 bg-white z-[1300] shadow-xl transition-transform lg:hidden',
-              isSideMenuOpen ? 'translate-x-0' : '-translate-x-full'
+              "fixed left-0 top-0 bottom-0 w-72 bg-white z-[1300] shadow-xl transition-transform lg:hidden",
+              isSideMenuOpen ? "translate-x-0" : "-translate-x-full",
             )}
           >
             <div className="p-6">
               <h2 className="text-lg font-semibold mb-4">Menu</h2>
               <nav className="space-y-2">
-                <a href="/dealer/dashboard" className="block py-2 text-slate-700 hover:text-blue-600">
+                <Link
+                  href="/dealer/dashboard"
+                  className="block py-2 text-slate-700 hover:text-blue-600"
+                >
                   Dashboard
-                </a>
-                <a href="/dealer/search" className="block py-2 text-slate-700 hover:text-blue-600">
+                </Link>
+                <Link
+                  href="/dealer/search"
+                  className="block py-2 text-slate-700 hover:text-blue-600"
+                >
                   Search Parts
-                </a>
-                <a href="/dealer/cart" className="block py-2 text-slate-700 hover:text-blue-600">
+                </Link>
+                <Link href="/dealer/cart" className="block py-2 text-slate-700 hover:text-blue-600">
                   Cart
-                </a>
-                <a href="/dealer/orders" className="block py-2 text-slate-700 hover:text-blue-600">
+                </Link>
+                <Link
+                  href="/dealer/orders"
+                  className="block py-2 text-slate-700 hover:text-blue-600"
+                >
                   Orders
-                </a>
-                <a href="/dealer/backorders" className="block py-2 text-slate-700 hover:text-blue-600">
+                </Link>
+                <Link
+                  href="/dealer/backorders"
+                  className="block py-2 text-slate-700 hover:text-blue-600"
+                >
                   Backorders
-                </a>
-                <a href="/dealer/account" className="block py-2 text-slate-700 hover:text-blue-600">
+                </Link>
+                <Link
+                  href="/dealer/account"
+                  className="block py-2 text-slate-700 hover:text-blue-600"
+                >
                   Account
-                </a>
+                </Link>
               </nav>
             </div>
           </div>

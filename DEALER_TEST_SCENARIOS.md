@@ -3,39 +3,41 @@
 ## Scenario 1: Genuine-Only Dealer Purchasing Genuine Parts
 
 ### Setup
+
 - Dealer: "Luxury Auto Parts Ltd" (Entitlement: GENUINE_ONLY)
 - Desired Product: Land Rover engine component (Code: LR071485)
 
 ### Test Flow
+
 ```
 1. Login as dealer
    → Expected: Login successful, dashboard shown
-   
+
 2. Search for "engine"
-   → Expected: 
+   → Expected:
      - GENUINE products shown
      - AFTERMARKET/BRANDED products NOT shown
      - Results include LR071485
-   
+
 3. Click on LR071485
    → Expected:
      - Product detail loads
      - Shows "GENUINE" badge
      - Price shown (e.g., £2231.41 in Band 1)
      - Free stock shown
-   
+
 4. Add 10 units to cart
    → Expected:
      - Unit price: £2231.41
      - Line total: £22,314.10
      - Cart total updates to £22,314.10
-   
+
 5. Proceed to checkout
    → Expected:
      - PO number field shown
      - Order review shows item
      - Order created successfully
-     
+
 6. View order history
    → Expected:
      - Order appears in list
@@ -44,6 +46,7 @@
 ```
 
 ### Key Validations
+
 - ✅ Only GENUINE products visible
 - ✅ Pricing matches band 1 pricing
 - ✅ Cart calculation correct
@@ -54,26 +57,28 @@
 ## Scenario 2: Aftermarket-Only Dealer Attempting to View Genuine Parts
 
 ### Setup
+
 - Dealer: "Quick Fix Auto" (Entitlement: AFTERMARKET_ONLY)
 - Scenario: Try to search for genuine parts
 
 ### Test Flow
+
 ```
 1. Login as dealer
    → Expected: Login successful
-   
+
 2. Search for "engine" (might return aftermarket engine parts)
    → Expected:
      - AFTERMARKET products shown
      - BRANDED products shown
      - GENUINE products NOT shown
      - Results limited to compatible alternatives
-   
+
 3. Try to directly access LR071485 via URL
    → Expected:
      - Either 404 Product Not Found
      - Or error: "Product not available for your account"
-   
+
 4. Search for BRANDED alternative
    → Expected:
      - Can add BRANDED engine parts to cart
@@ -81,6 +86,7 @@
 ```
 
 ### Key Validations
+
 - ✅ Genuine products completely hidden
 - ✅ Direct access to genuine product denied
 - ✅ Can still purchase allowed categories
@@ -90,26 +96,28 @@
 ## Scenario 3: High-Volume Order with Mixed Part Types (SHOW_ALL Dealer)
 
 ### Setup
+
 - Dealer: "Master Mechanics" (Entitlement: SHOW_ALL)
-- Order: 
+- Order:
   - 20 × GENUINE pump (£50 each)
   - 100 × AFTERMARKET bearing (£5 each)
   - 50 × BRANDED filter (£10 each)
 
 ### Test Flow
+
 ```
 1. Login
    → Expected: Successful login
-   
+
 2. Search and add items iteratively
    Item 1: Add 20 × pump
    → Expected: Line total = £1,000
-   
+
    Item 2: Add 100 × bearing
-   → Expected: 
+   → Expected:
      - Cart now has 2 lines
      - Subtotal = £1,000 + £500 = £1,500
-   
+
    Item 3: Add 50 × filter
    → Expected:
      - Cart has 3 lines
@@ -136,6 +144,7 @@
 ```
 
 ### Key Validations
+
 - ✅ Multiple part types visible
 - ✅ Pricing calculated separately for each type
 - ✅ Cart totals accurate across types
@@ -146,6 +155,7 @@
 ## Scenario 4: Minimum Price Rule Validation
 
 ### Setup
+
 - Product: "Standard Bearing" (Code: LR018173)
   - Trade Price: £1.45
   - Band 1 Price: £1.38
@@ -156,13 +166,14 @@
 - Dealer: Band 4 dealer (should get lowest price)
 
 ### Test Flow
+
 ```
 1. View product detail for LR018173
    → Expected:
      - Minimum price rule applied
      - Your Price = £1.29 (band 4 price, above minimum)
      - No "minimum applied" indicator needed
-   
+
 2. Add 1000 units to cart (bulk order)
    → Expected:
      - Unit price remains: £1.29
@@ -176,6 +187,7 @@
 ```
 
 ### Key Validations
+
 - ✅ Correct band price applied
 - ✅ Minimum price enforced
 - ✅ Bulk orders don't change band
@@ -186,12 +198,14 @@
 ## Scenario 5: Out-of-Stock / Backorder Scenario
 
 ### Setup
+
 - Product: "Rare Engine Component" (Code: XXX999)
   - Free Stock: 0
   - Can be backordered: Yes
   - Lead Time: 30 days
 
 ### Test Flow
+
 ```
 1. Search for product
    → Expected:
@@ -219,6 +233,7 @@
 ```
 
 ### Key Validations
+
 - ✅ Out-of-stock products remain purchasable
 - ✅ Pricing correct for backorder items
 - ✅ Order created with backorder flag
@@ -229,10 +244,12 @@
 ## Scenario 6: Cart Persistence & Session Recovery
 
 ### Setup
+
 - Dealer: Active session with items in cart
 - Scenario: Network interruption or page crash
 
 ### Test Flow
+
 ```
 1. Add 5 items to cart
    → Expected: Cart shows 5 items, total £500
@@ -248,7 +265,7 @@
      - Can proceed to checkout
 
 4. Modify quantity of item
-   → Expected: 
+   → Expected:
      - Only that line updates
      - Other items unchanged
      - Total recalculates
@@ -261,6 +278,7 @@
 ```
 
 ### Key Validations
+
 - ✅ Cart persisted across sessions
 - ✅ Session maintained
 - ✅ Cart state consistent
@@ -270,10 +288,12 @@
 ## Scenario 7: Entitlement Changes Mid-Session
 
 ### Setup
+
 - Dealer: Initial entitlement GENUINE_ONLY
 - Scenario: Admin changes entitlement to SHOW_ALL
 
 ### Test Flow
+
 ```
 1. Dealer searches - sees only GENUINE products
    → Expected: Only GENUINE visible
@@ -295,6 +315,7 @@
 ```
 
 ### Key Validations
+
 - ✅ Entitlement change reflected immediately on refresh
 - ✅ Product availability updated
 - ✅ Existing cart not affected
@@ -305,10 +326,12 @@
 ## Scenario 8: Concurrent Shopping & Order Placement
 
 ### Setup
+
 - Same dealer in 2 browser windows
 - Window A & B both have items in cart
 
 ### Test Flow
+
 ```
 Window A:
 1. Add 10 × Part A to cart
@@ -340,6 +363,7 @@ Window B:
 ```
 
 ### Key Validations
+
 - ✅ Sessions are independent
 - ✅ Orders don't interfere with each other
 - ✅ Cart isolation maintained
@@ -349,6 +373,7 @@ Window B:
 ## Scenario 9: Pricing Tier Verification
 
 ### Setup
+
 - Dealer: Band 3 assignment for GENUINE parts
 - Product: Premium bearing with price tiers
   - Band 1: £100.00 (only for premium dealers)
@@ -358,6 +383,7 @@ Window B:
   - Minimum: £80.00
 
 ### Test Flow
+
 ```
 1. View product detail
    → Expected:
@@ -379,6 +405,7 @@ Window B:
 ```
 
 ### Key Validations
+
 - ✅ Correct band assigned
 - ✅ No price modifications outside bands
 - ✅ Bulk orders use same band
@@ -389,6 +416,7 @@ Window B:
 ## Test Execution Checklist
 
 ### Before Running Tests
+
 - [ ] Database migrated and seeded
 - [ ] API server running
 - [ ] Web server running
@@ -397,6 +425,7 @@ Window B:
 - [ ] Test data includes out-of-stock items
 
 ### Running Tests
+
 - [ ] Scenario 1 - Genuine-only dealer: PASS / FAIL
 - [ ] Scenario 2 - Aftermarket-only restrictions: PASS / FAIL
 - [ ] Scenario 3 - High-volume mixed order: PASS / FAIL
@@ -408,13 +437,15 @@ Window B:
 - [ ] Scenario 9 - Pricing tier accuracy: PASS / FAIL
 
 ### Issues Log
+
 Document any failures:
-1. _________________________________
-2. _________________________________
-3. _________________________________
+
+1. ***
+2. ***
+3. ***
 
 ### Approval
-- **All tests passed**: [ ] Yes [ ] No
-- **Date**: ________________
-- **Tester**: ________________
 
+- **All tests passed**: [ ] Yes [ ] No
+- **Date**: **\*\***\_\_\_\_**\*\***
+- **Tester**: **\*\***\_\_\_\_**\*\***

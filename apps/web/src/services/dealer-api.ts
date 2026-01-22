@@ -13,7 +13,7 @@ import type {
   DispatchOption,
   SearchFilters,
   Cart,
-} from '@/types/dealer';
+} from "@/types/dealer";
 
 import {
   mockAnnouncements,
@@ -22,10 +22,10 @@ import {
   mockProducts,
   mockOrders,
   mockDispatchOptions,
-} from '@/mocks/data';
+} from "@/mocks/data";
 
 // Simulate network delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // === DEALER API ===
 export const dealerApi = {
@@ -61,33 +61,31 @@ export const dealerApi = {
     if (filters.query) {
       const query = filters.query.toLowerCase();
       results = results.filter(
-        p =>
+        (p) =>
           p.lrNo.toLowerCase().includes(query) ||
           p.description.toLowerCase().includes(query) ||
-          p.jagAlt?.toLowerCase().includes(query)
+          p.jagAlt?.toLowerCase().includes(query),
       );
     }
 
     // Filter by availability
     if (filters.availability && filters.availability.length > 0) {
-      results = results.filter(p => filters.availability!.includes(p.availability));
+      results = results.filter((p) => filters.availability!.includes(p.availability));
     }
 
     // Filter by price range
     if (filters.priceRange) {
       results = results.filter(
-        p =>
-          p.dealerPrice >= filters.priceRange!.min &&
-          p.dealerPrice <= filters.priceRange!.max
+        (p) => p.dealerPrice >= filters.priceRange!.min && p.dealerPrice <= filters.priceRange!.max,
       );
     }
 
     // Sort
-    if (filters.sortBy === 'price_asc') {
+    if (filters.sortBy === "price_asc") {
       results.sort((a, b) => a.dealerPrice - b.dealerPrice);
-    } else if (filters.sortBy === 'price_desc') {
+    } else if (filters.sortBy === "price_desc") {
       results.sort((a, b) => b.dealerPrice - a.dealerPrice);
-    } else if (filters.sortBy === 'part_number') {
+    } else if (filters.sortBy === "part_number") {
       results.sort((a, b) => a.lrNo.localeCompare(b.lrNo));
     }
 
@@ -96,14 +94,14 @@ export const dealerApi = {
 
   async getProductDetails(productId: string): Promise<Product | null> {
     await delay(300);
-    return mockProducts.find(p => p.id === productId) || null;
+    return mockProducts.find((p) => p.id === productId) || null;
   },
 
   // Cart
   async getCart(): Promise<Cart> {
     await delay(400);
     return {
-      id: 'cart-1',
+      id: "cart-1",
       items: [],
       subtotal: 0,
       vat: 0,
@@ -114,22 +112,22 @@ export const dealerApi = {
 
   async addToCart(productId: string, quantity: number): Promise<void> {
     await delay(300);
-    console.log('Added to cart:', productId, quantity);
+    console.log("Added to cart:", productId, quantity);
   },
 
   async updateCartItemQuantity(itemId: string, quantity: number): Promise<void> {
     await delay(250);
-    console.log('Updated cart item:', itemId, quantity);
+    console.log("Updated cart item:", itemId, quantity);
   },
 
   async removeFromCart(itemId: string): Promise<void> {
     await delay(250);
-    console.log('Removed from cart:', itemId);
+    console.log("Removed from cart:", itemId);
   },
 
   async clearCart(): Promise<void> {
     await delay(200);
-    console.log('Cart cleared');
+    console.log("Cart cleared");
   },
 
   // Orders
@@ -146,26 +144,22 @@ export const dealerApi = {
     let filtered = [...mockOrders];
 
     if (params?.status) {
-      filtered = filtered.filter(o => o.status === params.status);
+      filtered = filtered.filter((o) => o.status === params.status);
     }
 
     if (params?.dateFrom) {
-      filtered = filtered.filter(
-        o => new Date(o.createdAt) >= new Date(params.dateFrom!)
-      );
+      filtered = filtered.filter((o) => new Date(o.createdAt) >= new Date(params.dateFrom!));
     }
     if (params?.dateTo) {
-      filtered = filtered.filter(
-        o => new Date(o.createdAt) <= new Date(params.dateTo!)
-      );
+      filtered = filtered.filter((o) => new Date(o.createdAt) <= new Date(params.dateTo!));
     }
 
     if (params?.search) {
       const query = params.search.toLowerCase();
       filtered = filtered.filter(
-        o =>
+        (o) =>
           o.orderNumber.toLowerCase().includes(query) ||
-          o.items.some(item => item.lrNo.toLowerCase().includes(query))
+          o.items.some((item) => item.lrNo.toLowerCase().includes(query)),
       );
     }
 
@@ -182,12 +176,12 @@ export const dealerApi = {
 
   async getOrderDetails(orderId: string): Promise<Order | null> {
     await delay(400);
-    return mockOrders.find(o => o.id === orderId) || null;
+    return mockOrders.find((o) => o.id === orderId) || null;
   },
 
   async downloadOrderSummary(orderId: string): Promise<Blob> {
     await delay(600);
-    const blob = new Blob(['Order Summary PDF Content'], { type: 'application/pdf' });
+    const blob = new Blob(["Order Summary PDF Content"], { type: "application/pdf" });
     return blob;
   },
 
@@ -204,7 +198,7 @@ export const dealerApi = {
   }): Promise<{ orderNumber: string; orderId: string }> {
     await delay(800);
     return {
-      orderNumber: `ORD-2026-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
+      orderNumber: `ORD-2026-${String(Math.floor(Math.random() * 1000)).padStart(3, "0")}`,
       orderId: `o${Date.now()}`,
     };
   },

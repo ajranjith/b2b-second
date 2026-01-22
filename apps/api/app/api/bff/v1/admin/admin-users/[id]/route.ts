@@ -5,8 +5,12 @@ import { fail, ok } from "@/lib/response";
 import { AdminUserUpdateSchema, type AdminUserUpdateDTO } from "@repo/lib";
 import { updateAdminUser } from "@/services/adminUsersService";
 import { ZodError } from "zod";
+import { withEnvelope } from "@/lib/withEnvelope";
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+async function handlePATCH(
+  request: NextRequest,
+  context: { params: { id: string } },
+) {
   const auth = requireRole(request, "ADMIN");
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);
@@ -15,7 +19,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   try {
     const body = (await request.json()) as AdminUserUpdateDTO;
     const payload = AdminUserUpdateSchema.parse(body);
-    const user = await updateAdminUser(params.id, payload);
+    const user = await updateAdminUser(context.params.id, payload);
     if (!user) {
       return fail({ message: "Admin user not found" }, 404);
     }
@@ -28,3 +32,5 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     throw error;
   }
 }
+
+export const PATCH = withEnvelope({ namespace: "A" }, handlePATCH);

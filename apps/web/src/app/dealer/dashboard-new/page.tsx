@@ -1,26 +1,19 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Clock, Package, TrendingUp, Download } from 'lucide-react';
-import {
-  DashboardKPICard,
-  DashboardKPICardSkeleton,
-} from '@/components/dealer/DashboardKPICard';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Clock, Package, TrendingUp, Download } from "lucide-react";
+import { DashboardKPICard, DashboardKPICardSkeleton } from "@/components/dealer/DashboardKPICard";
 import {
   RecentOrdersTable,
   RecentOrdersTableSkeleton,
-} from '@/components/dealer/RecentOrdersTable';
-import { NewsFeed, NewsFeedSkeleton } from '@/components/dealer/NewsFeed';
-import { AppShellSection } from '@/components/layouts';
-import { showToast } from '@/components/global';
-import type { DashboardKPI, Order, NewsItem } from '@/types/dealer';
-import { dashboardAPI, orderAPI } from '@/services/dealer-api';
-import {
-  mockDashboardKPI,
-  mockOrders,
-  mockNewsItems,
-} from '@/mocks/dealer-data';
+} from "@/components/dealer/RecentOrdersTable";
+import { NewsFeed, NewsFeedSkeleton } from "@/components/dealer/NewsFeed";
+import { AppShellSection } from "@/components/layouts";
+import { showToast } from "@/components/global";
+import type { DashboardKPI, Order, NewsItem } from "@/types/dealer";
+import { dashboardAPI, orderAPI } from "@/services/dealer-api";
+import { mockDashboardKPI, mockOrders, mockNewsItems } from "@/mocks/dealer-data";
 
 /**
  * Dealer Dashboard Page
@@ -64,9 +57,9 @@ export default function DealerDashboardPage() {
         // setRecentOrders(ordersData);
         // setNews(newsData);
       } catch (err) {
-        console.error('Failed to fetch dashboard data:', err);
-        setError('Failed to load dashboard data');
-        showToast.error('Failed to load dashboard', 'Please try refreshing the page');
+        console.error("Failed to fetch dashboard data:", err);
+        setError("Failed to load dashboard data");
+        showToast.error("Failed to load dashboard", "Please try refreshing the page");
       } finally {
         setIsLoading(false);
       }
@@ -76,7 +69,7 @@ export default function DealerDashboardPage() {
   }, []);
 
   const handleDownloadBackorders = () => {
-    showToast.info('Downloading backorders', 'Preparing your backorders report...');
+    showToast.info("Downloading backorders", "Preparing your backorders report...");
     // TODO: Implement backorders download
   };
 
@@ -85,17 +78,17 @@ export default function DealerDashboardPage() {
       // TODO: Replace with real API call
       new Promise((resolve) => setTimeout(resolve, 1000)),
       {
-        loading: 'Downloading invoice...',
-        success: 'Invoice downloaded successfully',
-        error: 'Failed to download invoice',
-      }
+        loading: "Downloading invoice...",
+        success: "Invoice downloaded successfully",
+        error: "Failed to download invoice",
+      },
     );
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: 'GBP',
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: "GBP",
     }).format(amount);
   };
 
@@ -117,10 +110,7 @@ export default function DealerDashboardPage() {
 
         <div className="rounded-lg border-2 border-dashed border-slate-300 p-12 text-center">
           <p className="text-slate-600 mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="text-primary hover:underline"
-          >
+          <button onClick={() => window.location.reload()} className="text-primary hover:underline">
             Try Again
           </button>
         </div>
@@ -158,7 +148,7 @@ export default function DealerDashboardPage() {
                 iconColor="text-amber-600"
                 iconBgColor="bg-amber-100"
                 action={{
-                  label: 'Download Report',
+                  label: "Download Report",
                   onClick: handleDownloadBackorders,
                 }}
               />
@@ -172,8 +162,8 @@ export default function DealerDashboardPage() {
                 iconColor="text-blue-600"
                 iconBgColor="bg-blue-100"
                 action={{
-                  label: 'View Orders',
-                  onClick: () => router.push('/dealer/orders'),
+                  label: "View Orders",
+                  onClick: () => router.push("/dealer/orders"),
                 }}
               />
 
@@ -182,14 +172,14 @@ export default function DealerDashboardPage() {
                 title="Account Balance"
                 value={formatCurrency(kpis.accountBalance)}
                 subtitle={`${calculateCreditUsage().toFixed(0)}% of ${formatCurrency(
-                  kpis.accountCreditLimit
+                  kpis.accountCreditLimit,
                 )} limit`}
                 icon={TrendingUp}
                 iconColor="text-green-600"
                 iconBgColor="bg-green-100"
                 action={{
-                  label: 'View Account',
-                  onClick: () => router.push('/dealer/account'),
+                  label: "View Account",
+                  onClick: () => router.push("/dealer/account"),
                 }}
               />
             </>
@@ -204,10 +194,7 @@ export default function DealerDashboardPage() {
           {isLoading ? (
             <RecentOrdersTableSkeleton />
           ) : (
-            <RecentOrdersTable
-              orders={recentOrders}
-              onDownloadInvoice={handleDownloadInvoice}
-            />
+            <RecentOrdersTable orders={recentOrders} onDownloadInvoice={handleDownloadInvoice} />
           )}
         </div>
 

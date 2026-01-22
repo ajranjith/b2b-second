@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
-import { ReferenceHeader } from '@/components/dealer/ReferenceHeader';
-import { AnnouncementTicker } from '@/components/global/AnnouncementTicker';
-import { SideNav } from '@/components/layouts/SideNav';
-import { BottomNav } from '@/components/layouts/BottomNav';
-import { MessageDrawer } from '@/components/global/MessageDrawer';
-import type { Announcement } from '@/types/dealer';
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { ReferenceHeader } from "@/components/dealer/ReferenceHeader";
+import { AnnouncementTicker } from "@/components/global/AnnouncementTicker";
+import { SideNav } from "@/components/layouts/SideNav";
+import { BottomNav } from "@/components/layouts/BottomNav";
+import { MessageDrawer } from "@/components/global/MessageDrawer";
+import type { Announcement } from "@/types/dealer";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -28,12 +28,12 @@ export function AppShell({ children, announcements }: AppShellProps) {
 
   useEffect(() => {
     if (isLoading) {
-      document.body.classList.add('app-loading');
+      document.body.classList.add("app-loading");
     } else {
-      document.body.classList.remove('app-loading');
+      document.body.classList.remove("app-loading");
     }
     return () => {
-      document.body.classList.remove('app-loading');
+      document.body.classList.remove("app-loading");
     };
   }, [isLoading]);
 

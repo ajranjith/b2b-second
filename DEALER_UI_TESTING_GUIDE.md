@@ -59,6 +59,7 @@ pnpm install
 ```
 
 **Required packages (should already be installed):**
+
 - ✅ `date-fns` - Date formatting
 - ✅ `lucide-react` - Icons
 - ✅ `sonner` - Toast notifications
@@ -74,7 +75,7 @@ Create a test file to verify tokens work:
 
 ```tsx
 // apps/web/src/app/test-tokens/page.tsx
-import { tokens } from '@/styles/tokens';
+import { tokens } from "@/styles/tokens";
 
 export default function TestTokensPage() {
   return (
@@ -82,18 +83,14 @@ export default function TestTokensPage() {
       <h1 className="text-3xl font-bold">Design Tokens Test</h1>
 
       {/* Test Spacing */}
-      <div style={{ padding: tokens.spacing.lg }}>
-        Padding: {tokens.spacing.lg}
-      </div>
+      <div style={{ padding: tokens.spacing.lg }}>Padding: {tokens.spacing.lg}</div>
 
       {/* Test Layout */}
       <div>Header Height: {tokens.layout.header.desktop}</div>
       <div>SideNav Width: {tokens.layout.sideNav.width}</div>
 
       {/* Test Typography */}
-      <div style={{ fontFamily: tokens.typography.fontFamily.sans }}>
-        Font Family: Sans
-      </div>
+      <div style={{ fontFamily: tokens.typography.fontFamily.sans }}>Font Family: Sans</div>
     </div>
   );
 }
@@ -103,12 +100,7 @@ export default function TestTokensPage() {
 
 ```tsx
 // apps/web/src/app/test-mocks/page.tsx
-import {
-  mockAnnouncements,
-  mockProducts,
-  mockOrders,
-  mockDashboardKPI,
-} from '@/mocks/dealer-data';
+import { mockAnnouncements, mockProducts, mockOrders, mockDashboardKPI } from "@/mocks/dealer-data";
 
 export default function TestMocksPage() {
   return (
@@ -132,16 +124,19 @@ export default function TestMocksPage() {
 #### C. Test New Pages
 
 **Test Dashboard:**
+
 ```bash
 # Navigate to: http://localhost:3000/dealer/dashboard-new
 ```
 
 **Test Search:**
+
 ```bash
 # Navigate to: http://localhost:3000/dealer/search-new
 ```
 
 **Test Cart:**
+
 ```bash
 # Navigate to: http://localhost:3000/dealer/cart-new
 ```
@@ -178,16 +173,16 @@ To use the new AppShell system globally:
 **Replace `apps/web/src/app/dealer/layout.tsx`:**
 
 ```tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { CartProvider } from '@/context/CartContext';
-import { AppShell, DealerHeader, SideNav, BottomNav } from '@/components/layouts';
-import { AnnouncementTicker, MessageDrawer } from '@/components/global';
-import type { Announcement } from '@/types/dealer';
-import { mockAnnouncements } from '@/mocks/dealer-data';
-import { Toaster } from '@/components/ui/sonner';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { CartProvider } from "@/context/CartContext";
+import { AppShell, DealerHeader, SideNav, BottomNav } from "@/components/layouts";
+import { AnnouncementTicker, MessageDrawer } from "@/components/global";
+import type { Announcement } from "@/types/dealer";
+import { mockAnnouncements } from "@/mocks/dealer-data";
+import { Toaster } from "@/components/ui/sonner";
 
 function DealerLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -222,9 +217,7 @@ function DealerLayoutContent({ children }: { children: React.ReactNode }) {
             onAnnouncementClick={handleAnnouncementClick}
           />
         }
-        sideNav={
-          <SideNav badgeCounts={{ cart: cartItemCount, backorders: 7 }} />
-        }
+        sideNav={<SideNav badgeCounts={{ cart: cartItemCount, backorders: 7 }} />}
         bottomNav={<BottomNav cartItemCount={cartItemCount} />}
       >
         {children}
@@ -274,6 +267,7 @@ Migrate one page at a time:
 ## ✅ Component Testing Checklist
 
 ### Dashboard Page
+
 - [ ] KPI cards display correctly
 - [ ] KPI cards show proper icons and colors
 - [ ] Action buttons navigate correctly
@@ -286,6 +280,7 @@ Migrate one page at a time:
 - [ ] Mobile responsive (test on 375px width)
 
 ### Search Page
+
 - [ ] Search input accepts text
 - [ ] Search executes on Enter key
 - [ ] Availability filters toggle correctly
@@ -306,6 +301,7 @@ Migrate one page at a time:
 - [ ] Mobile responsive (filters stack)
 
 ### Cart Page
+
 - [ ] Cart table displays items
 - [ ] Quantity editor increments/decrements
 - [ ] Manual quantity input updates total
@@ -321,6 +317,7 @@ Migrate one page at a time:
 - [ ] Mobile responsive (summary stacks below table)
 
 ### Layout Components
+
 - [ ] AppShell renders all sections
 - [ ] Header is sticky at top
 - [ ] Announcement ticker auto-rotates
@@ -339,6 +336,7 @@ Migrate one page at a time:
 - [ ] Global search submits
 
 ### Toast Notifications
+
 - [ ] Success toasts appear (green)
 - [ ] Error toasts appear (red)
 - [ ] Warning toasts appear (amber)
@@ -354,31 +352,44 @@ Migrate one page at a time:
 ## 🐛 Known Issues & Workarounds
 
 ### Issue 1: AlertDialog Import
+
 **Problem:** AlertDialog might not be exported from `@/components/ui/dialog`
 
 **Solution:** Create AlertDialog component or use Dialog directly:
 
 ```tsx
 // apps/web/src/components/ui/alert-dialog.tsx
-export { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@radix-ui/react-alert-dialog';
+export {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@radix-ui/react-alert-dialog";
 ```
 
 ### Issue 2: Missing Toaster Component
+
 **Problem:** Toaster might not be set up in your app
 
 **Solution:** Already using `sonner` in package.json, just import correctly:
 
 ```tsx
-import { Toaster } from '@/components/ui/sonner';
+import { Toaster } from "@/components/ui/sonner";
 ```
 
 ### Issue 3: Cart Context Not Connected
+
 **Problem:** Cart count shows 0
 
 **Solution:** Connect to existing CartContext:
 
 ```tsx
-import { useCart } from '@/hooks/useCart';
+import { useCart } from "@/hooks/useCart";
 
 const { items, itemCount } = useCart();
 ```
@@ -390,7 +401,7 @@ const { items, itemCount } = useCart();
 ### Using Tokens in Custom Components
 
 ```tsx
-import { tokens } from '@/styles/tokens';
+import { tokens } from "@/styles/tokens";
 
 function MyComponent() {
   return (
@@ -425,23 +436,20 @@ import { OrderStatusChip, StockStatusChip, StatusChip } from '@/components/globa
 ### Using Toast Notifications
 
 ```tsx
-import { showToast, commonToasts } from '@/components/global';
+import { showToast, commonToasts } from "@/components/global";
 
 // Simple success
-showToast.success('Saved!', 'Your changes have been saved');
+showToast.success("Saved!", "Your changes have been saved");
 
 // Pre-configured
-commonToasts.addedToCart('Oil Filter LR001234');
+commonToasts.addedToCart("Oil Filter LR001234");
 
 // Promise handling
-showToast.promise(
-  api.createOrder(),
-  {
-    loading: 'Creating order...',
-    success: 'Order created!',
-    error: 'Failed to create order',
-  }
-);
+showToast.promise(api.createOrder(), {
+  loading: "Creating order...",
+  success: "Order created!",
+  error: "Failed to create order",
+});
 ```
 
 ---
@@ -450,15 +458,15 @@ showToast.promise(
 
 ### Component Bundle Sizes (Estimated)
 
-| Component | Size | Impact |
-|-----------|------|--------|
-| AppShell | ~15KB | Medium |
-| AnnouncementTicker | ~8KB | Low |
-| MessageDrawer | ~12KB | Low (lazy load) |
-| DataTable | ~10KB | Medium |
-| SearchFilters | ~18KB | Medium |
-| ProductResultsTable | ~20KB | Medium |
-| CartTable | ~15KB | Medium |
+| Component           | Size  | Impact          |
+| ------------------- | ----- | --------------- |
+| AppShell            | ~15KB | Medium          |
+| AnnouncementTicker  | ~8KB  | Low             |
+| MessageDrawer       | ~12KB | Low (lazy load) |
+| DataTable           | ~10KB | Medium          |
+| SearchFilters       | ~18KB | Medium          |
+| ProductResultsTable | ~20KB | Medium          |
+| CartTable           | ~15KB | Medium          |
 
 **Total New Code:** ~100KB (minified, gzipped: ~30KB)
 
@@ -473,6 +481,7 @@ showToast.promise(
 ## 🚀 Next Steps
 
 ### Immediate (This Week)
+
 1. Test all new pages in development
 2. Verify mobile responsiveness
 3. Test accessibility (keyboard navigation)
@@ -480,6 +489,7 @@ showToast.promise(
 5. Fix any TypeScript errors
 
 ### Short Term (Next Week)
+
 - [ ] Complete Task 7: Checkout flow
 - [ ] Complete Task 8: Orders pages
 - [ ] Integrate with backend APIs
@@ -487,6 +497,7 @@ showToast.promise(
 - [ ] Optimize bundle size
 
 ### Medium Term (2-3 Weeks)
+
 - [ ] Complete Task 9: Accessibility audit
 - [ ] Complete Task 10: Final polish
 - [ ] Add end-to-end tests
@@ -500,17 +511,21 @@ showToast.promise(
 ### Common Errors
 
 **"Cannot find module '@/types/dealer'"**
+
 - Ensure `tsconfig.json` has path mapping for `@/*`
 - Restart TypeScript server in IDE
 
 **"tokens is not exported"**
+
 - Check import: `import { tokens } from '@/styles/tokens'`
 - Verify file exists at correct path
 
 **"Module not found: Can't resolve 'date-fns'"**
+
 - Run: `pnpm install date-fns`
 
 **Toast not appearing**
+
 - Ensure `<Toaster />` is added to layout
 - Import from correct path: `@/components/ui/sonner`
 
@@ -535,6 +550,7 @@ pnpm run build
 ## ✨ Feature Highlights
 
 ### What's Working
+
 ✅ Complete design system with tokens
 ✅ TypeScript type safety
 ✅ Responsive layouts (mobile + desktop)
@@ -549,6 +565,7 @@ pnpm run build
 ✅ 20+ reusable components
 
 ### What's Next
+
 🚧 Checkout flow (3-step wizard)
 🚧 Orders list and detail pages
 🚧 Backend API integration

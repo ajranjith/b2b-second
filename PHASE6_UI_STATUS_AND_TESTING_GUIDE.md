@@ -11,11 +11,13 @@ Phase 6 UI components **already exist** in the codebase. This document provides 
 ### Admin Panel
 
 #### Import Pages
+
 **Location**: `apps/web/src/app/admin/imports/page.tsx`
 
 **Status**: ✅ **ALREADY EXISTS**
 
 **Features**:
+
 - Tabbed interface for different import types
 - File upload with drag-and-drop
 - Import history table with status tracking
@@ -23,6 +25,7 @@ Phase 6 UI components **already exist** in the codebase. This document provides 
 - View import errors
 
 **Import Types Supported**:
+
 - ✅ Products/Pricing/Stock (PRODUCTS_MIXED)
 - ✅ Dealers (via PRODUCTS_GENUINE - needs update)
 - ✅ Supersessions (SUPERSESSION)
@@ -30,12 +33,14 @@ Phase 6 UI components **already exist** in the codebase. This document provides 
 - ✅ Backorders (BACKORDERS)
 
 **What Works**:
+
 - File upload UI exists
 - Import history table exists
 - Status badges exist
 - Error viewing exists
 
 **Minor Updates Needed**:
+
 1. Add dealer-specific import tab (currently may be missing)
 2. Ensure special prices tab has start/end date inputs
 3. Connect to new Phase 5 API endpoints
@@ -43,6 +48,7 @@ Phase 6 UI components **already exist** in the codebase. This document provides 
 ---
 
 #### Other Admin Pages
+
 - ✅ `apps/web/src/app/admin/dashboard/page.tsx` - Dashboard
 - ✅ `apps/web/src/app/admin/dealers/page.tsx` - Dealer management
 - ✅ `apps/web/src/app/admin/products/page.tsx` - Product management
@@ -54,11 +60,13 @@ Phase 6 UI components **already exist** in the codebase. This document provides 
 ### Dealer Portal
 
 #### Search Page
+
 **Location**: `apps/web/src/app/dealer/search/page.tsx`
 
 **Status**: ✅ **ALREADY EXISTS**
 
 **Features**:
+
 - Search input with debouncing
 - Table results with columns:
   - Product Code
@@ -74,12 +82,14 @@ Phase 6 UI components **already exist** in the codebase. This document provides 
 - Expandable rows for details
 
 **What Works**:
+
 - Table layout exists
 - Search and filters exist
 - Add to cart functionality exists
 - Uses `searchParts` API service
 
 **Minor Updates Needed**:
+
 1. Connect to new `/api/dealer/search` endpoint (Phase 5)
 2. Display supersession info if part is superseded
 3. Show equivalents in expanded row
@@ -87,11 +97,13 @@ Phase 6 UI components **already exist** in the codebase. This document provides 
 ---
 
 #### Cart Page
+
 **Location**: `apps/web/src/app/dealer/cart/page.tsx`
 
 **Status**: ✅ **ALREADY EXISTS**
 
 **Features**:
+
 - Cart items table with:
   - Product code
   - Description
@@ -104,12 +116,14 @@ Phase 6 UI components **already exist** in the codebase. This document provides 
 - Persists via `DealerCartContext`
 
 **What Works**:
+
 - Cart display exists
 - Quantity update exists
 - Remove item exists
 - Context provides persistence
 
 **Minor Updates Needed**:
+
 1. Connect to new `/api/dealer/cart` endpoint (Phase 5)
 2. Show price source indicator (Special Price, Net Tier, etc.)
 3. Auto-refresh prices when cart loads
@@ -117,11 +131,13 @@ Phase 6 UI components **already exist** in the codebase. This document provides 
 ---
 
 #### Checkout Page
+
 **Location**: `apps/web/src/app/dealer/checkout/page.tsx`
 
 **Status**: ✅ **ALREADY EXISTS**
 
 **Features**:
+
 - Cart summary with line items
 - Shipping method selector (DELIVERY/COLLECTION)
 - PO reference input
@@ -130,11 +146,13 @@ Phase 6 UI components **already exist** in the codebase. This document provides 
 - Order summary display
 
 **What Works**:
+
 - Checkout form exists
 - Shipping method selector exists
 - Cart summary exists
 
 **Minor Updates Needed**:
+
 1. Connect to new `/api/dealer/checkout` endpoint (Phase 5)
 2. Fix hook usage (already fixed in earlier work: `useDealerCart` → `useCart`)
 3. Show price snapshot confirmation
@@ -142,11 +160,13 @@ Phase 6 UI components **already exist** in the codebase. This document provides 
 ---
 
 #### Orders Page
+
 **Location**: `apps/web/src/app/dealer/orders/page.tsx`
 
 **Status**: ✅ **ALREADY EXISTS**
 
 **Features**:
+
 - Orders list table with:
   - Order number
   - Status
@@ -159,11 +179,13 @@ Phase 6 UI components **already exist** in the codebase. This document provides 
 - View order details
 
 **What Works**:
+
 - Orders table exists
 - Status filtering exists
 - Detail view exists
 
 **Minor Updates Needed**:
+
 1. Connect to new `/api/dealer/orders` endpoint (Phase 5)
 2. Add export button to trigger `/api/dealer/orders/export`
 3. Show immutable prices (unitPriceSnapshot)
@@ -171,11 +193,13 @@ Phase 6 UI components **already exist** in the codebase. This document provides 
 ---
 
 #### Backorders Page
+
 **Location**: `apps/web/src/app/dealer/backorders/page.tsx`
 
 **Status**: ✅ **ALREADY EXISTS**
 
 **Features**:
+
 - Backorders list table with:
   - Order number
   - Part code
@@ -186,21 +210,25 @@ Phase 6 UI components **already exist** in the codebase. This document provides 
 - Export button
 
 **What Works**:
+
 - Backorders table exists
 - Data display exists
 
 **Minor Updates Needed**:
+
 1. Connect to new `/api/dealer/backorders` endpoint (Phase 5)
 2. Add export button to trigger `/api/dealer/backorders/export`
 
 ---
 
 #### Account Page
+
 **Location**: `apps/web/src/app/dealer/account/page.tsx`
 
 **Status**: ✅ **ALREADY EXISTS**
 
 **Features**:
+
 - Profile information display
 - Edit profile form
 - Password change form
@@ -208,10 +236,12 @@ Phase 6 UI components **already exist** in the codebase. This document provides 
 - Credit status
 
 **What Works**:
+
 - Profile display exists
 - Edit form exists
 
 **Minor Updates Needed**:
+
 1. Connect to new `/api/dealer/profile` endpoints (GET/PUT)
 2. Connect to `/api/dealer/password/change` endpoint
 
@@ -278,21 +308,21 @@ const handleUpload = async () => {
 
 export async function searchParts(params: SearchParams) {
   const query = new URLSearchParams({
-    q: params.query || '',
+    q: params.query || "",
     limit: String(params.pageSize || 20),
     offset: String((params.page - 1) * params.pageSize),
-    ...(params.partType !== 'All' && { partType: params.partType }),
-    ...(params.stock === 'In Stock' && { inStockOnly: 'true' })
+    ...(params.partType !== "All" && { partType: params.partType }),
+    ...(params.stock === "In Stock" && { inStockOnly: "true" }),
   });
 
   const response = await fetch(`/api/dealer/search?${query}`, {
-    credentials: 'include'
+    credentials: "include",
   });
 
   const data = await response.json();
 
   return {
-    items: data.results.map(r => ({
+    items: data.results.map((r) => ({
       id: r.id,
       sku: r.productCode,
       name: r.description,
@@ -301,10 +331,10 @@ export async function searchParts(params: SearchParams) {
       price: r.yourPrice,
       priceSource: r.priceSource,
       supersession: r.supersession, // NEW
-      equivalents: r.equivalents    // NEW
+      equivalents: r.equivalents, // NEW
     })),
     total: data.pagination.total,
-    supersessionInfo: data.supersession // NEW
+    supersessionInfo: data.supersession, // NEW
   };
 }
 ```
@@ -390,15 +420,15 @@ export default function CartPage() {
 // apps/web/src/app/dealer/checkout/page.tsx
 
 const handleCheckout = async () => {
-  const response = await fetch('/api/dealer/checkout', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
+  const response = await fetch("/api/dealer/checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({
       dispatchMethod: shippingMethod,
       poRef: poReference,
-      notes: notes
-    })
+      notes: notes,
+    }),
   });
 
   const data = await response.json();
@@ -505,6 +535,7 @@ const handleExport = async () => {
 ### Admin Tests
 
 **Imports Page** (`/admin/imports`)
+
 - [ ] Can access imports page
 - [ ] See 5 tabs: Products, Dealers, Supersessions, Special Prices, Backorders
 - [ ] Can upload Excel file for products
@@ -523,6 +554,7 @@ const handleExport = async () => {
 ### Dealer Tests
 
 **Search Page** (`/dealer/search`)
+
 - [ ] Can search for products by code or description
 - [ ] See table with columns: Code, Description, Part Type, Stock, Price
 - [ ] Can filter by part type (All, Genuine, Aftermarket, Branded)
@@ -537,6 +569,7 @@ const handleExport = async () => {
 ---
 
 **Cart Page** (`/dealer/cart`)
+
 - [ ] Can view cart items
 - [ ] Prices refresh automatically when cart loads
 - [ ] Can update item quantities
@@ -550,6 +583,7 @@ const handleExport = async () => {
 ---
 
 **Checkout Page** (`/dealer/checkout`)
+
 - [ ] Can review cart items
 - [ ] Can select shipping method (DELIVERY/COLLECTION)
 - [ ] Can enter PO reference
@@ -563,6 +597,7 @@ const handleExport = async () => {
 ---
 
 **Orders Page** (`/dealer/orders`)
+
 - [ ] Can view list of orders
 - [ ] Can filter by order status
 - [ ] Can view order details
@@ -575,6 +610,7 @@ const handleExport = async () => {
 ---
 
 **Backorders Page** (`/dealer/backorders`)
+
 - [ ] Can view list of backorders
 - [ ] See order number, part code, quantities, value
 - [ ] Can export backorders to CSV
@@ -607,6 +643,7 @@ All Phase 6 UI components already exist:
 ### No Breaking Changes Required ✅
 
 All updates are **additive** and **non-breaking**:
+
 - Existing UI components stay intact
 - Only API endpoint URLs need updating
 - New features (supersession, export) are additions

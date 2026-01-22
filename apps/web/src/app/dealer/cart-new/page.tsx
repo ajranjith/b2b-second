@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ShoppingCart, ArrowLeft } from 'lucide-react';
-import type { CartItem } from '@/types/dealer';
-import { CartTable } from '@/components/dealer/CartTable';
-import { OrderSummary } from '@/components/dealer/OrderSummary';
-import { showToast, commonToasts } from '@/components/global';
-import { Button } from '@/components/ui/button';
-import { mockProducts } from '@/mocks/dealer-data';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { ShoppingCart, ArrowLeft } from "lucide-react";
+import type { CartItem } from "@/types/dealer";
+import { CartTable } from "@/components/dealer/CartTable";
+import { OrderSummary } from "@/components/dealer/OrderSummary";
+import { showToast, commonToasts } from "@/components/global";
+import { Button } from "@/components/ui/button";
+import { mockProducts } from "@/mocks/dealer-data";
 
 /**
  * Cart Page
@@ -25,19 +25,19 @@ export default function CartPage() {
   // Mock cart items for demonstration
   const [cartItems, setCartItems] = useState<CartItem[]>([
     {
-      id: 'cart-1',
+      id: "cart-1",
       product: mockProducts[0],
       quantity: 2,
       lineTotal: mockProducts[0].dealerPrice * 2,
     },
     {
-      id: 'cart-2',
+      id: "cart-2",
       product: mockProducts[1],
       quantity: 1,
       lineTotal: mockProducts[1].dealerPrice * 1,
     },
     {
-      id: 'cart-3',
+      id: "cart-3",
       product: mockProducts[3],
       quantity: 5,
       lineTotal: mockProducts[3].dealerPrice * 5,
@@ -53,8 +53,8 @@ export default function CartPage() {
               quantity,
               lineTotal: item.product.dealerPrice * quantity,
             }
-          : item
-      )
+          : item,
+      ),
     );
   };
 
@@ -89,7 +89,7 @@ export default function CartPage() {
   };
 
   const handleCheckout = () => {
-    router.push('/dealer/checkout');
+    router.push("/dealer/checkout");
   };
 
   // Empty Cart State
@@ -107,13 +107,9 @@ export default function CartPage() {
         {/* Empty State */}
         <div className="rounded-lg border-2 border-dashed border-slate-300 p-12 text-center">
           <ShoppingCart className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">
-            Your cart is empty
-          </h2>
-          <p className="text-slate-600 mb-6">
-            Add some parts to your cart to get started
-          </p>
-          <Button size="lg" onClick={() => router.push('/dealer/search')}>
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">Your cart is empty</h2>
+          <p className="text-slate-600 mb-6">Add some parts to your cart to get started</p>
+          <Button size="lg" onClick={() => router.push("/dealer/search")}>
             Browse Parts
           </Button>
         </div>
@@ -128,7 +124,7 @@ export default function CartPage() {
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Shopping Cart</h1>
           <p className="text-slate-600 mt-1">
-            {getTotalItems()} {getTotalItems() === 1 ? 'item' : 'items'} in your cart
+            {getTotalItems()} {getTotalItems() === 1 ? "item" : "items"} in your cart
           </p>
         </div>
 
@@ -143,11 +139,7 @@ export default function CartPage() {
       </div>
 
       {/* Back to Search */}
-      <Button
-        variant="ghost"
-        onClick={() => router.push('/dealer/search')}
-        className="gap-2"
-      >
+      <Button variant="ghost" onClick={() => router.push("/dealer/search")} className="gap-2">
         <ArrowLeft className="w-4 h-4" />
         Continue Shopping
       </Button>

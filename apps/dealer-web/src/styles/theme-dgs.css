@@ -1,0 +1,251 @@
+:root {
+  --dgs-bg: rgb(255, 255, 255);
+  --dgs-bg-image: none;
+  --dgs-surface: rgb(243, 243, 243);
+  --dgs-surface-2: rgb(243, 243, 243);
+  --dgs-border: rgb(106, 106, 106);
+  --dgs-text: rgb(106, 106, 106);
+  --dgs-muted: rgb(106, 106, 106);
+  --dgs-primary: #f5710f;
+  --dgs-primary-hover: #e86400;
+  --dgs-primary-active: #cc5500;
+  --dgs-accent: #f5710f;
+  --dgs-ring: rgba(245, 113, 15, 0.18);
+  --dgs-nav-bg: rgb(255, 255, 255);
+  --dgs-nav-hover-bg: rgba(245, 113, 15, 0.1);
+  --dgs-nav-active-bg: rgba(245, 113, 15, 0.14);
+  --dgs-nav-active-indicator: #f5710f;
+  --dgs-table-head-bg: rgb(255, 255, 255);
+  --dgs-radius-sm: 3px;
+  --dgs-radius-md: 0px;
+  --dgs-shadow-1: 0 6px 14px rgba(0, 0, 0, 0.08);
+  --dgs-shadow-2: 0 12px 24px rgba(245, 113, 15, 0.18);
+  --dgs-font-sans: Roboto, sans-serif;
+  --dgs-banner-overlay: linear-gradient(90deg, rgba(245, 113, 15, 0.35), rgba(0, 0, 0, 0.12));
+  --dgs-banner-tint: rgba(245, 113, 15, 0.18);
+  --dgs-click-overlay: rgba(245, 113, 15, 0.92);
+}
+
+:root {
+  --color-background: var(--dgs-bg);
+  --color-foreground: var(--dgs-text);
+  --color-card: var(--dgs-surface);
+  --color-card-foreground: var(--dgs-text);
+  --color-popover: var(--dgs-surface);
+  --color-popover-foreground: var(--dgs-text);
+  --color-primary: var(--dgs-primary);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--dgs-surface-2);
+  --color-secondary-foreground: var(--dgs-text);
+  --color-accent: var(--dgs-accent);
+  --color-accent-foreground: #1b1f24;
+  --color-muted: var(--dgs-surface-2);
+  --color-muted-foreground: var(--dgs-muted);
+  --color-border: var(--dgs-border);
+  --color-input: var(--dgs-border);
+  --color-ring: var(--dgs-primary);
+  --radius: var(--dgs-radius-md);
+  --radius-sm: var(--dgs-radius-sm);
+  --radius-md: var(--dgs-radius-md);
+  --radius-lg: calc(var(--dgs-radius-md) + 4px);
+  --font-sans: var(--dgs-font-sans);
+}
+
+body {
+  background-color: var(--dgs-bg);
+  background-image: var(--dgs-bg-image);
+  color: var(--dgs-text);
+}
+
+.bg-slate-50 {
+  background-color: var(--dgs-bg) !important;
+}
+
+.bg-white {
+  background-color: var(--dgs-surface) !important;
+}
+
+.bg-slate-100 {
+  background-color: var(--dgs-surface-2) !important;
+}
+
+.bg-gray-50 {
+  background-color: var(--dgs-surface-2) !important;
+}
+
+.hover\:bg-slate-50:hover,
+.hover\:bg-gray-50:hover {
+  background-color: var(--dgs-surface-2) !important;
+}
+
+.border-slate-200,
+.border-gray-200,
+.border-gray-300 {
+  border-color: var(--dgs-border) !important;
+}
+
+.text-slate-500,
+.text-gray-500,
+.text-slate-600,
+.text-gray-600 {
+  color: var(--dgs-muted) !important;
+}
+
+.text-slate-700,
+.text-gray-700,
+.text-slate-900,
+.text-gray-900 {
+  color: var(--dgs-text) !important;
+}
+
+.bg-blue-600 {
+  background-color: var(--dgs-primary) !important;
+}
+
+.text-blue-600 {
+  color: var(--dgs-primary) !important;
+}
+
+.hover\:bg-blue-700:hover {
+  background-color: var(--dgs-primary-hover) !important;
+}
+
+.active\:bg-blue-700:active {
+  background-color: var(--dgs-primary-active) !important;
+}
+
+.border-blue-600 {
+  border-color: var(--dgs-primary) !important;
+}
+
+.text-blue-700 {
+  color: var(--dgs-primary) !important;
+}
+
+.bg-blue-50 {
+  background-color: var(--dgs-surface-2) !important;
+}
+
+.border-blue-200 {
+  border-color: var(--dgs-border) !important;
+}
+
+.hover\:text-blue-600:hover {
+  color: var(--dgs-primary) !important;
+}
+
+.focus-visible\:outline-blue-600:focus-visible {
+  outline-color: var(--dgs-primary) !important;
+}
+
+.focus\:ring-blue-100:focus {
+  --tw-ring-color: var(--dgs-ring) !important;
+}
+
+.shadow-sm {
+  box-shadow: var(--dgs-shadow-1) !important;
+}
+
+.hover\:shadow-md:hover {
+  box-shadow: var(--dgs-shadow-2) !important;
+}
+
+.shadow-sm:hover {
+  box-shadow: var(--dgs-shadow-2) !important;
+}
+
+.border-slate-200:hover,
+.border-gray-200:hover {
+  border-color: rgba(245, 113, 15, 0.22) !important;
+}
+
+.dgs-ticker {
+  height: 40px;
+  background: linear-gradient(90deg, var(--dgs-primary), var(--dgs-primary-hover));
+  color: #ffffff;
+}
+
+.dgs-banner {
+  height: 240px;
+  border-radius: var(--dgs-radius-md);
+  overflow: hidden;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  box-shadow: var(--dgs-shadow-1);
+}
+
+.dgs-banner-overlay {
+  height: 100%;
+  width: 100%;
+  background:
+    var(--dgs-banner-overlay),
+    linear-gradient(90deg, var(--dgs-banner-tint), rgba(255, 107, 0, 0.05));
+}
+
+.dgs-progress {
+  height: 3px;
+  background: linear-gradient(90deg, var(--dgs-primary), var(--dgs-primary-hover));
+  transition: opacity 200ms ease;
+}
+
+.dgs-click-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--dgs-click-overlay);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 250ms ease;
+  z-index: 40;
+}
+
+.dgs-click-overlay.is-active {
+  opacity: 1;
+  transition-duration: 150ms;
+}
+
+.dgs-watermark {
+  position: fixed;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  filter: blur(2px);
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@media (max-width: 768px) {
+  .dgs-banner {
+    height: 160px;
+  }
+}
+
+header,
+nav {
+  background-color: var(--dgs-nav-bg);
+}
+
+header nav a,
+header nav button {
+  color: var(--dgs-text);
+}
+
+header nav a:hover,
+header nav button:hover {
+  background-color: var(--dgs-nav-hover-bg);
+}
+
+header nav a[aria-current="page"],
+header nav a.active {
+  background-color: var(--dgs-nav-active-bg);
+  border-bottom: 2px solid var(--dgs-nav-active-indicator);
+}
+
+thead {
+  background-color: var(--dgs-table-head-bg);
+}
+
+thead th {
+  color: var(--dgs-text);
+}

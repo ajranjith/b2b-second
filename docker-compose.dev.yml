@@ -1,0 +1,36 @@
+services:
+  postgres-primary:
+    image: bitnami/postgresql:16
+    container_name: hotbray-postgres-primary
+    environment:
+      POSTGRESQL_REPLICATION_MODE: master
+      POSTGRESQL_REPLICATION_USER: replicator
+      POSTGRESQL_REPLICATION_PASSWORD: replicator-pass
+      POSTGRESQL_USERNAME: postgres
+      POSTGRESQL_PASSWORD: postgres
+      POSTGRESQL_DATABASE: hotbray
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-primary:/bitnami/postgresql
+
+  postgres-replica:
+    image: bitnami/postgresql:16
+    container_name: hotbray-postgres-replica
+    depends_on:
+      - postgres-primary
+    environment:
+      POSTGRESQL_REPLICATION_MODE: slave
+      POSTGRESQL_REPLICATION_USER: replicator
+      POSTGRESQL_REPLICATION_PASSWORD: replicator-pass
+      POSTGRESQL_MASTER_HOST: postgres-primary
+      POSTGRESQL_MASTER_PORT_NUMBER: 5432
+      POSTGRESQL_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg-replica:/bitnami/postgresql
+
+volumes:
+  pg-primary:
+  pg-replica:

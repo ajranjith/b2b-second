@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, AlertCircle } from 'lucide-react';
-import type { DispatchMethod, CartItem } from '@/types/dealer';
-import { CheckoutStepIndicator } from '@/components/dealer/CheckoutStepIndicator';
-import { DispatchMethodSelector } from '@/components/dealer/DispatchMethodSelector';
-import { OrderReview } from '@/components/dealer/OrderReview';
-import { OrderConfirmation } from '@/components/dealer/OrderConfirmation';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { showToast, commonToasts } from '@/components/global';
-import { mockProducts } from '@/mocks/dealer-data';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
+import type { DispatchMethod, CartItem } from "@/types/dealer";
+import { CheckoutStepIndicator } from "@/components/dealer/CheckoutStepIndicator";
+import { DispatchMethodSelector } from "@/components/dealer/DispatchMethodSelector";
+import { OrderReview } from "@/components/dealer/OrderReview";
+import { OrderConfirmation } from "@/components/dealer/OrderConfirmation";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { showToast, commonToasts } from "@/components/global";
+import { mockProducts } from "@/mocks/dealer-data";
 
 /**
  * Checkout Page
@@ -24,21 +24,21 @@ import { mockProducts } from '@/mocks/dealer-data';
 export default function CheckoutPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
-  const [dispatchMethod, setDispatchMethod] = useState<DispatchMethod>('standard');
+  const [dispatchMethod, setDispatchMethod] = useState<DispatchMethod>("standard");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [orderNumber, setOrderNumber] = useState('');
+  const [orderNumber, setOrderNumber] = useState("");
   const [showEmailWarning] = useState(true); // Non-blocking warning
 
   // Mock cart items (in real app, get from context)
   const [cartItems] = useState<CartItem[]>([
     {
-      id: 'cart-1',
+      id: "cart-1",
       product: mockProducts[0],
       quantity: 2,
       lineTotal: mockProducts[0].dealerPrice * 2,
     },
     {
-      id: 'cart-2',
+      id: "cart-2",
       product: mockProducts[1],
       quantity: 1,
       lineTotal: mockProducts[1].dealerPrice * 1,
@@ -50,7 +50,7 @@ export default function CheckoutPage() {
   };
 
   const getDeliveryCharge = () => {
-    return dispatchMethod === 'express' ? 15.0 : 0;
+    return dispatchMethod === "express" ? 15.0 : 0;
   };
 
   const calculateVAT = () => {
@@ -73,7 +73,7 @@ export default function CheckoutPage() {
     if (currentStep > 1 && currentStep < 3) {
       setCurrentStep(currentStep - 1);
     } else if (currentStep === 1) {
-      router.push('/dealer/cart');
+      router.push("/dealer/cart");
     }
   };
 
@@ -95,15 +95,15 @@ export default function CheckoutPage() {
       // Show success toast
       commonToasts.orderPlaced(newOrderNumber);
     } catch (error) {
-      console.error('Failed to place order:', error);
-      showToast.error('Order failed', 'Please try again or contact support');
+      console.error("Failed to place order:", error);
+      showToast.error("Order failed", "Please try again or contact support");
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleDownloadInvoice = () => {
-    showToast.info('Downloading invoice', 'Your invoice is being prepared...');
+    showToast.info("Downloading invoice", "Your invoice is being prepared...");
     // TODO: Implement invoice download
   };
 
@@ -123,10 +123,10 @@ export default function CheckoutPage() {
         <Alert className="border-amber-200 bg-amber-50">
           <AlertCircle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800">
-            <strong>Note:</strong> Order confirmation will be sent to your registered
-            email address. Please ensure your email is up to date in your{' '}
+            <strong>Note:</strong> Order confirmation will be sent to your registered email address.
+            Please ensure your email is up to date in your{" "}
             <button
-              onClick={() => router.push('/dealer/account')}
+              onClick={() => router.push("/dealer/account")}
               className="underline hover:no-underline"
             >
               account settings
@@ -171,11 +171,11 @@ export default function CheckoutPage() {
               orderDate={new Date().toISOString()}
               total={calculateTotal()}
               estimatedDelivery={
-                dispatchMethod === 'express'
-                  ? 'Tomorrow'
-                  : dispatchMethod === 'collection'
-                  ? '2-3 days'
-                  : '3-5 days'
+                dispatchMethod === "express"
+                  ? "Tomorrow"
+                  : dispatchMethod === "collection"
+                    ? "2-3 days"
+                    : "3-5 days"
               }
               onDownloadInvoice={handleDownloadInvoice}
             />
@@ -199,17 +199,13 @@ export default function CheckoutPage() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-600">Delivery</span>
                   <span className="font-medium text-slate-900">
-                    {getDeliveryCharge() > 0
-                      ? `£${getDeliveryCharge().toFixed(2)}`
-                      : 'Free'}
+                    {getDeliveryCharge() > 0 ? `£${getDeliveryCharge().toFixed(2)}` : "Free"}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-600">VAT (20%)</span>
-                  <span className="font-medium text-slate-900">
-                    £{calculateVAT().toFixed(2)}
-                  </span>
+                  <span className="font-medium text-slate-900">£{calculateVAT().toFixed(2)}</span>
                 </div>
 
                 <div className="border-t border-slate-200 pt-3">
@@ -229,22 +225,12 @@ export default function CheckoutPage() {
       {/* Navigation Buttons */}
       {currentStep < 3 && (
         <div className="flex items-center justify-between pt-6 border-t border-slate-200">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={handleBack}
-            disabled={isProcessing}
-          >
+          <Button variant="outline" size="lg" onClick={handleBack} disabled={isProcessing}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {currentStep === 1 ? 'Back to Cart' : 'Previous Step'}
+            {currentStep === 1 ? "Back to Cart" : "Previous Step"}
           </Button>
 
-          <Button
-            size="lg"
-            onClick={handleNext}
-            disabled={isProcessing}
-            className="min-w-[200px]"
-          >
+          <Button size="lg" onClick={handleNext} disabled={isProcessing} className="min-w-[200px]">
             {isProcessing ? (
               <>
                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />

@@ -1,5 +1,5 @@
-import { PrismaClient, ImportType, PartType } from '@prisma/client';
-import { ImportService, ValidationResult } from './ImportService';
+import { PrismaClient, ImportType, PartType } from "@prisma/client";
+import { ImportService, ValidationResult } from "./ImportService";
 
 /**
  * DGS Sample File Format:
@@ -10,17 +10,17 @@ import { ImportService, ValidationResult } from './ImportService';
  * - Discount code (gn=GENUINE, es=AFTERMARKET, br=BRANDED)
  */
 interface DGSProductRow {
-  'Product Code'?: string;
-  'Full Description'?: string;
-  'Free Stock'?: number | string;
-  'Net 1 Price'?: number | string;
-  'Net 2 Price'?: number | string;
-  'Net 3 Price'?: number | string;
-  'Net 4 Price'?: number | string;
-  'Net 5 Price'?: number | string;
-  'Net 6 Price'?: number | string;
-  'Net 7 Price'?: number | string;
-  'Discount code'?: string;
+  "Product Code"?: string;
+  "Full Description"?: string;
+  "Free Stock"?: number | string;
+  "Net 1 Price"?: number | string;
+  "Net 2 Price"?: number | string;
+  "Net 3 Price"?: number | string;
+  "Net 4 Price"?: number | string;
+  "Net 5 Price"?: number | string;
+  "Net 6 Price"?: number | string;
+  "Net 7 Price"?: number | string;
+  "Discount code"?: string;
   Supplier?: string;
 }
 
@@ -55,17 +55,17 @@ export class ProductImportService extends ImportService<DGSProductRow> {
    */
   validateColumns(headers: string[]): { valid: boolean; missing: string[] } {
     const required = [
-      'Product Code',
-      'Full Description',
-      'Free Stock',
-      'Net 1 Price',
-      'Net 2 Price',
-      'Net 3 Price',
-      'Net 4 Price',
-      'Net 5 Price',
-      'Net 6 Price',
-      'Net 7 Price',
-      'Discount code'
+      "Product Code",
+      "Full Description",
+      "Free Stock",
+      "Net 1 Price",
+      "Net 2 Price",
+      "Net 3 Price",
+      "Net 4 Price",
+      "Net 5 Price",
+      "Net 6 Price",
+      "Net 7 Price",
+      "Discount code",
     ];
 
     const missing: string[] = [];
@@ -77,7 +77,7 @@ export class ProductImportService extends ImportService<DGSProductRow> {
 
     return {
       valid: missing.length === 0,
-      missing
+      missing,
     };
   }
 
@@ -88,24 +88,20 @@ export class ProductImportService extends ImportService<DGSProductRow> {
     const errors: string[] = [];
 
     // Required: Product Code
-    const productCodeError = this.validateRequired(row['Product Code'], 'Product Code');
+    const productCodeError = this.validateRequired(row["Product Code"], "Product Code");
     if (productCodeError) errors.push(productCodeError);
 
     // Required: Full Description
-    const descriptionError = this.validateRequired(row['Full Description'], 'Full Description');
+    const descriptionError = this.validateRequired(row["Full Description"], "Full Description");
     if (descriptionError) errors.push(descriptionError);
 
     // Required: Discount code (must be gn, es, or br)
-    const discountCode = this.trimString(row['Discount code']);
-    const discountCodeError = this.validateEnum(
-      discountCode,
-      'Discount code',
-      ['gn', 'es', 'br']
-    );
+    const discountCode = this.trimString(row["Discount code"]);
+    const discountCodeError = this.validateEnum(discountCode, "Discount code", ["gn", "es", "br"]);
     if (discountCodeError) errors.push(discountCodeError);
 
     // Free Stock: must be non-negative integer
-    const freeStockError = this.validateNonNegativeInt(row['Free Stock'], 'Free Stock');
+    const freeStockError = this.validateNonNegativeInt(row["Free Stock"], "Free Stock");
     if (freeStockError) errors.push(freeStockError);
 
     // Net Prices: must be non-negative decimals
@@ -117,7 +113,7 @@ export class ProductImportService extends ImportService<DGSProductRow> {
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -126,11 +122,11 @@ export class ProductImportService extends ImportService<DGSProductRow> {
    */
   parseRow(row: DGSProductRow, batchId: string, rowNumber: number): ParsedProductRow {
     // Determine PartType from discount code
-    const discountCode = this.trimString(row['Discount code'])?.toLowerCase();
+    const discountCode = this.trimString(row["Discount code"])?.toLowerCase();
     let partType: PartType;
-    if (discountCode === 'gn') {
+    if (discountCode === "gn") {
       partType = PartType.GENUINE;
-    } else if (discountCode === 'br') {
+    } else if (discountCode === "br") {
       partType = PartType.BRANDED;
     } else {
       partType = PartType.AFTERMARKET; // es or default
@@ -141,22 +137,22 @@ export class ProductImportService extends ImportService<DGSProductRow> {
     return {
       batchId,
       rowNumber,
-      productCode: this.normalizePartNumber(row['Product Code']),
-      description: this.trimString(row['Full Description']),
-      discountCode: this.trimString(row['Discount code']),
+      productCode: this.normalizePartNumber(row["Product Code"]),
+      description: this.trimString(row["Full Description"]),
+      discountCode: this.trimString(row["Discount code"]),
       supplier: this.trimString(row.Supplier),
-      freeStock: this.parseInt(row['Free Stock']),
-      net1Price: this.parseDecimal(row['Net 1 Price']),
-      net2Price: this.parseDecimal(row['Net 2 Price']),
-      net3Price: this.parseDecimal(row['Net 3 Price']),
-      net4Price: this.parseDecimal(row['Net 4 Price']),
-      net5Price: this.parseDecimal(row['Net 5 Price']),
-      net6Price: this.parseDecimal(row['Net 6 Price']),
-      net7Price: this.parseDecimal(row['Net 7 Price']),
+      freeStock: this.parseInt(row["Free Stock"]),
+      net1Price: this.parseDecimal(row["Net 1 Price"]),
+      net2Price: this.parseDecimal(row["Net 2 Price"]),
+      net3Price: this.parseDecimal(row["Net 3 Price"]),
+      net4Price: this.parseDecimal(row["Net 4 Price"]),
+      net5Price: this.parseDecimal(row["Net 5 Price"]),
+      net6Price: this.parseDecimal(row["Net 6 Price"]),
+      net7Price: this.parseDecimal(row["Net 7 Price"]),
       partType,
       isValid: validation.isValid,
-      validationErrors: validation.errors.length > 0 ? validation.errors.join('; ') : null,
-      rawRowJson: row
+      validationErrors: validation.errors.length > 0 ? validation.errors.join("; ") : null,
+      rawRowJson: row,
     };
   }
 
@@ -168,8 +164,8 @@ export class ProductImportService extends ImportService<DGSProductRow> {
     const validRows = await this.prisma.stgProductPriceRow.findMany({
       where: {
         batchId,
-        isValid: true
-      }
+        isValid: true,
+      },
     });
 
     console.log(`\n📊 Processing ${validRows.length} valid products...`);
@@ -188,7 +184,7 @@ export class ProductImportService extends ImportService<DGSProductRow> {
               discountCode: row.discountCode,
               partType: row.partType,
               isActive: true,
-              updatedAt: new Date()
+              updatedAt: new Date(),
             },
             create: {
               productCode: row.productCode!,
@@ -196,8 +192,8 @@ export class ProductImportService extends ImportService<DGSProductRow> {
               description: row.description!,
               discountCode: row.discountCode,
               partType: row.partType,
-              isActive: true
-            }
+              isActive: true,
+            },
           });
 
           // 2. UPSERT ProductStock
@@ -207,25 +203,25 @@ export class ProductImportService extends ImportService<DGSProductRow> {
               update: {
                 freeStock: row.freeStock,
                 lastImportBatchId: batchId,
-                updatedAt: new Date()
+                updatedAt: new Date(),
               },
               create: {
                 productId: product.id,
                 freeStock: row.freeStock,
-                lastImportBatchId: batchId
-              }
+                lastImportBatchId: batchId,
+              },
             });
           }
 
           // 3. UPSERT ProductNetPrice (7 tiers: Net1..Net7)
           const netPrices = [
-            { tierCode: 'Net1', price: row.band1Price }, // Using band1Price for Net1 (schema mapping)
-            { tierCode: 'Net2', price: row.band2Price },
-            { tierCode: 'Net3', price: row.band3Price },
-            { tierCode: 'Net4', price: row.band4Price },
-            { tierCode: 'Net5', price: null }, // Not in StgProductPriceRow schema
-            { tierCode: 'Net6', price: null },
-            { tierCode: 'Net7', price: null }
+            { tierCode: "Net1", price: row.band1Price }, // Using band1Price for Net1 (schema mapping)
+            { tierCode: "Net2", price: row.band2Price },
+            { tierCode: "Net3", price: row.band3Price },
+            { tierCode: "Net4", price: row.band4Price },
+            { tierCode: "Net5", price: null }, // Not in StgProductPriceRow schema
+            { tierCode: "Net6", price: null },
+            { tierCode: "Net7", price: null },
           ];
 
           for (const netPrice of netPrices) {
@@ -234,18 +230,18 @@ export class ProductImportService extends ImportService<DGSProductRow> {
                 where: {
                   productId_tierCode: {
                     productId: product.id,
-                    tierCode: netPrice.tierCode
-                  }
+                    tierCode: netPrice.tierCode,
+                  },
                 },
                 update: {
                   price: netPrice.price,
-                  updatedAt: new Date()
+                  updatedAt: new Date(),
                 },
                 create: {
                   productId: product.id,
                   tierCode: netPrice.tierCode,
-                  price: netPrice.price
-                }
+                  price: netPrice.price,
+                },
               });
             }
           }
@@ -263,8 +259,8 @@ export class ProductImportService extends ImportService<DGSProductRow> {
           row.rowNumber,
           `Processing error: ${error instanceof Error ? error.message : String(error)}`,
           undefined,
-          'PROCESSING_ERROR',
-          row.rawRowJson
+          "PROCESSING_ERROR",
+          row.rawRowJson,
         );
       }
     }

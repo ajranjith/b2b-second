@@ -1,15 +1,10 @@
 {
-    "root": true,
-    "extends": [
-        "eslint:recommended"
-    ],
-    "parser": "@typescript-eslint/parser",
-    "plugins": [
-        "@typescript-eslint"
-    ],
-    "ignorePatterns": [
-        "dist",
-        ".turbo",
-        "node_modules"
-    ]
+  "root": true,
+  "extends": ["eslint:recommended"],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "rules": {
+    "quotes": ["error", "double"]
+  },
+  "ignorePatterns": ["dist", ".turbo", "node_modules"]
 }

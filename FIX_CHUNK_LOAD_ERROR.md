@@ -9,6 +9,7 @@
 ## What Happened
 
 This error occurs when Next.js tries to load a JavaScript chunk (code splitting file) but fails due to:
+
 1. Stale build cache
 2. Dev server not restarting after file changes
 3. Browser caching old chunks
@@ -19,22 +20,26 @@ This error occurs when Next.js tries to load a JavaScript chunk (code splitting 
 ## ✅ Solution Applied
 
 ### Step 1: Clear Next.js Build Cache
+
 ```bash
 cd apps/web
 rm -rf .next
 ```
 
 ### Step 2: Stop Any Running Dev Servers
+
 ```bash
 pkill -f "next dev"
 ```
 
 ### Step 3: Restart Dev Server
+
 ```bash
 pnpm dev
 ```
 
 ### Step 4: Hard Refresh Browser
+
 - Windows/Linux: `Ctrl + Shift + R`
 - Mac: `Cmd + Shift + R`
 - Or open DevTools (F12) → Right-click refresh → "Empty Cache and Hard Reload"
@@ -92,12 +97,14 @@ pnpm dev
 ### For Developers:
 
 1. **Always restart after layout changes:**
+
    ```bash
    # After changing any layout.tsx file:
    pkill -f "next dev" && pnpm dev
    ```
 
 2. **Clear cache when adding new routes:**
+
    ```bash
    rm -rf .next && pnpm dev
    ```
@@ -117,6 +124,7 @@ pnpm dev
 After applying the fix, verify:
 
 1. **Dev Server Running:**
+
    ```bash
    # Should see:
    # ✓ Ready in 2.5s
@@ -144,6 +152,7 @@ After applying the fix, verify:
 If the above doesn't work, try these:
 
 ### Option 1: Nuclear Clean
+
 ```bash
 # Stop everything
 pkill -f "next dev"
@@ -160,18 +169,21 @@ pnpm dev
 ```
 
 ### Option 2: Different Port
+
 ```bash
 # Sometimes port conflicts cause issues
 PORT=3001 pnpm dev
 ```
 
 ### Option 3: Check File Permissions
+
 ```bash
 # Ensure .next directory is writable
 chmod -R 755 .next
 ```
 
 ### Option 4: Disable Caching in Browser
+
 1. Open DevTools (F12)
 2. Go to Network tab
 3. Check "Disable cache"
@@ -182,6 +194,7 @@ chmod -R 755 .next
 ## 📊 When This Error Occurs
 
 ### High Risk Scenarios:
+
 - ✅ Creating new layout files (layout.tsx, layout-new.tsx)
 - ✅ Renaming layout files
 - ✅ Adding new route groups
@@ -190,6 +203,7 @@ chmod -R 755 .next
 - ✅ Updating next.config.js
 
 ### Low Risk Scenarios:
+
 - Regular page component changes
 - CSS/styling updates
 - Adding new API routes
@@ -202,11 +216,13 @@ chmod -R 755 .next
 **Issue:** ChunkLoadError when loading admin layout
 **Cause:** New layout files (layout-new.tsx) + stale cache
 **Fix Applied:**
+
 - ✅ Cleared `.next` cache
 - ✅ Stopped dev server
 - ⏳ Ready for restart
 
 **Next Steps:**
+
 1. Run `pnpm dev` in apps/web
 2. Hard refresh browser (Ctrl+Shift+R)
 3. Navigate to http://localhost:3000
@@ -219,6 +235,7 @@ chmod -R 755 .next
 ### During Development:
 
 1. **Use turbo mode:**
+
    ```json
    // next.config.js
    experimental: {
@@ -227,6 +244,7 @@ chmod -R 755 .next
    ```
 
 2. **Enable source maps:**
+
    ```json
    // next.config.js
    productionBrowserSourceMaps: true
@@ -255,6 +273,7 @@ After applying the fix:
 ```
 
 Browser should load:
+
 - ✅ No console errors
 - ✅ Page renders correctly
 - ✅ Navigation works
@@ -267,6 +286,7 @@ Browser should load:
 Contact support with:
 
 1. **Terminal output:**
+
    ```bash
    pnpm dev > dev-output.log 2>&1
    ```

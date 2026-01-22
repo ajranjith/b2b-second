@@ -1,4 +1,4 @@
-import { PrismaClient, ImportBatch, ImportType, ImportStatus } from '@prisma/client';
+import { PrismaClient, ImportBatch, ImportType, ImportStatus } from "@prisma/client";
 
 export interface ValidationResult {
   isValid: boolean;
@@ -37,7 +37,7 @@ export abstract class ImportService<TRow = any> {
     importType: ImportType,
     fileName: string,
     fileHash: string,
-    filePath?: string
+    filePath?: string,
   ): Promise<ImportBatch> {
     return this.prisma.importBatch.create({
       data: {
@@ -48,8 +48,8 @@ export abstract class ImportService<TRow = any> {
         status: ImportStatus.PROCESSING,
         totalRows: 0,
         validRows: 0,
-        invalidRows: 0
-      }
+        invalidRows: 0,
+      },
     });
   }
 
@@ -98,8 +98,8 @@ export abstract class ImportService<TRow = any> {
         validRows: counts.valid,
         invalidRows: counts.invalid,
         status,
-        completedAt: new Date()
-      }
+        completedAt: new Date(),
+      },
     });
   }
 
@@ -112,7 +112,7 @@ export abstract class ImportService<TRow = any> {
     errorMessage: string,
     columnName?: string,
     errorCode?: string,
-    rawRow?: any
+    rawRow?: any,
   ): Promise<void> {
     await this.prisma.importError.create({
       data: {
@@ -121,8 +121,8 @@ export abstract class ImportService<TRow = any> {
         columnName,
         errorCode,
         errorMessage,
-        rawRowJson: rawRow
-      }
+        rawRowJson: rawRow,
+      },
     });
   }
 
@@ -134,12 +134,12 @@ export abstract class ImportService<TRow = any> {
       where: { id: batchId },
       data: {
         status: ImportStatus.FAILED,
-        completedAt: new Date()
-      }
+        completedAt: new Date(),
+      },
     });
 
     if (error) {
-      await this.logError(batchId, 0, error.message, undefined, 'BATCH_ERROR');
+      await this.logError(batchId, 0, error.message, undefined, "BATCH_ERROR");
     }
   }
 
@@ -150,7 +150,7 @@ export abstract class ImportService<TRow = any> {
    */
   protected normalizePartNumber(code: string | null | undefined): string | null {
     if (!code) return null;
-    return code.trim().toUpperCase().replace(/\s+/g, '');
+    return code.trim().toUpperCase().replace(/\s+/g, "");
   }
 
   /**
@@ -165,17 +165,17 @@ export abstract class ImportService<TRow = any> {
    * Trim string and return null if empty
    */
   protected trimString(value: string | null | undefined): string | null {
-    if (!value) return null;
-    const trimmed = value.trim();
-    return trimmed === '' ? null : trimmed;
+    if (value === undefined || value === null) return null;
+    const trimmed = String(value).trim();
+    return trimmed === "" ? null : trimmed;
   }
 
   /**
    * Parse decimal value, return null if invalid
    */
   protected parseDecimal(value: any): number | null {
-    if (value === undefined || value === null || value === '') return null;
-    const num = typeof value === 'number' ? value : parseFloat(String(value));
+    if (value === undefined || value === null || value === "") return null;
+    const num = typeof value === "number" ? value : parseFloat(String(value));
     return isNaN(num) ? null : num;
   }
 
@@ -183,8 +183,8 @@ export abstract class ImportService<TRow = any> {
    * Parse integer value, return null if invalid
    */
   protected parseInt(value: any): number | null {
-    if (value === undefined || value === null || value === '') return null;
-    const num = typeof value === 'number' ? value : Number(value);
+    if (value === undefined || value === null || value === "") return null;
+    const num = typeof value === "number" ? value : Number(value);
     return isNaN(num) ? null : Math.floor(num);
   }
 
@@ -212,7 +212,11 @@ export abstract class ImportService<TRow = any> {
    * Validate required field exists
    */
   protected validateRequired(value: any, fieldName: string): string | null {
-    if (value === undefined || value === null || (typeof value === 'string' && value.trim() === '')) {
+    if (
+      value === undefined ||
+      value === null ||
+      (typeof value === "string" && value.trim() === "")
+    ) {
       return `${fieldName} is required`;
     }
     return null;
@@ -224,13 +228,13 @@ export abstract class ImportService<TRow = any> {
   protected validateEnum<T extends string>(
     value: any,
     fieldName: string,
-    allowedValues: readonly T[]
+    allowedValues: readonly T[],
   ): string | null {
     if (!value) return null; // Null is OK (optional field)
     const stringValue = String(value).toLowerCase();
-    const normalized = allowedValues.find(v => v.toLowerCase() === stringValue);
+    const normalized = allowedValues.find((v) => v.toLowerCase() === stringValue);
     if (!normalized) {
-      return `${fieldName} must be one of: ${allowedValues.join(', ')}`;
+      return `${fieldName} must be one of: ${allowedValues.join(", ")}`;
     }
     return null;
   }
@@ -239,7 +243,7 @@ export abstract class ImportService<TRow = any> {
    * Check if column exists in headers (case-insensitive)
    */
   protected hasColumn(headers: string[], columnName: string): boolean {
-    return headers.some(h => h.toLowerCase() === columnName.toLowerCase());
+    return headers.some((h) => h.toLowerCase() === columnName.toLowerCase());
   }
 
   /**
@@ -253,7 +257,7 @@ export abstract class ImportService<TRow = any> {
 
     // Try case-insensitive match
     const keys = Object.keys(row);
-    const matchingKey = keys.find(k => k.toLowerCase() === columnName.toLowerCase());
+    const matchingKey = keys.find((k) => k.toLowerCase() === columnName.toLowerCase());
     return matchingKey ? row[matchingKey] : undefined;
   }
 }

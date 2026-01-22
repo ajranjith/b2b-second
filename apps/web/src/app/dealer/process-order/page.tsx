@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { ArrowLeft, CheckCircle2, Download, Phone, Mail, AlertCircle } from 'lucide-react';
-import { getOrderById } from '@/lib/services/dealerApi';
-import { StatusChip } from '@/components/portal/StatusChip';
-import { Card, CardContent, CardHeader, CardTitle, Button } from '@/ui';
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { ArrowLeft, CheckCircle2, Download, Phone, Mail, AlertCircle } from "lucide-react";
+import { getOrderById } from "@/lib/services/dealerApi";
+import { StatusChip } from "@/components/portal/StatusChip";
+import { Card, CardContent, CardHeader, CardTitle, Button } from "@/ui";
 
-const statusTone: Record<string, 'blue' | 'green' | 'amber' | 'red' | 'slate'> = {
-  Processing: 'blue',
-  Ready: 'amber',
-  Shipped: 'green',
-  Backorder: 'red',
+const statusTone: Record<string, "blue" | "green" | "amber" | "red" | "slate"> = {
+  Processing: "blue",
+  Ready: "amber",
+  Shipped: "green",
+  Backorder: "red",
 };
 
 interface ChecklistItem {
@@ -25,38 +25,38 @@ interface ChecklistItem {
 export default function ProcessOrderPage() {
   const router = useRouter();
   const params = useSearchParams();
-  const orderId = params.get('id') || 'order-1001';
+  const orderId = params.get("id") || "order-1001";
   const [order, setOrder] = useState<Awaited<ReturnType<typeof getOrderById>>>(null);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([
     {
-      id: 'verify',
-      label: 'Verify Order Details',
+      id: "verify",
+      label: "Verify Order Details",
       completed: true,
-      description: 'Order details have been verified and confirmed',
+      description: "Order details have been verified and confirmed",
     },
     {
-      id: 'payment',
-      label: 'Payment Processing',
+      id: "payment",
+      label: "Payment Processing",
       completed: true,
-      description: 'Payment has been successfully processed',
+      description: "Payment has been successfully processed",
     },
     {
-      id: 'picking',
-      label: 'Order Picking',
+      id: "picking",
+      label: "Order Picking",
       completed: false,
-      description: 'Items are being picked from warehouse',
+      description: "Items are being picked from warehouse",
     },
     {
-      id: 'packing',
-      label: 'Packing & Quality Check',
+      id: "packing",
+      label: "Packing & Quality Check",
       completed: false,
-      description: 'Items will be packed and quality checked',
+      description: "Items will be packed and quality checked",
     },
     {
-      id: 'dispatch',
-      label: 'Dispatch',
+      id: "dispatch",
+      label: "Dispatch",
       completed: false,
-      description: 'Order will be dispatched to your location',
+      description: "Order will be dispatched to your location",
     },
   ]);
 
@@ -81,11 +81,7 @@ export default function ProcessOrderPage() {
   return (
     <div className="space-y-6">
       {/* Back Button */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => router.back()}
-      >
+      <Button variant="outline" size="sm" onClick={() => router.back()}>
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to Order
       </Button>
@@ -120,7 +116,9 @@ export default function ProcessOrderPage() {
                 </div>
                 <div className="flex items-center gap-4 text-sm">
                   <span className="text-slate-600">Dispatch Method:</span>
-                  <span className="font-medium text-slate-900 capitalize">{order.dispatchMethod}</span>
+                  <span className="font-medium text-slate-900 capitalize">
+                    {order.dispatchMethod}
+                  </span>
                 </div>
               </div>
 
@@ -145,10 +143,11 @@ export default function ProcessOrderPage() {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 min-w-[220px]">
               <p className="text-sm text-slate-600 mb-1">Order Total</p>
               <p className="text-3xl font-bold text-slate-900">
-                GBP {order.lines.reduce((sum, line) => sum + line.qty * line.unitPrice, 0).toFixed(2)}
+                GBP{" "}
+                {order.lines.reduce((sum, line) => sum + line.qty * line.unitPrice, 0).toFixed(2)}
               </p>
               <p className="text-xs text-slate-500 mt-2">
-                {order.lines.length} item{order.lines.length !== 1 ? 's' : ''}
+                {order.lines.length} item{order.lines.length !== 1 ? "s" : ""}
               </p>
             </div>
           </div>
@@ -178,16 +177,14 @@ export default function ProcessOrderPage() {
                       </div>
                     ) : (
                       <div className="w-6 h-6 rounded-full border-2 border-slate-300 flex items-center justify-center">
-                        <span className="text-xs font-semibold text-slate-500">
-                          {index + 1}
-                        </span>
+                        <span className="text-xs font-semibold text-slate-500">{index + 1}</span>
                       </div>
                     )}
                   </div>
                   <div className="flex-1">
                     <h4
                       className={`text-sm font-semibold ${
-                        item.completed ? 'text-slate-900' : 'text-slate-700'
+                        item.completed ? "text-slate-900" : "text-slate-700"
                       }`}
                     >
                       {item.label}
@@ -205,11 +202,11 @@ export default function ProcessOrderPage() {
                 <div>
                   <p className="text-sm font-semibold text-blue-900">Estimated Completion</p>
                   <p className="text-xs text-blue-700 mt-1">
-                    {order.dispatchMethod === 'Express'
-                      ? 'Your order will be dispatched within 24 hours'
-                      : order.dispatchMethod === 'Collection'
-                      ? 'Your order will be ready for collection in 2-3 business days'
-                      : 'Your order will be dispatched in 3-5 business days'}
+                    {order.dispatchMethod === "Express"
+                      ? "Your order will be dispatched within 24 hours"
+                      : order.dispatchMethod === "Collection"
+                        ? "Your order will be ready for collection in 2-3 business days"
+                        : "Your order will be dispatched in 3-5 business days"}
                   </p>
                 </div>
               </div>
@@ -254,13 +251,14 @@ export default function ProcessOrderPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-slate-600">
-                This order is processed offline by the warehouse team. Contact support with your order number and PO reference.
+                This order is processed offline by the warehouse team. Contact support with your
+                order number and PO reference.
               </p>
 
               <Button
                 variant="outline"
                 className="w-full justify-start"
-                onClick={() => window.open('tel:+441234567890')}
+                onClick={() => window.open("tel:+441234567890")}
               >
                 <Phone className="w-4 h-4 mr-2" />
                 Call Support: +44 1234 567 890
@@ -269,7 +267,7 @@ export default function ProcessOrderPage() {
               <Button
                 variant="outline"
                 className="w-full justify-start"
-                onClick={() => window.open('mailto:support@example.com')}
+                onClick={() => window.open("mailto:support@example.com")}
               >
                 <Mail className="w-4 h-4 mr-2" />
                 Email: support@example.com
@@ -279,7 +277,7 @@ export default function ProcessOrderPage() {
                 className="w-full bg-blue-600 text-white hover:bg-blue-700"
                 onClick={() => {
                   // TODO: Implement PDF download
-                  alert('Downloading invoice...');
+                  alert("Downloading invoice...");
                 }}
               >
                 <Download className="w-4 h-4 mr-2" />

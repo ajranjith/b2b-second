@@ -10,6 +10,7 @@
 ### 1. Database Schema - COMPLETE
 
 **Import Framework Tables:**
+
 - ✅ `ImportBatch` - Tracks each import job with status, counts, metadata
 - ✅ `ImportError` - Stores row-level validation errors with context
 - ✅ Staging Tables:
@@ -20,6 +21,7 @@
   - `StgBackorderRow` - Backorder data
 
 **Import Types (Enum):**
+
 ```typescript
 enum ImportType {
   PRODUCTS_GENUINE
@@ -35,6 +37,7 @@ enum ImportType {
 ```
 
 **Import Status (Enum):**
+
 ```typescript
 enum ImportStatus {
   PROCESSING
@@ -49,29 +52,31 @@ enum ImportStatus {
 #### A. Product Import ([importProducts.ts](apps/worker/src/importProducts.ts))
 
 **✅ Follows UPSERT Strategy:**
+
 ```typescript
 // Line 226-243: Product UPSERT
 await tx.product.upsert({
-    where: { productCode: row['Product Code']! },
-    update: {
-        supplier: row.Supplier || null,
-        description: (row.Description || row['Full Description'])!,
-        discountCode: row['Discount Code'] || null,
-        partType,
-        isActive: true
-    },
-    create: {
-        productCode: row['Product Code']!,
-        supplier: row.Supplier || null,
-        description: (row.Description || row['Full Description'])!,
-        discountCode: row['Discount Code'] || null,
-        partType,
-        isActive: true
-    }
+  where: { productCode: row["Product Code"]! },
+  update: {
+    supplier: row.Supplier || null,
+    description: (row.Description || row["Full Description"])!,
+    discountCode: row["Discount Code"] || null,
+    partType,
+    isActive: true,
+  },
+  create: {
+    productCode: row["Product Code"]!,
+    supplier: row.Supplier || null,
+    description: (row.Description || row["Full Description"])!,
+    discountCode: row["Discount Code"] || null,
+    partType,
+    isActive: true,
+  },
 });
 ```
 
 **✅ Key Features Implemented:**
+
 - ✅ Import batch creation with file hash
 - ✅ Row-by-row validation
 - ✅ Staging table population (`StgProductPriceRow`)
@@ -83,6 +88,7 @@ await tx.product.upsert({
 - ✅ Normalized keys (trim on product codes)
 
 **✅ Non-Destructive:**
+
 - Never truncates tables
 - Only UPSERT operations
 - Preserves existing data
@@ -90,6 +96,7 @@ await tx.product.upsert({
 #### B. Backorder Import ([importBackorders.ts](apps/worker/src/importBackorders.ts))
 
 **✅ Key Features:**
+
 - ✅ CSV parsing with flexible column mapping
 - ✅ Zod schema validation
 - ✅ Staging table (`StgBackorderRow`)
@@ -106,6 +113,7 @@ await tx.product.upsert({
 **Needed:** Create a generic `ImportService` class
 
 **Recommended Structure:**
+
 ```
 apps/worker/src/services/
 ├── ImportService.ts          # Generic import framework
@@ -116,18 +124,24 @@ apps/worker/src/services/
 ```
 
 **Generic Framework Should Provide:**
+
 ```typescript
 abstract class ImportService<TRow, TStagingRow> {
   // Common lifecycle
-  async createBatch(fileName: string, fileHash: string): Promise<ImportBatch>
-  abstract validateRow(row: TRow, rowNumber: number): ValidationResult
-  abstract parseRow(row: TRow): TStagingRow
-  abstract processValidRows(batchId: string): Promise<void>
-  async finishBatch(batchId: string, counts: Counts, status: ImportStatus): Promise<void>
+  async createBatch(fileName: string, fileHash: string): Promise<ImportBatch>;
+  abstract validateRow(row: TRow, rowNumber: number): ValidationResult;
+  abstract parseRow(row: TRow): TStagingRow;
+  abstract processValidRows(batchId: string): Promise<void>;
+  async finishBatch(batchId: string, counts: Counts, status: ImportStatus): Promise<void>;
 
   // Helpers
-  async logError(batchId: string, rowNumber: number, error: string): Promise<void>
-  async stageRow(batchId: string, rowNumber: number, row: TStagingRow, validation: ValidationResult): Promise<void>
+  async logError(batchId: string, rowNumber: number, error: string): Promise<void>;
+  async stageRow(
+    batchId: string,
+    rowNumber: number,
+    row: TStagingRow,
+    validation: ValidationResult,
+  ): Promise<void>;
 }
 ```
 
@@ -158,6 +172,7 @@ Based on schema but not yet implemented:
 
 **Current:** Basic validation in worker code
 **Needed:**
+
 - ✅ Column existence validation
 - ✅ Type validation (numbers, dates, enums)
 - ✅ Business rule validation (e.g., price > 0, valid dealer status)
@@ -168,15 +183,17 @@ Based on schema but not yet implemented:
 
 **Current:** Basic trim on product codes
 **Needed:**
+
 - Consistent uppercase for part numbers
 - Trim all string fields
 - Normalize dealer account numbers
 - Standardize email addresses (lowercase)
 
 **Example Enhancement:**
+
 ```typescript
 function normalizePartNumber(code: string): string {
-  return code.trim().toUpperCase().replace(/\s+/g, '');
+  return code.trim().toUpperCase().replace(/\s+/g, "");
 }
 
 function normalizeEmail(email: string): string {
@@ -190,6 +207,7 @@ function normalizeEmail(email: string): string {
 **Note:** Your schema says SQL Server, but the code uses PostgreSQL
 
 **For SQL Server MERGE (if switching DBs):**
+
 ```sql
 MERGE INTO Product AS target
 USING (VALUES (@productCode, @description, @partType)) AS source (productCode, description, partType)
@@ -276,7 +294,7 @@ Create `ImportService` base class to reduce duplication:
 
 ```typescript
 // apps/worker/src/services/ImportService.ts
-import { PrismaClient, ImportBatch, ImportType, ImportStatus } from '@prisma/client';
+import { PrismaClient, ImportBatch, ImportType, ImportStatus } from "@prisma/client";
 
 export interface ValidationResult {
   isValid: boolean;
@@ -293,7 +311,12 @@ export abstract class ImportService<TRow = any> {
   constructor(protected prisma: PrismaClient) {}
 
   // Step 1: Create batch
-  async createBatch(importType: ImportType, fileName: string, fileHash: string, filePath?: string): Promise<ImportBatch> {
+  async createBatch(
+    importType: ImportType,
+    fileName: string,
+    fileHash: string,
+    filePath?: string,
+  ): Promise<ImportBatch> {
     return this.prisma.importBatch.create({
       data: {
         importType,
@@ -303,8 +326,8 @@ export abstract class ImportService<TRow = any> {
         status: ImportStatus.PROCESSING,
         totalRows: 0,
         validRows: 0,
-        invalidRows: 0
-      }
+        invalidRows: 0,
+      },
     });
   }
 
@@ -338,26 +361,31 @@ export abstract class ImportService<TRow = any> {
         validRows: counts.valid,
         invalidRows: counts.invalid,
         status,
-        completedAt: new Date()
-      }
+        completedAt: new Date(),
+      },
     });
   }
 
   // Helper: Log error
-  async logError(batchId: string, rowNumber: number, errorMessage: string, rawRow?: any): Promise<void> {
+  async logError(
+    batchId: string,
+    rowNumber: number,
+    errorMessage: string,
+    rawRow?: any,
+  ): Promise<void> {
     await this.prisma.importError.create({
       data: {
         batchId,
         rowNumber,
         errorMessage,
-        rawRowJson: rawRow
-      }
+        rawRowJson: rawRow,
+      },
     });
   }
 
   // Normalize helpers
   protected normalizePartNumber(code: string): string {
-    return code.trim().toUpperCase().replace(/\s+/g, '');
+    return code.trim().toUpperCase().replace(/\s+/g, "");
   }
 
   protected normalizeEmail(email: string): string {
@@ -380,28 +408,28 @@ export abstract class ImportService<TRow = any> {
 
 ```typescript
 // apps/worker/tests/imports.test.ts
-describe('Product Import', () => {
-  it('should import valid products', async () => {
-    const result = await importProducts({ file: 'test-data/valid-products.xlsx', type: 'GENUINE' });
-    expect(result.status).toBe('SUCCEEDED');
+describe("Product Import", () => {
+  it("should import valid products", async () => {
+    const result = await importProducts({ file: "test-data/valid-products.xlsx", type: "GENUINE" });
+    expect(result.status).toBe("SUCCEEDED");
     expect(result.validRows).toBe(10);
   });
 
-  it('should handle invalid rows gracefully', async () => {
-    const result = await importProducts({ file: 'test-data/mixed-products.xlsx', type: 'GENUINE' });
-    expect(result.status).toBe('SUCCEEDED_WITH_ERRORS');
+  it("should handle invalid rows gracefully", async () => {
+    const result = await importProducts({ file: "test-data/mixed-products.xlsx", type: "GENUINE" });
+    expect(result.status).toBe("SUCCEEDED_WITH_ERRORS");
     expect(result.validRows).toBeGreaterThan(0);
     expect(result.invalidRows).toBeGreaterThan(0);
   });
 
-  it('should UPSERT existing products', async () => {
+  it("should UPSERT existing products", async () => {
     // First import
-    await importProducts({ file: 'test-data/products-v1.xlsx', type: 'GENUINE' });
-    const product1 = await prisma.product.findUnique({ where: { productCode: 'TEST001' } });
+    await importProducts({ file: "test-data/products-v1.xlsx", type: "GENUINE" });
+    const product1 = await prisma.product.findUnique({ where: { productCode: "TEST001" } });
 
     // Second import with updated data
-    await importProducts({ file: 'test-data/products-v2.xlsx', type: 'GENUINE' });
-    const product2 = await prisma.product.findUnique({ where: { productCode: 'TEST001' } });
+    await importProducts({ file: "test-data/products-v2.xlsx", type: "GENUINE" });
+    const product2 = await prisma.product.findUnique({ where: { productCode: "TEST001" } });
 
     expect(product1.description).not.toBe(product2.description); // Updated
     expect(product1.id).toBe(product2.id); // Same product (UPSERT, not INSERT)
@@ -415,25 +443,25 @@ describe('Product Import', () => {
 
 ### ✅ Non-Negotiable Constraints - COMPLIANT
 
-| Constraint | Status | Implementation |
-|-----------|--------|----------------|
-| No table truncation | ✅ PASS | Only UPSERT operations used |
-| Additive changes only | ✅ PASS | Schema uses migrations |
-| UPSERT strategy | ✅ PASS | Prisma `upsert()` used throughout |
-| Preserve historical orders | ✅ PASS | Orders never modified after creation |
-| Store unitPrice at checkout | ✅ PASS | `OrderLine.unitPriceSnapshot` field |
-| Never wipe tables | ✅ PASS | No truncate/delete operations |
+| Constraint                  | Status  | Implementation                       |
+| --------------------------- | ------- | ------------------------------------ |
+| No table truncation         | ✅ PASS | Only UPSERT operations used          |
+| Additive changes only       | ✅ PASS | Schema uses migrations               |
+| UPSERT strategy             | ✅ PASS | Prisma `upsert()` used throughout    |
+| Preserve historical orders  | ✅ PASS | Orders never modified after creation |
+| Store unitPrice at checkout | ✅ PASS | `OrderLine.unitPriceSnapshot` field  |
+| Never wipe tables           | ✅ PASS | No truncate/delete operations        |
 
 ### ✅ Import Framework Requirements - COMPLIANT
 
-| Requirement | Status | Notes |
-|------------|--------|-------|
-| Create ImportBatch at start | ✅ PASS | Line 152 (products), Line 52 (backorders) |
-| Validate required columns | ⚠️ PARTIAL | Happens implicitly, should be explicit |
-| Per-row validation errors to ImportError | ✅ PASS | Line 316-323 (products) |
-| Only write valid rows | ✅ PASS | Validation check before UPSERT |
-| Finish batch with counts/status | ✅ PASS | Line 350-358 (products) |
-| Normalized keys | ⚠️ PARTIAL | Basic trim, needs uppercase for parts |
+| Requirement                              | Status     | Notes                                     |
+| ---------------------------------------- | ---------- | ----------------------------------------- |
+| Create ImportBatch at start              | ✅ PASS    | Line 152 (products), Line 52 (backorders) |
+| Validate required columns                | ⚠️ PARTIAL | Happens implicitly, should be explicit    |
+| Per-row validation errors to ImportError | ✅ PASS    | Line 316-323 (products)                   |
+| Only write valid rows                    | ✅ PASS    | Validation check before UPSERT            |
+| Finish batch with counts/status          | ✅ PASS    | Line 350-358 (products)                   |
+| Normalized keys                          | ⚠️ PARTIAL | Basic trim, needs uppercase for parts     |
 
 ---
 
@@ -442,6 +470,7 @@ describe('Product Import', () => {
 **Current State:** Import framework is **80% production-ready**
 
 **Ready for Production:**
+
 - ✅ Product imports (Genuine, Aftermarket, Branded)
 - ✅ Backorder dataset imports
 - ✅ Error tracking and reporting
@@ -449,6 +478,7 @@ describe('Product Import', () => {
 - ✅ UPSERT strategy (no data loss)
 
 **Needs Work Before Production:**
+
 - 🔨 Reusable service framework (reduce duplication)
 - 🔨 Dealer account import
 - 🔨 Supersession import

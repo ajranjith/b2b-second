@@ -2,6 +2,33 @@
 
 This project enforces the Identity Passport contract end-to-end. Follow these steps every time you add new surface, DB access, or integrations.
 
+## Registry Format
+
+**IMPORTANT: Registries are TypeScript exports only. JSON registries are forbidden.**
+
+All registries (FEATURES, OPERATIONS, QUERIES, SERVICES, RULES, QUEUES, NOTIFICATIONS, CACHES) are defined as TypeScript `as const` arrays in `packages/identity/src/index.ts`.
+
+```typescript
+// Example: Adding a new feature
+export const FEATURES: readonly FeatureRegistryEntry[] = [
+  // ... existing entries
+  {
+    namespace: "A",
+    pathTemplate: "/api/bff/v1/admin/reports",
+    featureId: "REF-A-09",
+    description: "Admin reports",
+  },
+] as const;
+```
+
+**Why TypeScript-only?**
+- Type safety: IDs are checked at compile time
+- No runtime JSON parsing or file I/O
+- Direct imports enable tree-shaking
+- CI scripts can import registries directly
+
+A CI guardrail (`scripts/check-no-json-registries.ts`) fails if any `*registry*.json` files appear in the repo.
+
 ## 1. Adding a new route
 
 1. Register the feature/method combination in `packages/identity/src/index.ts`:
@@ -34,8 +61,73 @@ This project enforces the Identity Passport contract end-to-end. Follow these st
 
 ## 5. Command checklist
 
-Run the following locally to verify enforcement (CI runs the same commands):
+Run the following locally to verify enforcement (CI runs the same commands).
 
-- `pnpm identity:verify` (attack + concurrency tests)
-- `pnpm worker:identity-proof` (worker envelope proof)
-- `pnpm tsx scripts/check-registry-and-routes.ts`
+> **IMPORTANT: Stage 1 cannot be skipped.** It always runs regardless of environment variables.
+> The deprecated `SKIP_STAGE_ONE` flag is ignored and will print a warning.
+
+### Environment Variables
+
+| Variable | Effect |
+|----------|--------|
+| `SKIP_DB_CHECKS=1` | Skip Stage 2 (database checks only) |
+| `FORCE_DB_CHECKS=1` | Force Stage 2; fail loudly if DB unreachable |
+| `SKIP_STAGE_ONE=1` | **DEPRECATED** - Ignored. Stage 1 always runs. |
+
+### Run Stage 1 only (no database required)
+
+```bash
+SKIP_DB_CHECKS=1 pnpm identity:verify
+SKIP_DB_CHECKS=1 pnpm worker:identity-proof
+```
+
+### Run both stages (requires database)
+
+```bash
+# Ensure DATABASE_URL is set
+export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/hotbray?schema=public"
+
+# Run API identity verification (Stage 1 + Stage 2)
+FORCE_DB_CHECKS=1 pnpm identity:verify
+
+# Run Worker identity verification (Stage 1 + Stage 2)
+FORCE_DB_CHECKS=1 pnpm worker:identity-proof
+```
+
+### Registry and route validation
+
+```bash
+pnpm check:registries
+# or
+pnpm tsx scripts/check-registry-and-routes.ts
+```
+
+### Check for forbidden JSON registries
+
+```bash
+pnpm check:no-json-registries
+# or
+pnpm tsx scripts/check-no-json-registries.ts
+```
+
+### Full verification (all checks)
+
+```bash
+pnpm verify:identity
+```
+
+## 6. What each stage validates
+
+**Stage 1 (Mandatory - always runs):**
+- Registry integrity (no duplicates, correct ID formats)
+- Route handler coverage (all routes use withEnvelope)
+- TypeScript type checking
+- Identity unit tests
+- Disallowed imports (no axios, node-fetch, direct @prisma/client)
+- DB wrapper usage patterns (all Prisma calls via db(dbId))
+- Prisma envelope guard (blocks direct access without Identity Envelope)
+
+**Stage 2 (Requires database):**
+- DB-ID enforcement (throws BLOCKER if db() wrapper not used)
+- Namespace isolation (throws ENVELOPE_MISMATCH on cross-namespace access)
+- Concurrency safety (50 parallel queries with correct tracing)

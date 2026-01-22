@@ -5,13 +5,11 @@ import { ZodError } from "zod";
 
 import { requireRole } from "@/auth/requireRole";
 import { fail, ok } from "@/lib/response";
-import {
-  AdminUserCreateSchema,
-  type AdminUserCreateDTO,
-} from "@repo/lib";
+import { AdminUserCreateSchema, type AdminUserCreateDTO } from "@repo/lib";
 import { createAdminUser, listAdminUsers } from "@/services/adminUsersService";
+import { withEnvelope } from "@/lib/withEnvelope";
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   cacheTag("admin-users");
   cacheLife("short");
 
@@ -24,7 +22,7 @@ export async function GET(request: NextRequest) {
   return ok(data);
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const auth = requireRole(request, "ADMIN");
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);
@@ -42,3 +40,6 @@ export async function POST(request: NextRequest) {
     throw error;
   }
 }
+
+export const GET = withEnvelope({ namespace: "A" }, handleGET);
+export const POST = withEnvelope({ namespace: "A" }, handlePOST);

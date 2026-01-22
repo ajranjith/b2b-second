@@ -11,11 +11,13 @@ Phase 5 provides comprehensive API endpoints for dealer features and admin impor
 ### Profile Management
 
 #### GET /dealer/profile
+
 Get dealer profile information including account details
 
 **Authentication**: Required (Dealer role)
 
 **Response**:
+
 ```json
 {
   "id": "uuid",
@@ -40,11 +42,13 @@ Get dealer profile information including account details
 ---
 
 #### PUT /dealer/profile
+
 Update dealer profile (name, email)
 
 **Authentication**: Required (Dealer role)
 
 **Request Body**:
+
 ```json
 {
   "firstName": "John",
@@ -55,11 +59,13 @@ Update dealer profile (name, email)
 ```
 
 **Validations**:
+
 - Email must be unique (409 Conflict if duplicate)
 - Email format validation
 - All fields optional
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -80,11 +86,13 @@ Update dealer profile (name, email)
 ### Password Management
 
 #### POST /auth/forgot-password
+
 Request password reset link
 
 **Authentication**: None
 
 **Request Body**:
+
 ```json
 {
   "email": "john@dealer.com"
@@ -92,6 +100,7 @@ Request password reset link
 ```
 
 **Response** (always returns success to prevent email enumeration):
+
 ```json
 {
   "success": true,
@@ -103,6 +112,7 @@ Request password reset link
 ```
 
 **Implementation Notes**:
+
 - Reset token expires in 1 hour
 - Token is SHA-256 hashed before storage
 - Always returns 200 OK (even for non-existent emails)
@@ -111,11 +121,13 @@ Request password reset link
 ---
 
 #### POST /auth/reset-password
+
 Reset password using token
 
 **Authentication**: None
 
 **Request Body**:
+
 ```json
 {
   "token": "abc123...",
@@ -125,11 +137,13 @@ Reset password using token
 ```
 
 **Validations**:
+
 - Password min 8 characters, max 100
 - Passwords must match
 - Token must be valid and not expired
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -140,11 +154,13 @@ Reset password using token
 ---
 
 #### POST /dealer/password/change
+
 Change password (requires current password)
 
 **Authentication**: Required (Dealer role)
 
 **Request Body**:
+
 ```json
 {
   "currentPassword": "OldPassword123",
@@ -154,11 +170,13 @@ Change password (requires current password)
 ```
 
 **Validations**:
+
 - Current password must be correct (401 if invalid)
 - New password min 8 characters
 - Passwords must match
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -171,11 +189,13 @@ Change password (requires current password)
 ### Product Search
 
 #### GET /dealer/search?q=...
+
 Search products with pricing, supersession, and equivalents
 
 **Authentication**: Required (Dealer role)
 
 **Query Parameters**:
+
 ```
 q            - Search query (product code, description, alias)
 limit        - Results per page (default: 20, max: 100)
@@ -186,6 +206,7 @@ sortBy       - Sort order: price | code | stock | relevance (default: relevance)
 ```
 
 **Response**:
+
 ```json
 {
   "results": [
@@ -234,6 +255,7 @@ sortBy       - Sort order: price | code | stock | relevance (default: relevance)
 ```
 
 **Supersession Logic**:
+
 1. Normalize query: trim, uppercase, remove spaces
 2. Check SupersessionResolved table
 3. If superseded, search for latest part and include supersession info
@@ -242,11 +264,13 @@ sortBy       - Sort order: price | code | stock | relevance (default: relevance)
 ---
 
 #### GET /dealer/product/:productCode
+
 Get single product detail with supersession info
 
 **Authentication**: Required (Dealer role)
 
 **Response**:
+
 ```json
 {
   "id": "uuid",
@@ -295,11 +319,13 @@ Get single product detail with supersession info
 ### Cart Management
 
 #### GET /dealer/cart
+
 Get current cart with refreshed prices
 
 **Authentication**: Required (Dealer role)
 
 **Response**:
+
 ```json
 {
   "id": "uuid",
@@ -330,11 +356,13 @@ Get current cart with refreshed prices
 ---
 
 #### POST /dealer/cart/items
+
 Add item to cart
 
 **Authentication**: Required (Dealer role)
 
 **Request Body**:
+
 ```json
 {
   "productId": "uuid",
@@ -343,6 +371,7 @@ Add item to cart
 ```
 
 **Validations**:
+
 - productId must be valid UUID
 - qty must be 1-9999
 
@@ -351,11 +380,13 @@ Add item to cart
 ---
 
 #### PATCH /dealer/cart/items/:itemId
+
 Update cart item quantity
 
 **Authentication**: Required (Dealer role)
 
 **Request Body**:
+
 ```json
 {
   "qty": 5
@@ -367,6 +398,7 @@ Update cart item quantity
 ---
 
 #### DELETE /dealer/cart/items/:itemId
+
 Remove item from cart
 
 **Authentication**: Required (Dealer role)
@@ -378,11 +410,13 @@ Remove item from cart
 ### Checkout
 
 #### POST /dealer/checkout
+
 Create suspended order + order export file
 
 **Authentication**: Required (Dealer role)
 
 **Request Body**:
+
 ```json
 {
   "dispatchMethod": "DELIVERY",
@@ -392,11 +426,13 @@ Create suspended order + order export file
 ```
 
 **Validations**:
+
 - Cart must not be empty
 - Account must be ACTIVE
 - All items must have valid prices
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -424,6 +460,7 @@ Create suspended order + order export file
 ```
 
 **Side Effects**:
+
 1. Creates OrderHeader with SUSPENDED status
 2. Creates OrderLine records with **unitPriceSnapshot** (IMMUTABLE)
 3. Creates OrderExportLine records for ERP integration
@@ -436,11 +473,13 @@ Create suspended order + order export file
 ### Orders
 
 #### GET /dealer/orders
+
 Get dealer's orders
 
 **Authentication**: Required (Dealer role)
 
 **Query Parameters**:
+
 ```
 limit   - Results per page (default: 20, max: 100)
 offset  - Pagination offset (default: 0)
@@ -448,6 +487,7 @@ status  - Filter by status: SUSPENDED | CONFIRMED | DISPATCHED | DELIVERED | CAN
 ```
 
 **Response**:
+
 ```json
 {
   "orders": [
@@ -489,6 +529,7 @@ status  - Filter by status: SUSPENDED | CONFIRMED | DISPATCHED | DELIVERED | CAN
 ---
 
 #### GET /dealer/orders/export
+
 Export orders to CSV
 
 **Authentication**: Required (Dealer role)
@@ -501,6 +542,7 @@ ORD-000001,D-001,ORDER,PART-001,"Brake Pad Set",GENUINE,2,45.99,2026-01-18T15:30
 ```
 
 **Headers**:
+
 ```
 Content-Type: text/csv
 Content-Disposition: attachment; filename="orders-export-1737215400000.csv"
@@ -511,11 +553,13 @@ Content-Disposition: attachment; filename="orders-export-1737215400000.csv"
 ### Backorders
 
 #### GET /dealer/backorders
+
 Get dealer's backorders
 
 **Authentication**: Required (Dealer role)
 
 **Response**:
+
 ```json
 {
   "backorders": [
@@ -528,7 +572,7 @@ Get dealer's backorders
       "description": "Out of stock part",
       "qtyOrdered": 5,
       "qtyOutstanding": 3,
-      "orderValue": 150.00
+      "orderValue": 150.0
     }
   ],
   "datasetId": "uuid",
@@ -539,6 +583,7 @@ Get dealer's backorders
 ---
 
 #### GET /dealer/backorders/export
+
 Export backorders to CSV
 
 **Authentication**: Required (Dealer role)
@@ -555,11 +600,13 @@ D-001,ORD-OLD-123,2026-01-10,PART-999,"Out of stock part",5,3,150.00
 ### Support
 
 #### POST /dealer/support
+
 Send support request
 
 **Authentication**: Required (Dealer role)
 
 **Request Body**:
+
 ```json
 {
   "subject": "Question about order status",
@@ -569,6 +616,7 @@ Send support request
 ```
 
 **Categories**:
+
 - `ORDER` - Order-related inquiries
 - `PRICING` - Pricing and discounts
 - `ACCOUNT` - Account management
@@ -576,11 +624,13 @@ Send support request
 - `OTHER` - General inquiries
 
 **Validations**:
+
 - subject: 5-200 characters
 - message: 10-2000 characters
 - category: optional enum
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -589,6 +639,7 @@ Send support request
 ```
 
 **Implementation Notes**:
+
 - Currently logs to console (DEV)
 - TODO: Integrate email service for production
 - Should send to SUPPORT_EMAIL environment variable
@@ -600,6 +651,7 @@ Send support request
 ### Products Import
 
 #### POST /admin/import/products
+
 Upload and import products/pricing/stock (DGS format)
 
 **Authentication**: Required (Admin role)
@@ -607,9 +659,11 @@ Upload and import products/pricing/stock (DGS format)
 **Content-Type**: `multipart/form-data`
 
 **Form Data**:
+
 - `file` - Excel file (.xlsx)
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -623,6 +677,7 @@ Upload and import products/pricing/stock (DGS format)
 ```
 
 **Implementation**:
+
 - Uploads file to `uploads/` directory
 - Executes `importProductsDGS.ts` worker script in background
 - Returns immediately (import runs async)
@@ -632,6 +687,7 @@ Upload and import products/pricing/stock (DGS format)
 ### Dealers Import
 
 #### POST /admin/import/dealers
+
 Upload and import dealer accounts with tier assignments
 
 **Authentication**: Required (Admin role)
@@ -639,9 +695,11 @@ Upload and import dealer accounts with tier assignments
 **Content-Type**: `multipart/form-data`
 
 **Form Data**:
+
 - `file` - Excel file (.xlsx)
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -659,6 +717,7 @@ Upload and import dealer accounts with tier assignments
 ### Supersessions Import
 
 #### POST /admin/import/supersessions
+
 Upload and import supersessions
 
 **Authentication**: Required (Admin role)
@@ -666,9 +725,11 @@ Upload and import supersessions
 **Content-Type**: `multipart/form-data`
 
 **Form Data**:
+
 - `file` - Excel file (.xlsx)
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -686,6 +747,7 @@ Upload and import supersessions
 ### Special Prices Import
 
 #### POST /admin/import/special-prices
+
 Upload and import special prices with date range
 
 **Authentication**: Required (Admin role)
@@ -693,11 +755,13 @@ Upload and import special prices with date range
 **Content-Type**: `multipart/form-data`
 
 **Form Data**:
+
 - `file` - Excel file (.xlsx)
 - `startDate` - Start date (YYYY-MM-DD)
 - `endDate` - End date (YYYY-MM-DD)
 
 **Request Example**:
+
 ```
 POST /admin/import/special-prices
 Content-Type: multipart/form-data
@@ -719,6 +783,7 @@ Content-Disposition: form-data; name="endDate"
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -740,6 +805,7 @@ Content-Disposition: form-data; name="endDate"
 ### Backorders Import
 
 #### POST /admin/import/backorders
+
 Upload and import backorders
 
 **Authentication**: Required (Admin role)
@@ -747,9 +813,11 @@ Upload and import backorders
 **Content-Type**: `multipart/form-data`
 
 **Form Data**:
+
 - `file` - CSV file (.csv)
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -767,6 +835,7 @@ Upload and import backorders
 ### Order Status Import
 
 #### POST /admin/import/order-status
+
 Upload and import order status updates
 
 **Authentication**: Required (Admin role)
@@ -774,6 +843,7 @@ Upload and import order status updates
 **Status**: 501 Not Implemented
 
 **Response**:
+
 ```json
 {
   "error": "Not Implemented",
@@ -788,11 +858,13 @@ Upload and import order status updates
 ### Import Batches List
 
 #### GET /admin/import/batches
+
 List all import batches
 
 **Authentication**: Required (Admin role)
 
 **Query Parameters**:
+
 ```
 limit      - Results per page (default: 20, max: 100)
 offset     - Pagination offset (default: 0)
@@ -801,6 +873,7 @@ status     - Filter by status: PROCESSING | SUCCEEDED | FAILED | SUCCEEDED_WITH_
 ```
 
 **Response**:
+
 ```json
 {
   "batches": [
@@ -831,11 +904,13 @@ status     - Filter by status: PROCESSING | SUCCEEDED | FAILED | SUCCEEDED_WITH_
 ### Import Batch Errors
 
 #### GET /admin/import/batches/:batchId/errors
+
 Get errors for a specific import batch
 
 **Authentication**: Required (Admin role)
 
 **Response**:
+
 ```json
 {
   "batchId": "uuid",
@@ -863,26 +938,26 @@ To enable all Phase 5 endpoints, register routes in your Fastify server:
 ```typescript
 // apps/api/src/index.ts
 
-import dealerProfileRoutes from './routes/dealer-profile';
-import authPasswordRoutes from './routes/auth-password';
-import dealerSearchRoutes from './routes/dealer-search';
-import dealerCompleteRoutes from './routes/dealer-complete';
-import adminImportsRoutes from './routes/admin-imports';
-import pricingRoutes from './routes/pricing';
+import dealerProfileRoutes from "./routes/dealer-profile";
+import authPasswordRoutes from "./routes/auth-password";
+import dealerSearchRoutes from "./routes/dealer-search";
+import dealerCompleteRoutes from "./routes/dealer-complete";
+import adminImportsRoutes from "./routes/admin-imports";
+import pricingRoutes from "./routes/pricing";
 
 // Dealer routes
-server.register(dealerProfileRoutes, { prefix: '/api/dealer' });
-server.register(dealerSearchRoutes, { prefix: '/api/dealer' });
-server.register(dealerCompleteRoutes, { prefix: '/api/dealer' });
+server.register(dealerProfileRoutes, { prefix: "/api/dealer" });
+server.register(dealerSearchRoutes, { prefix: "/api/dealer" });
+server.register(dealerCompleteRoutes, { prefix: "/api/dealer" });
 
 // Auth routes
-server.register(authPasswordRoutes, { prefix: '/api/auth' });
+server.register(authPasswordRoutes, { prefix: "/api/auth" });
 
 // Pricing routes
-server.register(pricingRoutes, { prefix: '/api/pricing' });
+server.register(pricingRoutes, { prefix: "/api/pricing" });
 
 // Admin routes
-server.register(adminImportsRoutes, { prefix: '/api/admin/import' });
+server.register(adminImportsRoutes, { prefix: "/api/admin/import" });
 ```
 
 ---
@@ -890,18 +965,21 @@ server.register(adminImportsRoutes, { prefix: '/api/admin/import' });
 ## Testing Checklist
 
 ### Dealer Profile
+
 - [ ] GET /dealer/profile returns correct data
 - [ ] PUT /dealer/profile updates name/email
 - [ ] PUT /dealer/profile enforces unique email (409 on duplicate)
 - [ ] POST /dealer/password/change requires correct current password
 
 ### Password Reset
+
 - [ ] POST /auth/forgot-password sends reset email (or logs in dev)
 - [ ] POST /auth/reset-password validates token expiry
 - [ ] POST /auth/reset-password enforces password match
 - [ ] Reset token expires after 1 hour
 
 ### Search
+
 - [ ] GET /dealer/search returns products with pricing
 - [ ] GET /dealer/search resolves superseded parts
 - [ ] GET /dealer/search includes equivalents
@@ -909,30 +987,36 @@ server.register(adminImportsRoutes, { prefix: '/api/admin/import' });
 - [ ] GET /dealer/product/:code shows supersession info
 
 ### Cart
+
 - [ ] GET /dealer/cart refreshes prices on load
 - [ ] POST /dealer/cart/items adds item with current price
 - [ ] PATCH /dealer/cart/items/:id updates quantity
 - [ ] DELETE /dealer/cart/items/:id removes item
 
 ### Checkout
+
 - [ ] POST /dealer/checkout creates SUSPENDED order
 - [ ] POST /dealer/checkout snapshots unitPriceSnapshot (immutable)
 - [ ] POST /dealer/checkout creates OrderExportLine records
 - [ ] POST /dealer/checkout clears cart
 
 ### Orders
+
 - [ ] GET /dealer/orders returns orders with snapshotted prices
 - [ ] GET /dealer/orders filters by status
 - [ ] GET /dealer/orders/export generates CSV
 
 ### Backorders
+
 - [ ] GET /dealer/backorders filters by dealer accountNo
 - [ ] GET /dealer/backorders/export generates CSV
 
 ### Support
+
 - [ ] POST /dealer/support logs request (or sends email)
 
 ### Admin Imports
+
 - [ ] POST /admin/import/products uploads and starts import
 - [ ] POST /admin/import/dealers uploads and starts import
 - [ ] POST /admin/import/supersessions uploads and starts import

@@ -6,10 +6,11 @@ import { requireRole } from "@/auth/requireRole";
 import { fail, ok } from "@/lib/response";
 import { DealerCartUpdateItemSchema } from "@repo/lib";
 import { updateDealerCartItem, removeCartItemForDealer } from "@/services/cartService";
+import { withEnvelope } from "@/lib/withEnvelope";
 
-export async function PATCH(
+async function handlePATCH(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  context: { params: { id: string } },
 ) {
   const auth = requireRole(request, "DEALER");
   if (!auth.ok) {
@@ -24,7 +25,7 @@ export async function PATCH(
 
   try {
     const payload = DealerCartUpdateItemSchema.parse(await request.json());
-    const cart = await updateDealerCartItem(accountId, dealerUserId, params.id, payload.qty);
+    const cart = await updateDealerCartItem(accountId, dealerUserId, context.params.id, payload.qty);
     return ok(cart);
   } catch (error: unknown) {
     if (error instanceof ZodError) {
@@ -34,9 +35,9 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
+async function handleDELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  context: { params: { id: string } },
 ) {
   const auth = requireRole(request, "DEALER");
   if (!auth.ok) {
@@ -49,6 +50,9 @@ export async function DELETE(
     return fail({ message: "Dealer context missing" }, 400);
   }
 
-  const cart = await removeCartItemForDealer(accountId, dealerUserId, params.id);
+  const cart = await removeCartItemForDealer(accountId, dealerUserId, context.params.id);
   return ok(cart);
 }
+
+export const PATCH = withEnvelope({ namespace: "D" }, handlePATCH);
+export const DELETE = withEnvelope({ namespace: "D" }, handleDELETE);
