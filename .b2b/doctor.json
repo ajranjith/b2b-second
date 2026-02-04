@@ -1,0 +1,40 @@
+{
+  "generatedAtUtc": "2026-02-04T17:26:51Z",
+  "repoRoot": "C:\\Users\\ajran\\.gemini\\b2b-second-GA-Applied-full",
+  "registry": {
+    "found": true,
+    "path": "C:\\Users\\ajran\\.gemini\\b2b-second-GA-Applied-full\\main-index.json",
+    "valid": true,
+    "requiredNamespaces": {
+      "API": true,
+      "DB": true,
+      "SVC": true
+    }
+  },
+  "bff": {
+    "dealerBffFound": true,
+    "adminBffFound": true,
+    "wrapperSignaturesConfigured": true,
+    "permissionSignaturesConfigured": true
+  },
+  "contracts": {
+    "modulesWithVersionFile": [
+      "kernel",
+      "bff",
+      "ui"
+    ],
+    "modulesMissingVersionFile": []
+  },
+  "uiRegistry": {
+    "exists": true,
+    "valid": true,
+    "coveragePct": 13.953488372093023
+  },
+  "modes": {
+    "verifyAvailable": true,
+    "watchAvailable": true,
+    "shadowAvailable": true,
+    "fixAvailable": true
+  },
+  "status": "OK"
+}

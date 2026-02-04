@@ -1,0 +1,21 @@
+{
+  "generatedAtUtc": "2026-02-04T17:26:50Z",
+  "modules": [
+    {
+      "name": "kernel",
+      "root": "packages\\kernel",
+      "svcId": "SVC-K-01-01"
+    },
+    {
+      "name": "bff",
+      "root": "bff",
+      "svcId": "SVC-B-01-01"
+    },
+    {
+      "name": "ui",
+      "root": "ui",
+      "svcId": "SVC-U-01-01"
+    }
+  ],
+  "edges": []
+}

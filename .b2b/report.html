@@ -1,0 +1,386 @@
+<html><body><h2>Governance HUD</h2><p>HUD will turn RED if the template performs a DB mutation without the mandatory audit wrapper/marker (Naked Mutation).</p><pre>{
+  "phase1Status": "PASS",
+  "phase2Status": "PASS",
+  "phase3Status": "PASS",
+  "phase4Status": "PASS",
+  "rules": [
+    {
+      "ruleId": "1.1.1",
+      "severity": "high",
+      "status": "PASS",
+      "evidence": {
+        "registryPath": "C:\\Users\\ajran\\.gemini\\b2b-second-GA-Applied-full\\main-index.json",
+        "registryValid": true
+      },
+      "fixHint": "Ensure registry exists and is valid JSON with required fields."
+    },
+    {
+      "ruleId": "1.1.3",
+      "severity": "high",
+      "status": "PASS",
+      "evidence": {
+        "idNamespaces": {
+          "API": true,
+          "DB": true,
+          "SVC": true
+        }
+      },
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "1.1.2",
+      "severity": "high",
+      "status": "PASS",
+      "evidence": {
+        "impactGraph": "generated"
+      },
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "1.1.4",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "1.2.1",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "1.2.2",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "1.2.3",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "1.2.4",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "1.3.1",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "1.3.2",
+      "severity": "high",
+      "status": "PASS",
+      "evidence": {
+        "kernelPresent": true
+      },
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "1.3.3",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "1.3.4",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "1.3.5",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "2.1.1",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "2.1.2",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "2.1.3",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "2.1.4",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "4.6.1",
+      "severity": "high",
+      "status": "PASS",
+      "evidence": {
+        "sourceRule": "2.1.4"
+      },
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "2.4.1",
+      "severity": "medium",
+      "status": "PASS",
+      "evidence": {
+        "mutationCount": 195
+      },
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "2.4.2",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "2.4.3",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "3.1.1",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "3.1.2",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "3.1.3",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "3.1.4",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "3.2.1",
+      "severity": "high",
+      "status": "PASS",
+      "evidence": {
+        "dealerBffHandlers": 1
+      },
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "3.2.2",
+      "severity": "high",
+      "status": "PASS",
+      "evidence": {
+        "adminBffHandlers": 1
+      },
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "3.2.3",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "3.2.4",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "3.2.5",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "API_ROUTE_ID_REQUIRED",
+      "severity": "high",
+      "status": "PASS",
+      "evidence": {
+        "ghostRouteCount": 0
+      },
+      "fixHint": "Declare a valid API-ID for each BFF route."
+    },
+    {
+      "ruleId": "API_ROUTE_ID_UNKNOWN",
+      "severity": "high",
+      "status": "PASS",
+      "evidence": {
+        "unknownApiIdCount": 0
+      },
+      "fixHint": "Register the API-ID under ids.API in the registry."
+    },
+    {
+      "ruleId": "3.3.1",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "3.3.2",
+      "severity": "medium",
+      "status": "PASS",
+      "evidence": {
+        "uiRegistryCoveragePct": 13.953488372093023,
+        "uiRegistryMappedCount": 18,
+        "uiRegistryTotalCount": 129
+      },
+      "fixHint": "Map UI components in ui/registry.json."
+    },
+    {
+      "ruleId": "3.3.3",
+      "severity": "medium",
+      "status": "PASS",
+      "evidence": {
+        "enforcement": "fail"
+      },
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "3.3.4",
+      "severity": "low",
+      "status": "PASS",
+      "evidence": {
+        "uiRegistryCoveragePct": 13.953488372093023,
+        "uiRegistryMappedCount": 18,
+        "uiRegistryTotalCount": 129
+      },
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "3.4.1",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "3.4.2",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "3.4.3",
+      "severity": "high",
+      "status": "PASS",
+      "evidence": {
+        "sourceRule": "2.4.2"
+      },
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "DEALER_UI_LLID_DISPLAY_REQUIRED",
+      "severity": "high",
+      "status": "PASS",
+      "evidence": {
+        "dealerDataPages": 0,
+        "llidDisplayCoveragePct": 100,
+        "missingLlidDisplay": 0
+      },
+      "fixHint": "Render LLID/trace markers in dealer UI pages that show dealer data."
+    },
+    {
+      "ruleId": "4.5.1",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "4.5.2",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "4.5.3",
+      "severity": "medium",
+      "status": "PASS",
+      "evidence": {
+        "sourceRules": [
+          "1.2.1",
+          "3.2.5",
+          "1.3.4"
+        ]
+      },
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "4.5.4",
+      "severity": "medium",
+      "status": "PASS",
+      "evidence": {
+        "sourceRules": [
+          "1.3.4",
+          "3.1.2",
+          "3.1.3"
+        ]
+      },
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "4.1.4",
+      "severity": "high",
+      "status": "PASS",
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "4.6.2",
+      "severity": "high",
+      "status": "PASS",
+      "evidence": {
+        "doctorStatus": "OK",
+        "reasons": []
+      },
+      "fixHint": "Ensure doctor readiness checks pass."
+    },
+    {
+      "ruleId": "4.6.3",
+      "severity": "low",
+      "status": "PASS",
+      "evidence": {
+        "supportBundleAvailable": true
+      },
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "4.6.4",
+      "severity": "low",
+      "status": "PASS",
+      "evidence": {
+        "setupAvailable": true
+      },
+      "fixHint": "Review rule documentation and apply the required fixes."
+    },
+    {
+      "ruleId": "ROLLBACK_READY",
+      "severity": "high",
+      "status": "PASS",
+      "evidence": {
+        "backupCount": 1,
+        "latestBackup": "20260204_172225"
+      },
+      "fixHint": "Create a GREEN/PASS snapshot before attempting rollback."
+    }
+  ]
+}</pre></body></html>

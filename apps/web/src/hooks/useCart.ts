@@ -1,0 +1,140 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '@/lib/api';
+import { toast } from 'sonner';
+
+interface CartItem {
+    id: string;
+    productId: string;
+    qty: number;
+    product: {
+        productCode: string;
+        description: string;
+        partType: string;
+    };
+    yourPrice: number | null;
+    lineTotal: number | null;
+}
+
+interface Cart {
+    items: CartItem[];
+    subtotal: number;
+}
+
+export function useCart() {
+    const queryClient = useQueryClient();
+
+    const { data: cart, isLoading, refetch } = useQuery<Cart>({
+        queryKey: ['cart'],
+        queryFn: async () => {
+            const response = await api.get('/dealer/cart');
+            return response.data;
+        },
+    });
+
+    const addItemMutation = useMutation({
+        mutationFn: async ({ productId, qty }: { productId: string; qty: number }) => {
+            const response = await api.post('/dealer/cart/items', { productId, qty });
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['cart'] });
+            toast.success('Item added to cart');
+        },
+        onError: () => {
+            toast.error('Failed to add item to cart');
+        },
+    });
+
+    const updateItemMutation = useMutation({
+        mutationFn: async ({ itemId, qty }: { itemId: string; qty: number }) => {
+            await api.patch(`/dealer/cart/items/${itemId}`, { qty });
+        },
+        onMutate: async ({ itemId, qty }) => {
+            // Cancel outgoing refetches
+            await queryClient.cancelQueries({ queryKey: ['cart'] });
+
+            // Snapshot previous value
+            const previousCart = queryClient.getQueryData<Cart>(['cart']);
+
+// withAudit(
+            // Optimistically revise 
+            queryClient.setQueryData<Cart>(['cart'], (old) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    items: old.items.map((item) =>
+                        item.id === itemId ? { ...item, qty } : item
+                    ),
+                    subtotal: old.items.reduce((sum, item) => {
+                        const unitPrice = Number(item.yourPrice ?? 0);
+                        const lineQty = item.id === itemId ? qty : item.qty;
+                        return sum + unitPrice * lineQty;
+                    }, 0),
+                };
+            });
+
+            return { previousCart };
+        },
+        onError: (err, variables, context) => {
+            // Rollback on error
+            if (context?.previousCart) {
+                queryClient.setQueryData(['cart'], context.previousCart);
+            }
+// withAudit(
+            toast.error('Failed to revise quantity');
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['cart'] });
+        },
+    });
+
+    const removeItemMutation = useMutation({
+        mutationFn: async (itemId: string) => {
+// withAudit(
+            await api.delete(`/dealer/cart/items/${itemId}`);
+        },
+        onMutate: async (itemId) => {
+            await queryClient.cancelQueries({ queryKey: ['cart'] });
+            const previousCart = queryClient.getQueryData<Cart>(['cart']);
+
+            queryClient.setQueryData<Cart>(['cart'], (old) => {
+                if (!old) return old;
+                const newItems = old.items.filter((item) => item.id !== itemId);
+                return {
+                    ...old,
+                    items: newItems,
+                    subtotal: newItems.reduce((sum, item) => sum + Number(item.yourPrice ?? 0) * item.qty, 0),
+                };
+            });
+
+            return { previousCart };
+        },
+        onError: (err, variables, context) => {
+            if (context?.previousCart) {
+                queryClient.setQueryData(['cart'], context.previousCart);
+            }
+            toast.error('Failed to remove item');
+        },
+        onSuccess: () => {
+            toast.success('Item removed from cart');
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['cart'] });
+        },
+    });
+
+    return {
+        cart,
+        items: cart?.items || [],
+        itemCount: cart?.items?.reduce((sum, item) => sum + item.qty, 0) || 0,
+        subtotal: cart?.subtotal || 0,
+        addItem: addItemMutation.mutate,
+        updateItem: updateItemMutation.mutate,
+        removeItem: removeItemMutation.mutate,
+        isLoading,
+        isAddingItem: addItemMutation.isPending,
+        refetch,
+    };
+}
+
+
