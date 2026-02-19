@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/bff/v1";
+import { bffClient } from "@/lib/bffClient";
 
 export interface Product {
   productCode: string;
@@ -73,19 +73,18 @@ export interface Dealer {
 
 class ApiClient {
   private async fetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options?.headers,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+    const method = options?.method || "GET";
+    const body = options?.body;
+    if (method === "GET") {
+      const response = await bffClient.get<T>(endpoint);
+      return response.data;
     }
 
-    return response.json();
+    const response = await bffClient.post<T>(
+      endpoint,
+      typeof body === "string" ? JSON.parse(body) : body,
+    );
+    return response.data;
   }
 
   // Dealer endpoints

@@ -18,7 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/ui";
-import api from "@/lib/api";
+import { authApi } from "@/lib/api";
 import { decodeJwtPayload, getAuthToken, setAuthToken, clearAuthToken } from "@/lib/auth";
 
 const changePasswordSchema = z
@@ -57,7 +57,7 @@ export default function ChangePasswordPage() {
     setIsLoading(true);
 
     try {
-      await api.post("/auth/change-password", {
+      await authApi.post("/auth/change-password", {
         currentPassword: data.currentPassword,
         newPassword: data.newPassword,
       });

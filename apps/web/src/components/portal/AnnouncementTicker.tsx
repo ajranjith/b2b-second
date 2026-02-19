@@ -39,6 +39,8 @@ export function AnnouncementTicker({ announcements, onOpenMessage }: Announcemen
               <button
                 key={`${announcement.id}-${index}`}
                 type="button"
+                data-fid={`FID-TICKER-${String(index + 1).padStart(3, "0")}`}
+                data-action-id={`ACT-TICKER-OPEN-${String(index + 1).padStart(3, "0")}`}
                 className="text-sm font-medium text-white hover:text-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-2 whitespace-nowrap"
                 onClick={() => onOpenMessage(announcement)}
               >

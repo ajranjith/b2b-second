@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/hooks/useCart";
+import api from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, Button } from "@/ui";
 import { StatusChip } from "@/components/portal/StatusChip";
+import { toast } from "sonner";
 
 const steps = ["Dispatch", "Review", "Confirmation"] as const;
 
@@ -15,15 +17,33 @@ export default function DealerCheckoutPage() {
   const [poRef, setPoRef] = useState("");
   const [notes, setNotes] = useState("");
   const [orderNumber, setOrderNumber] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const hasSupersededItems = items.some((item) => item.supersededBy);
 
-  const next = () => {
+  const next = async () => {
     if (hasSupersededItems) return;
     if (step === 0 && !dispatchMethod) return;
-    if (step === 1 && !orderNumber) {
-      const nextOrder = `HB-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`;
-      setOrderNumber(nextOrder);
+    if (step === 1) {
+      setSubmitting(true);
+      try {
+        const response = await api.post("/dealer/checkout", {
+          shippingMethod: dispatchMethod,
+          poRef,
+          notes,
+        });
+        const resolvedOrderNo = response?.data?.orderNo ?? response?.data?.data?.orderNo;
+        if (!resolvedOrderNo) {
+          throw new Error("Checkout response missing order number");
+        }
+        setOrderNumber(resolvedOrderNo);
+      } catch (error) {
+        toast.error("Checkout failed. Please try again.");
+        setSubmitting(false);
+        return;
+      }
+      setSubmitting(false);
     }
+
     setStep((prev) => Math.min(prev + 1, steps.length - 1));
   };
   const prev = () => setStep((prev) => Math.max(prev - 1, 0));
@@ -195,9 +215,9 @@ export default function DealerCheckoutPage() {
           <Button
             className="bg-blue-600 text-white hover:bg-blue-700"
             onClick={next}
-            disabled={hasSupersededItems}
+            disabled={hasSupersededItems || submitting}
           >
-            Continue
+            {submitting ? "Processing..." : "Continue"}
           </Button>
         ) : (
           <Link href="/dealer/orders">

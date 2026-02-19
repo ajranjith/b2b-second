@@ -2,253 +2,276 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Download, FileText, Package, UserCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { clearAuthToken } from "@/lib/auth";
 import {
-  getBackorders,
   getDealerProfile,
-  getNewsArticles,
   getOrders,
   getPricingContext,
 } from "@/lib/services/dealerApi";
-import { Button, Card, CardContent, CardHeader, CardTitle } from "@/ui";
-import { StatusChip } from "@/components/portal/StatusChip";
+import styles from "./dashboard-theme.module.css";
 
-const statusTone: Record<string, "blue" | "green" | "amber" | "red" | "slate"> = {
-  Processing: "blue",
-  Ready: "amber",
-  Shipped: "green",
-  Backorder: "red",
-  PROCESSING: "blue",
-  READY: "amber",
-  SHIPPED: "green",
-  BACKORDER: "red",
-  SUSPENDED: "slate",
-};
+const heroSlides = [
+  {
+    image: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1600",
+    title: "Land Rover Genuine Parts",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80&w=1600",
+    title: "Dealer Fulfilment Network",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1486497395400-7ec0c034a62f?q=80&w=1600",
+    title: "Fast Dispatch and Coverage",
+  },
+];
 
-export default function DealerDashboard() {
+const verticalSlides = [
+  {
+    image: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80&w=600",
+    title: "Defender L663",
+    subtitle: "Accessories in stock",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1486497395400-7ec0c034a62f?q=80&w=600",
+    title: "Range Rover",
+    subtitle: "Daily replenishment",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1562612174-889816694e97?q=80&w=600",
+    title: "Jaguar",
+    subtitle: "OEM + alternatives",
+  },
+];
+
+const tickerItems = [
+  "15% discount on L663 steering components",
+  "Global shipping active",
+  "OEM specialist stock arriving daily",
+  "Same day processing cut-off 6PM",
+];
+
+const partStripImages = [
+  "https://images.unsplash.com/photo-1635773054018-029053e53ee6?q=80&w=600",
+  "https://images.unsplash.com/photo-1486006920555-c77dcf18193c?q=80&w=600",
+  "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?q=80&w=600",
+  "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=600",
+  "https://images.unsplash.com/photo-1486262715619-01b8c247a552?q=80&w=600",
+];
+
+export default function DealerDashboardPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState<Awaited<ReturnType<typeof getOrders>>>([]);
-  const [backorders, setBackorders] = useState<any[]>([]);
-  const [pricingContext, setPricingContext] =
-    useState<Awaited<ReturnType<typeof getPricingContext>>>(null);
   const [profile, setProfile] = useState<Awaited<ReturnType<typeof getDealerProfile>>>(null);
-  const [news, setNews] = useState<Awaited<ReturnType<typeof getNewsArticles>>>([]);
+  const [pricing, setPricing] = useState<Awaited<ReturnType<typeof getPricingContext>>>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [rightIndex, setRightIndex] = useState(0);
 
   useEffect(() => {
-    Promise.all([
-      getOrders(),
-      getBackorders(),
-      getPricingContext(),
-      getDealerProfile(),
-      getNewsArticles(),
-    ])
-      .then(([ordersData, backordersData, pricingData, profileData, newsData]) => {
+    Promise.all([getOrders(), getDealerProfile(), getPricingContext()])
+      .then(([ordersData, profileData, pricingData]) => {
         setOrders(ordersData);
-        setBackorders(backordersData);
-        setPricingContext(pricingData);
         setProfile(profileData);
-        setNews(newsData);
+        setPricing(pricingData);
       })
       .catch(() => setError("Unable to load dashboard data."))
       .finally(() => setIsLoading(false));
   }, []);
 
-  const stats = useMemo(() => {
-    const inProgress = orders.filter((order) =>
-      ["PROCESSING", "READY", "SUSPENDED"].includes(String(order.status).toUpperCase()),
-    ).length;
-    return {
-      backorders: backorders.length,
-      inProgress,
-    };
-  }, [orders, backorders]);
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setHeroIndex((prev) => (prev + 1) % heroSlides.length);
+    }, 3800);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    // Left rail stays constant; right rail rotates.
+    const timer = window.setInterval(() => {
+      setRightIndex((prev) => (prev + 1) % verticalSlides.length);
+    }, 4200);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const recentOrders = useMemo(() => {
     if (orders.length === 0) return [];
-    return Array.from({ length: 10 }, (_, index) => orders[index % orders.length]).map(
-      (order, idx) => ({
-        ...order,
-        rowId: `${order.id}-${idx}`,
+    return Array.from({ length: Math.max(3, Math.min(8, orders.length)) }, (_, index) => {
+      const order = orders[index % orders.length];
+      return {
+        rowId: `${order.id}-${index}`,
+        orderId: order.id,
+        orderNo: order.orderNo,
+        createdAt: order.createdAt,
+        status: order.status,
         total: order.lines.reduce((sum, line) => sum + line.qty * line.unitPrice, 0),
-      }),
-    );
+      };
+    });
   }, [orders]);
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="py-16 text-center text-slate-500">Loading dashboard...</CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardContent className="py-16 text-center text-slate-500">{error}</CardContent>
-      </Card>
-    );
-  }
+  const logout = () => {
+    clearAuthToken();
+    router.push("/dealer/login");
+  };
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-3xl font-bold text-slate-900">Dashboard</h2>
-        <p className="text-slate-600 mt-1">
-          Welcome back, here&apos;s what needs your attention today.
-        </p>
+    <div className={styles.root}>
+      <header className={styles.header}>
+        <div className={styles.headerTop}>
+          <div className={styles.logo}>HOTBRAY</div>
+          <nav className={styles.topNav}>
+            <Link href="/dealer/dashboard" className={styles.navItem}>
+              Dashboard
+            </Link>
+            <Link href="/dealer/search" className={styles.navItem}>
+              Search
+            </Link>
+            <Link href="/dealer/orders" className={styles.navItem}>
+              Orders
+            </Link>
+            <Link href="/dealer/cart" className={styles.navItem}>
+              Cart
+            </Link>
+            <Link href="/dealer/account" className={styles.navItem}>
+              Account
+            </Link>
+            <button type="button" className={styles.navButton} onClick={logout}>
+              Logout
+            </button>
+          </nav>
+        </div>
+
+        <div className={styles.hero}>
+          {heroSlides.map((slide, index) => (
+            <div
+              key={slide.image}
+              className={`${styles.heroSlide} ${index === heroIndex ? styles.heroSlideActive : ""}`}
+              style={{ backgroundImage: `url(${slide.image})` }}
+            />
+          ))}
+          <div className={styles.heroOverlay}>
+            <h1 className={styles.heroTitle}>{heroSlides[heroIndex].title}</h1>
+          </div>
+        </div>
+      </header>
+
+      <div className={styles.tickerWrap}>
+        <div className={styles.tickerTrack}>
+          {tickerItems.concat(tickerItems).map((item, index) => (
+            <span key={`${item}-${index}`} className={styles.tickerItem}>
+              * {item}
+            </span>
+          ))}
+        </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm text-slate-500">Backorders</CardTitle>
-            <Button size="sm" variant="outline" className="gap-2">
-              <Download className="h-4 w-4" />
-              Download
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-semibold text-slate-900">{stats.backorders}</div>
-            <p className="text-sm text-slate-500 mt-1">Outstanding lines awaiting stock</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm text-slate-500">Orders in Progress</CardTitle>
-            <Package className="h-5 w-5 text-slate-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-semibold text-slate-900">{stats.inProgress}</div>
-            <p className="text-sm text-slate-500 mt-1">Processing & ready to dispatch</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm text-slate-500">Account Summary</CardTitle>
-            <UserCircle className="h-5 w-5 text-slate-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm text-slate-600 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-700">Genuine tier</span>
-                <span>{pricingContext?.genuineTier || "Not configured"}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-700">Aftermarket ES tier</span>
-                <span>{pricingContext?.aftermarketEsTier || "Not configured"}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-700">Aftermarket BR tier</span>
-                <span>{pricingContext?.aftermarketBTier || "Not configured"}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs text-slate-500">
-                <span>Default shipping</span>
-                <span>{profile?.defaultShippingMethod || "Not set"}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs text-slate-500">
-                <span>Status</span>
-                <span>{profile?.account.status || "Unknown"}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <main className={styles.workspace}>
+        <aside className={styles.leftRail}>
+          {verticalSlides.map((slide, index) => (
+            <div
+              key={`left-${slide.image}`}
+              className={`${styles.leftSlide} ${index === 0 ? styles.leftSlideActive : ""}`}
+              style={{ backgroundImage: `url(${slide.image})` }}
+            />
+          ))}
+          <div className={styles.leftOverlay} />
+          <div className={styles.leftLinks}>
+            <Link href="/dealer/dashboard" className={`${styles.railLink} ${styles.railLinkDashboard}`}>
+              Dashboard
+            </Link>
+            <Link href="/dealer/search" className={`${styles.railLink} ${styles.railLinkSearch}`}>
+              Part Search
+            </Link>
+            <Link href="/dealer/orders" className={`${styles.railLink} ${styles.railLinkOrders}`}>
+              Orders
+            </Link>
+            <Link href="/dealer/backorders" className={`${styles.railLink} ${styles.railLinkBackorders}`}>
+              Backorders
+            </Link>
+            <Link href="/dealer/news" className={`${styles.railLink} ${styles.railLinkNews}`}>
+              Portal News
+            </Link>
+            <Link href="/dealer/account" className={`${styles.railLink} ${styles.railLinkAccount}`}>
+              Account
+            </Link>
+          </div>
+        </aside>
 
-      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Orders</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-                  <tr>
-                    <th className="px-6 py-3 text-left">Order</th>
-                    <th className="px-6 py-3 text-left">Date</th>
-                    <th className="px-6 py-3 text-right">Total</th>
-                    <th className="px-6 py-3 text-right">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {recentOrders.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-6 text-center text-sm text-slate-500">
-                        No orders yet. Start by searching for parts.
-                      </td>
-                    </tr>
-                  ) : (
-                    recentOrders.map((order) => (
-                      <tr key={order.rowId} className="hover:bg-slate-50">
-                        <td className="px-6 py-3 font-semibold text-slate-900">{order.orderNo}</td>
-                        <td className="px-6 py-3 text-slate-600">{order.createdAt}</td>
-                        <td className="px-6 py-3 text-right text-slate-900 font-semibold">
-                          GBP {order.total.toFixed(2)}
-                        </td>
-                        <td className="px-6 py-3 text-right">
-                          <StatusChip
-                            label={order.status}
-                            tone={statusTone[order.status] || "slate"}
-                          />
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div className="px-6 py-4 border-t border-slate-200 text-right">
-              <Link
-                href="/dealer/orders"
-                className="text-sm font-semibold text-blue-600 hover:text-blue-700"
-              >
-                View all orders
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+        <section className={styles.centerColumn}>
+          <div className={styles.commandTitle}>{profile?.account.companyName || "Dealer Account"}</div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>News Feed</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {news.length === 0 ? (
-              <div className="text-sm text-slate-500">No news published yet.</div>
-            ) : (
-              news.map((item) => (
-                <div key={item.id} className="border border-slate-200 rounded-xl p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-sm font-semibold text-slate-900">{item.title}</div>
-                    <span className="text-[11px] uppercase tracking-wide text-slate-500">
-                      {item.type.replace(/_/g, " ")}
-                    </span>
-                  </div>
-                  {item.endsAt ? (
-                    <p className="text-xs text-slate-500 mt-2">
-                      Valid until {new Date(item.endsAt).toLocaleDateString()}
-                    </p>
-                  ) : null}
-                  <p className="text-xs text-slate-500 mt-2 line-clamp-2">
-                    {item.bodyMd || "No message provided."}
-                  </p>
-                  {item.attachments?.length ? (
-                    <a
-                      className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-blue-600 hover:text-blue-700"
-                      href="/dealer/news"
-                    >
-                      <FileText className="h-3 w-3" />
-                      View attachments
-                    </a>
-                  ) : null}
+          <div className={styles.summaryGrid}>
+            <Link href="/dealer/account" className={styles.summaryCard}>
+              <div className={styles.summaryLabel}>Credit Status</div>
+              <div className={styles.summaryValue}>{profile?.account.status || "ACTIVE"}</div>
+              <div className={styles.summaryMeta}>Account operational status</div>
+            </Link>
+            <Link href="/dealer/account" className={styles.summaryCard}>
+              <div className={styles.summaryLabel}>Account Type</div>
+              <div className={styles.summaryValue}>Tiered Dealer</div>
+              <div className={styles.summaryMeta}>
+                GN/ES/BR: {pricing?.genuineTier || "-"} / {pricing?.aftermarketEsTier || "-"} / {pricing?.aftermarketBTier || "-"}
+              </div>
+            </Link>
+            <Link href="/dealer/account" className={styles.summaryCard}>
+              <div className={styles.summaryLabel}>Dealer Code</div>
+              <div className={styles.summaryValue}>{profile?.account.accountNo || "N/A"}</div>
+              <div className={styles.summaryMeta}>Use in support and order references</div>
+            </Link>
+          </div>
+
+          <section className={styles.ordersPanel}>
+            <div className={styles.panelHeader}>Recent Order Activity ({recentOrders.length})</div>
+            <div className={styles.ordersList}>
+              {isLoading ? <div className={styles.empty}>Loading dashboard...</div> : null}
+              {error ? <div className={styles.empty}>{error}</div> : null}
+              {!isLoading && !error && recentOrders.length === 0 ? (
+                <div className={styles.empty}>
+                  No recent orders for this dealer account yet.
+                  <br />
+                  Place an order from Search and it will appear here.
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+              ) : null}
+              {!isLoading && !error
+                ? recentOrders.map((order) => (
+                    <Link
+                      key={order.rowId}
+                      href={`/dealer/orders/${order.orderId}`}
+                      className={`${styles.orderRow} ${styles.hoverPop}`}
+                      data-tip={`Open ${order.orderNo}`}
+                    >
+                      <div className={styles.orderNo}>{order.orderNo}</div>
+                      <div>{order.createdAt}</div>
+                      <div className={styles.orderStatus}>{order.status}</div>
+                      <div className={styles.orderTotal}>GBP {order.total.toFixed(2)}</div>
+                    </Link>
+                  ))
+                : null}
+            </div>
+          </section>
+        </section>
+
+        <aside className={styles.rightRail}>
+          {verticalSlides.map((slide, index) => (
+            <div
+              key={slide.image}
+              className={`${styles.verticalSlide} ${index === rightIndex ? styles.verticalSlideActive : ""}`}
+              style={{ backgroundImage: `url(${slide.image})` }}
+            />
+          ))}
+          <div className={styles.rightOverlay} />
+        </aside>
+      </main>
+
+      <div className={styles.partsTicker}>
+        <div className={styles.partsTrack}>
+          {partStripImages.concat(partStripImages).map((img, index) => (
+            <div key={`${img}-${index}`} className={styles.partsCard} style={{ backgroundImage: `url(${img})` }} />
+          ))}
+        </div>
       </div>
+      <footer className={styles.footer}>Hotbray Global Distribution</footer>
     </div>
   );
 }

@@ -1,0 +1,39 @@
+{
+  "generatedAtUtc": "2026-02-03T20:42:23Z",
+  "repoRoot": ".",
+  "registry": {
+    "found": false,
+    "valid": false,
+    "requiredNamespaces": {
+      "API": false,
+      "DB": false,
+      "SVC": false
+    }
+  },
+  "bff": {
+    "dealerBffFound": false,
+    "adminBffFound": false,
+    "wrapperSignaturesConfigured": true,
+    "permissionSignaturesConfigured": true
+  },
+  "contracts": {
+    "modulesWithVersionFile": [],
+    "modulesMissingVersionFile": []
+  },
+  "uiRegistry": {
+    "exists": false,
+    "valid": false
+  },
+  "modes": {
+    "verifyAvailable": true,
+    "watchAvailable": true,
+    "shadowAvailable": true,
+    "fixAvailable": true
+  },
+  "status": "DEGRADED",
+  "reasons": [
+    "registry invalid or missing namespaces",
+    "missing dealer/admin BFF",
+    "ui registry invalid"
+  ]
+}

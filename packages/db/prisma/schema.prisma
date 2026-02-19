@@ -115,8 +115,17 @@ model DealerAccount {
   billingCity     String?
   billingPostcode String?
   billingCountry  String?
+  billingNotes    String?
 
   dispatchDefault String?
+
+  shippingName     String?
+  shippingCompany  String?
+  shippingLine1    String?
+  shippingLine2    String?
+  shippingCity     String?
+  shippingPostcode String?
+  shippingCountry  String?
 
   defaultShippingMethod String?
   shippingNotes         String?
@@ -148,6 +157,7 @@ model DealerUser {
   isPrimary       Boolean  @default(false)
   firstName       String?
   lastName        String?
+  displayName     String?
   createdAt       DateTime @default(now())
 
   dealerAccount DealerAccount @relation(fields: [dealerAccountId], references: [id], onDelete: Cascade)

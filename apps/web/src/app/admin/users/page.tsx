@@ -78,7 +78,7 @@ export default function UsersPage() {
       params.role = roleFilter;
       if (searchQuery) params.search = searchQuery;
 
-      const response = await api.get("/admin/users", { params });
+      const response = await api.get("/admin/admin-users", { params });
       return response.data.users as User[];
     },
   });
@@ -89,7 +89,7 @@ export default function UsersPage() {
     if (!confirm(`Reset password for ${email}?`)) return;
 
     try {
-      await api.post(`/admin/users/${userId}/reset-password`);
+      await api.post(`/admin/admin-users/${userId}/reset-password`);
       toast.success(`Password reset email sent to ${email}`);
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to reset password");
@@ -100,7 +100,7 @@ export default function UsersPage() {
     if (!confirm(`Are you sure you want to deactivate ${email}?`)) return;
 
     try {
-      await api.delete(`/admin/users/${userId}`);
+      await api.delete(`/admin/admin-users/${userId}`);
       toast.success("User deactivated successfully");
       refetch();
     } catch (error: any) {
@@ -114,7 +114,7 @@ export default function UsersPage() {
         toast.error("Email and password are required.");
         return;
       }
-      await api.post("/admin/users/admin", {
+      await api.post("/admin/admin-users", {
         email: newEmail,
         password: newPassword,
         adminRole: newRole,

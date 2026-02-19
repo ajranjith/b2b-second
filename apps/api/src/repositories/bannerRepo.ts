@@ -114,3 +114,26 @@ export async function listActiveBanners(): Promise<BannerRecord[]> {
     throw error;
   }
 }
+
+export async function deleteBannerById(id: string): Promise<boolean> {
+  const result = await writeClient.query(
+    `DELETE FROM bff_banners WHERE id = $1`,
+    [id],
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function getBannerById(id: string): Promise<BannerRecord | null> {
+  try {
+    const result = await readClient.query<BannerRecord>(
+      `SELECT ${BANNER_SELECT_FIELDS} FROM bff_banners WHERE id = $1`,
+      [id],
+    );
+    return result.rows[0] || null;
+  } catch (error: any) {
+    if (error?.code === "42P01") {
+      return null;
+    }
+    throw error;
+  }
+}

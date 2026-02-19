@@ -21,7 +21,7 @@ export function AdminExportButtons() {
   const handleExportOrders = async () => {
     setIsExportingOrders(true);
     try {
-      await downloadFile("/admin/orders/export", `orders-export-${Date.now()}.csv`);
+      await downloadFile("/admin/exports/orders", `orders-export-${Date.now()}.csv`);
     } catch (err) {
       console.error("Failed to export orders:", err);
       alert("Failed to export orders. Please try again.");
@@ -33,7 +33,7 @@ export function AdminExportButtons() {
   const handleExportBackorders = async () => {
     setIsExportingBackorders(true);
     try {
-      await downloadFile("/admin/backorders/export", `backorders-export-${Date.now()}.csv`);
+      await downloadFile("/admin/exports/backorders", `backorders-export-${Date.now()}.csv`);
     } catch (err) {
       console.error("Failed to export backorders:", err);
       alert("Failed to export backorders. Please try again.");

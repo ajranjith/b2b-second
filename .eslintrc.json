@@ -6,5 +6,54 @@
   "rules": {
     "quotes": ["error", "double"]
   },
+  "overrides": [
+    {
+      "files": [
+        "apps/admin-web/**/*.{ts,tsx}",
+        "apps/dealer-web/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "axios",
+                "message": "Use bffClient instead of axios."
+              },
+              {
+                "name": "@prisma/client",
+                "message": "DB access is not allowed in UI apps."
+              },
+              {
+                "name": "pg",
+                "message": "DB access is not allowed in UI apps."
+              }
+            ]
+          }
+        ],
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "fetch",
+            "message": "Use bffClient instead of direct fetch."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "apps/admin-web/src/lib/bffClient.ts",
+        "apps/dealer-web/src/lib/bffClient.ts",
+        "apps/admin-web/src/app/api/auth/**/*.ts",
+        "apps/dealer-web/src/app/api/auth/**/*.ts",
+        "apps/admin-web/src/app/(auth)/**/*.tsx",
+        "apps/dealer-web/src/app/(auth)/**/*.tsx"
+      ],
+      "rules": {
+        "no-restricted-globals": "off"
+      }
+    }
+  ],
   "ignorePatterns": ["dist", ".turbo", "node_modules"]
 }

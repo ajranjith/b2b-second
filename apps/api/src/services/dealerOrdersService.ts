@@ -9,6 +9,7 @@ import {
   fetchDealerBackordersExport,
   fetchDealerOrders,
   fetchDealerOrdersExport,
+  fetchDealerOrderById,
   fetchOrderLines,
   type DealerOrderLineRow,
 } from "../repositories/dealerOrdersRepo";
@@ -118,4 +119,31 @@ export async function getDealerBackordersExport(accountId: string) {
   }
 
   return fetchDealerBackordersExport(account.accountNo);
+}
+
+export async function getDealerOrderById(orderId: string, accountId: string) {
+  const order = await fetchDealerOrderById(orderId, accountId);
+  if (!order) {
+    return null;
+  }
+
+  const lineRows = await fetchOrderLines([orderId]);
+
+  return {
+    id: order.id,
+    orderNo: order.orderNo,
+    createdAt: order.createdAt.toISOString(),
+    status: order.status,
+    total: toNumber(order.total),
+    dispatchMethod: order.dispatchMethod,
+    poRef: order.poRef,
+    notes: order.notes,
+    lines: lineRows.map((line) => ({
+      id: line.id,
+      productCodeSnapshot: line.productCodeSnapshot,
+      descriptionSnapshot: line.descriptionSnapshot,
+      qty: line.qty,
+      unitPriceSnapshot: toNumber(line.unitPriceSnapshot),
+    })),
+  };
 }

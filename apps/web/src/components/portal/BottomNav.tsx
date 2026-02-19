@@ -17,7 +17,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="lg:hidden fixed bottom-0 inset-x-0 border-t border-slate-200 bg-white/95 backdrop-blur z-40">
+    <nav className="lg:hidden fixed bottom-0 inset-x-0 border-t border-[#9d7641] bg-gradient-to-b from-[#8f6a2f] to-[#735224] backdrop-blur z-40">
       <div className="grid grid-cols-6 gap-1 px-2 py-2">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
@@ -25,8 +25,8 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-1 rounded-lg py-2 text-[11px] font-semibold ${
-                isActive ? "text-blue-600" : "text-slate-500"
+              className={`flex flex-col items-center gap-1 rounded-lg py-2 text-[11px] font-bold ${
+                isActive ? "text-white" : "text-[#ffe8b8]"
               }`}
             >
               <item.icon className="h-4 w-4" />

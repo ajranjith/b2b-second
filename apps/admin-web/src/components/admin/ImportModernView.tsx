@@ -279,13 +279,9 @@ export function ImportModernView({
                       <div className="flex flex-col items-center justify-center gap-3 text-slate-500">
                         <UploadCloud className="h-10 w-10 text-indigo-300" />
                         <div className="text-sm font-medium">Start your first import</div>
-                        <Button
-                          size="sm"
-                          className="bg-indigo-600 hover:bg-indigo-700"
-                          onClick={() => setIsUploadModalOpen(true)}
-                        >
-                          Upload spreadsheet
-                        </Button>
+                        <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase text-slate-500">
+                          Use “Upload File” above
+                        </div>
                       </div>
                     </TableCell>
                   </TableRow>

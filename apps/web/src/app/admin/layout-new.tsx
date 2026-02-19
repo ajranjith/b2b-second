@@ -14,36 +14,40 @@ const adminAnnouncements: Announcement[] = [
     id: "admin-1",
     type: "urgent",
     title: "System Maintenance Scheduled",
-    message:
+    shortText: "Scheduled maintenance Sunday 2:00-4:00 AM GMT.",
+    fullText:
       "Scheduled maintenance will occur on Sunday, Jan 20th from 2:00 AM to 4:00 AM GMT. System will be unavailable during this time.",
-    timestamp: new Date().toISOString(),
-    read: false,
+    createdAt: new Date().toISOString(),
+    priority: 1,
   },
   {
     id: "admin-2",
     type: "info",
     title: "New Dealer Registration",
-    message:
+    shortText: "3 new dealer applications pending review.",
+    fullText:
       "3 new dealer applications pending review. Please review and approve/reject within 48 hours.",
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-    read: false,
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    priority: 3,
   },
   {
     id: "admin-3",
     type: "promo",
     title: "Q1 Performance Report Available",
-    message:
+    shortText: "Q1 2026 performance report is now available.",
+    fullText:
       "Q1 2026 performance report is now available in the Reports section. Review dealer performance metrics and sales data.",
-    timestamp: new Date(Date.now() - 7200000).toISOString(),
-    read: false,
+    createdAt: new Date(Date.now() - 7200000).toISOString(),
+    priority: 4,
   },
   {
     id: "admin-4",
     type: "warning",
     title: "High Volume Alert",
-    message: "Order volume is 45% above normal. Consider allocating additional support resources.",
-    timestamp: new Date(Date.now() - 10800000).toISOString(),
-    read: false,
+    shortText: "Order volume is 45% above normal.",
+    fullText: "Order volume is 45% above normal. Consider allocating additional support resources.",
+    createdAt: new Date(Date.now() - 10800000).toISOString(),
+    priority: 2,
   },
 ];
 

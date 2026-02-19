@@ -1,6 +1,12 @@
 import { BannerSchema, type BannerDTO } from "@repo/lib";
 
-import { createBanner, listActiveBanners, type BannerRecord } from "../repositories/bannerRepo";
+import {
+  createBanner,
+  listActiveBanners,
+  deleteBannerById,
+  getBannerById,
+  type BannerRecord,
+} from "../repositories/bannerRepo";
 
 export type BannerInput = {
   id: string;
@@ -56,4 +62,13 @@ export async function createBannerRecord(input: BannerInput): Promise<BannerDTO>
 export async function getActiveBanners(): Promise<BannerDTO[]> {
   const records = await listActiveBanners();
   return records.map(toBannerDTO);
+}
+
+export async function deleteBanner(id: string): Promise<boolean> {
+  return deleteBannerById(id);
+}
+
+export async function getBanner(id: string): Promise<BannerDTO | null> {
+  const record = await getBannerById(id);
+  return record ? toBannerDTO(record) : null;
 }

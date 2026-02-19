@@ -203,3 +203,41 @@ export const dealerApi = {
     };
   },
 };
+
+// Compatibility exports for legacy page imports.
+export const productAPI = {
+  async search(filters: SearchFilters, _page = 1, _limit = 50): Promise<Product[]> {
+    return dealerApi.searchProducts(filters);
+  },
+  async getById(productId: string): Promise<Product | null> {
+    return dealerApi.getProductDetails(productId);
+  },
+};
+
+export const dashboardAPI = {
+  async getKPIs(): Promise<DashboardKPI> {
+    return dealerApi.getDashboardKPI();
+  },
+  async getRecentOrders(limit = 10): Promise<Order[]> {
+    return dealerApi.getRecentOrders(limit);
+  },
+  async getNews(limit = 5): Promise<NewsItem[]> {
+    return dealerApi.getNewsItems(limit);
+  },
+};
+
+export const orderAPI = {
+  async list(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    search?: string;
+  }): Promise<{ orders: Order[]; totalCount: number }> {
+    return dealerApi.getOrders(params);
+  },
+  async getById(orderId: string): Promise<Order | null> {
+    return dealerApi.getOrderDetails(orderId);
+  },
+};

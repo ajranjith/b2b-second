@@ -168,3 +168,23 @@ export async function fetchDealerBackordersExport(accountNo: string) {
   );
   return result.rows;
 }
+
+export async function fetchDealerOrderById(orderId: string, accountId: string) {
+  const result = await readClient.query<DealerOrderRow>(
+    `
+      SELECT
+        id,
+        "orderNo",
+        status,
+        total,
+        "createdAt",
+        "dispatchMethod",
+        "poRef",
+        notes
+      FROM "OrderHeader"
+      WHERE id = $1 AND "dealerAccountId" = $2;
+    `,
+    [orderId, accountId],
+  );
+  return result.rows[0] || null;
+}

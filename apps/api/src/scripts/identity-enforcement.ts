@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import { spawn } from "node:child_process";
-import { buildEnvelope, newSessionId, newTraceId, QUERIES, type QueryKey } from "@repo/identity";
-import { runWithContext } from "../lib/runtimeContext";
+import { newSessionId } from "@repo/identity";
+import { runWithEnvelope } from "../lib/runtimeContext";
 import { db, prisma } from "../lib/prisma";
 import { checkDatabaseReachable } from "../../../../scripts/db-preflight";
 
@@ -79,15 +79,13 @@ async function assertFailure({ description, fn, expectedMessage }: FailureExpect
 }
 
 function createAdminEnvelope() {
-  return buildEnvelope({
-    namespace: "A",
-    traceId: newTraceId("A"),
-    sessionId: newSessionId("A"),
-    featureId: "REF-A-01",
-    operationId: "API-A-01-01",
-    method: "GET",
+  return {
+    ns: "A",
+    sid: newSessionId("A"),
+    role: "ADMIN",
+    userId: "test-user",
     path: "/api/bff/v1/admin/dashboard",
-  });
+  };
 }
 
 async function testPrismaWithoutEnvelope() {
@@ -116,7 +114,7 @@ async function testMissingDbId() {
   await assertFailure({
     description: "Enforced DB-ID requirement",
     fn: async () => {
-      await runWithContext(envelope, async () => {
+      await runWithEnvelope(envelope, async () => {
         await prisma.$queryRaw`SELECT 1`;
       });
     },
@@ -129,8 +127,8 @@ async function testNamespaceMismatch() {
   await assertFailure({
     description: "Namespace mismatch when using Dealer DB on Admin envelope",
     fn: async () => {
-      await runWithContext(envelope, async () => {
-        await db(QUERIES.DEALER_DASHBOARD_ACCOUNT).$queryRaw`SELECT 1`;
+      await runWithEnvelope(envelope, async () => {
+        await db("DB-D-TEMP", (p) => p.$queryRaw`SELECT 1`);
       });
     },
     expectedMessage: "ENVELOPE_MISMATCH",
@@ -139,17 +137,13 @@ async function testNamespaceMismatch() {
 
 async function testConcurrencySafety() {
   const envelope = createAdminEnvelope();
-  const dbIds: QueryKey[] = [
-    "ADMIN_DASHBOARD_DEALER_STATS",
-    "ADMIN_DEALERS_LIST",
-    "ADMIN_IMPORTS_LIST",
-  ];
-
-  await runWithContext(envelope, async () => {
+  await runWithEnvelope(envelope, async () => {
     const tasks = Array.from({ length: 50 }, (_, index) => {
-      const dbId = dbIds[index % dbIds.length];
+      const dbId = index % 2 === 0 ? "DB-A-TEMP" : "DB-A-TEMP";
       return async () => {
-        const result = await db(dbId).$queryRaw<{ value: number }[]>`SELECT 1 AS value`;
+        const result = await db(dbId, (p) =>
+          p.$queryRaw<{ value: number }[]>`SELECT 1 AS value`,
+        );
         return { dbId, value: result[0]?.value ?? null };
       };
     });

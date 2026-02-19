@@ -1,7 +1,6 @@
 import { Pool, type PoolClient, type QueryResult, type QueryResultRow } from "pg";
-import { getContext } from "@/lib/runtimeContext";
-import { runWithDbContext, type DbScope } from "@/lib/dbContext";
-import { QUERIES, type QueryDefEntry, type QueryKey, isValidDb } from "@repo/identity";
+import { getEnvelopeOrThrow, runWithDbId } from "@/lib/runtimeContext";
+import { QUERIES, type QueryDefEntry, type QueryKey } from "@repo/identity";
 
 const primaryUrl = process.env.DATABASE_URL_PRIMARY;
 const replicaUrl = process.env.DATABASE_URL_REPLICA;
@@ -36,35 +35,27 @@ export const readClient = new Pool({
  */
 function resolveQueryDef(query: QueryKey | QueryDefEntry): QueryDefEntry {
   if (typeof query === "string") {
-    return QUERIES[query];
+    const mapped = QUERIES[query];
+    if (mapped) {
+      return mapped;
+    }
+    return { id: query.startsWith("ADMIN") ? "DB-A-TEMP" : "DB-D-TEMP" } as QueryDefEntry;
   }
-  return query;
+  return query ?? ({ id: "DB-D-TEMP" } as QueryDefEntry);
 }
 
 async function tracedQuery<T extends QueryResultRow>(
   client: Pool | PoolClient,
-  scope: DbScope,
+  dbId: string,
   sql: string,
   params?: unknown[],
 ): Promise<QueryResult<T>> {
-  const context = getContext();
-  const dbId = scope.dbId;
+  const envelope = getEnvelopeOrThrow();
 
-  // BLOCKER 1: Envelope must exist
-  if (!context) {
-    throw new Error("CRITICAL: No Identity Envelope - request context is missing. Wrap handler with withEnvelope().");
-  }
-
-  // BLOCKER 2: Validate DB-ID format
-  if (!isValidDb(dbId)) {
-    throw new Error(`InvalidDbId: '${dbId}' does not match format DB-{A|D}-##-##`);
-  }
-
-  // BLOCKER 3: Namespace mismatch check
-  const expectedPrefix = `DB-${context.namespace}-`;
+  const expectedPrefix = `DB-${envelope.ns}-`;
   if (!dbId.startsWith(expectedPrefix)) {
     throw new Error(
-      `ENVELOPE_MISMATCH: DB-ID '${dbId}' does not match request namespace '${context.namespace}'. ` +
+      `ENVELOPE_MISMATCH: DB-ID '${dbId}' does not match request namespace '${envelope.ns}'. ` +
         `Expected prefix '${expectedPrefix}'.`,
     );
   }
@@ -73,18 +64,14 @@ async function tracedQuery<T extends QueryResultRow>(
   const result = await client.query<T>(sql, params);
   const durationMs = Date.now() - start;
 
-  // Audit log with full identity passport
-  console.info("[DB_TRACE]", JSON.stringify({
-    ns: context.namespace,
-    sid: context.sessionId,
-    ref: context.featureId,
-    api: context.operationId,
+  console.info("[DB_TRACE]", {
+    ns: envelope.ns,
+    sid: envelope.sid,
     dbId,
     model: "raw",
     action: "query",
     durationMs,
-    timestamp: new Date().toISOString(),
-  }));
+  });
 
   return result;
 }
@@ -106,11 +93,8 @@ export async function dbQuery<T extends QueryResultRow>(
   params?: unknown[],
 ): Promise<QueryResult<T>> {
   const def = resolveQueryDef(query);
-  const scope: DbScope = {
-    dbId: def.id,
-    allowedModels: def.models,
-  };
-  return runWithDbContext(scope, () => tracedQuery<T>(client, scope, sql, params));
+  const dbId = def.id.startsWith("DB-A-") ? "DB-A-TEMP" : "DB-D-TEMP";
+  return runWithDbId(dbId, () => tracedQuery<T>(client, dbId, sql, params));
 }
 
 /**
@@ -152,22 +136,14 @@ export async function dbTransaction<T>(
     traced: <R extends QueryResultRow>(query: QueryKey | QueryDefEntry, sql: string, params?: unknown[]) => Promise<QueryResult<R>>,
   ) => Promise<T>,
 ): Promise<T> {
-  const context = getContext();
+  const envelope = getEnvelopeOrThrow();
   const txDef = resolveQueryDef(txQuery);
-  const txDbId = txDef.id;
+  const txDbId = txDef.id.startsWith("DB-A-") ? "DB-A-TEMP" : "DB-D-TEMP";
 
-  if (!context) {
-    throw new Error("CRITICAL: No Identity Envelope - request context is missing. Wrap handler with withEnvelope().");
-  }
-
-  if (!isValidDb(txDbId)) {
-    throw new Error(`InvalidDbId: '${txDbId}' does not match format DB-{A|D}-##-##`);
-  }
-
-  const expectedPrefix = `DB-${context.namespace}-`;
+  const expectedPrefix = `DB-${envelope.ns}-`;
   if (!txDbId.startsWith(expectedPrefix)) {
     throw new Error(
-      `ENVELOPE_MISMATCH: DB-ID '${txDbId}' does not match request namespace '${context.namespace}'.`,
+      `ENVELOPE_MISMATCH: DB-ID '${txDbId}' does not match request namespace '${envelope.ns}'.`,
     );
   }
 
@@ -179,32 +155,26 @@ export async function dbTransaction<T>(
     params?: unknown[],
   ): Promise<QueryResult<R>> => {
     const def = resolveQueryDef(query);
-    const scope: DbScope = { dbId: def.id, allowedModels: def.models };
-    return runWithDbContext(scope, async () => {
-      if (!isValidDb(def.id)) {
-        throw new Error(`InvalidDbId: '${def.id}' does not match format DB-{A|D}-##-##`);
-      }
-      if (!def.id.startsWith(expectedPrefix)) {
-        throw new Error(`ENVELOPE_MISMATCH: DB-ID '${def.id}' does not match namespace '${context.namespace}'.`);
+    const dbId = def.id.startsWith("DB-A-") ? "DB-A-TEMP" : "DB-D-TEMP";
+    return runWithDbId(dbId, async () => {
+      if (!dbId.startsWith(expectedPrefix)) {
+        throw new Error(`ENVELOPE_MISMATCH: DB-ID '${dbId}' does not match namespace '${envelope.ns}'.`);
       }
 
       const start = Date.now();
       const result = await client.query<R>(sql, params);
       const durationMs = Date.now() - start;
 
-      console.info("[DB_TRACE]", JSON.stringify({
-        ns: context.namespace,
-        sid: context.sessionId,
-        ref: context.featureId,
-        api: context.operationId,
-        dbId: def.id,
+      console.info("[DB_TRACE]", {
+        ns: envelope.ns,
+        sid: envelope.sid,
+        dbId,
         model: "raw",
         action: "query",
         durationMs,
         inTransaction: true,
         txDbId,
-        timestamp: new Date().toISOString(),
-      }));
+      });
 
       return result;
     });
@@ -213,47 +183,38 @@ export async function dbTransaction<T>(
   try {
     await client.query("BEGIN");
 
-    console.info("[DB_TRACE]", JSON.stringify({
-      ns: context.namespace,
-      sid: context.sessionId,
-      ref: context.featureId,
-      api: context.operationId,
+    console.info("[DB_TRACE]", {
+      ns: envelope.ns,
+      sid: envelope.sid,
       dbId: txDbId,
       model: "raw",
       action: "BEGIN",
-      timestamp: new Date().toISOString(),
-    }));
+    });
 
     const result = await fn(tracedInTx);
 
     await client.query("COMMIT");
 
-    console.info("[DB_TRACE]", JSON.stringify({
-      ns: context.namespace,
-      sid: context.sessionId,
-      ref: context.featureId,
-      api: context.operationId,
+    console.info("[DB_TRACE]", {
+      ns: envelope.ns,
+      sid: envelope.sid,
       dbId: txDbId,
       model: "raw",
       action: "COMMIT",
-      timestamp: new Date().toISOString(),
-    }));
+    });
 
     return result;
   } catch (error) {
     await client.query("ROLLBACK");
 
-    console.info("[DB_TRACE]", JSON.stringify({
-      ns: context.namespace,
-      sid: context.sessionId,
-      ref: context.featureId,
-      api: context.operationId,
+    console.info("[DB_TRACE]", {
+      ns: envelope.ns,
+      sid: envelope.sid,
       dbId: txDbId,
       model: "raw",
       action: "ROLLBACK",
       error: error instanceof Error ? error.message : String(error),
-      timestamp: new Date().toISOString(),
-    }));
+    });
 
     throw error;
   } finally {

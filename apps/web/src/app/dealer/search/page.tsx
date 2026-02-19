@@ -1,384 +1,381 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { searchParts, type SearchParams, getPartBySku } from "@/lib/services/dealerApi";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { searchParts } from "@/lib/services/dealerApi";
+import type { Part } from "@/lib/mock/dealerData";
+import { clearAuthToken } from "@/lib/auth";
 import { useDealerCart } from "@/context/DealerCartContext";
-import { DataTable } from "@/components/portal/DataTable";
-import { DensityToggle } from "@/components/portal/DensityToggle";
-import { StatusChip } from "@/components/portal/StatusChip";
-import { SearchInput } from "@/components/portal/SearchInput";
-import { QtyStepper } from "@/components/portal/QtyStepper";
-import { StockNotesBanner } from "@/components/portal/StockNotesBanner";
-import { Card, CardContent, CardHeader, Button } from "@/ui";
+import styles from "./search-theme.module.css";
+
+const heroSlides = [
+  {
+    image: "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?q=80&w=1600",
+    title: "Land Rover Genuine Parts",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1600",
+    title: "Jaguar Performance Components",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=1600",
+    title: "OEM + Aftermarket Coverage",
+  },
+];
+
+const sideSlides = [
+  "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=600",
+  "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=600",
+  "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?q=80&w=600",
+];
+
+const tickerItems = ["JLR Approved", "Global Shipping", "OEM Specialist", "Dealer Pricing Live"];
+
+const getStockClass = (status: string) => {
+  if (status === "In Stock") return styles.inStock;
+  if (status === "Low Stock") return styles.lowStock;
+  return styles.backorder;
+};
 
 export default function DealerSearchPage() {
-  const params = useSearchParams();
   const router = useRouter();
-  const queryParam = params.get("q") || "";
-  const [query, setQuery] = useState(queryParam);
-  const [partType, setPartType] = useState<SearchParams["partType"]>("All");
-  const [stock, setStock] = useState<SearchParams["stock"]>("All");
-  const [page, setPage] = useState(1);
-  const [density, setDensity] = useState<"comfortable" | "dense">("comfortable");
-  const [expandedPartId, setExpandedPartId] = useState<string | null>(null);
-  const debouncedQuery = useDebouncedValue(query, 300);
-  const [results, setResults] = useState<{ items: any[]; total: number }>({ items: [], total: 0 });
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q") || "";
+
+  const [query, setQuery] = useState(initialQuery);
+  const [items, setItems] = useState<Part[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(Boolean(initialQuery.trim()));
+  const [qtyById, setQtyById] = useState<Record<string, number>>({});
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [sideIndex, setSideIndex] = useState(0);
+  const [displayCount, setDisplayCount] = useState(0);
+  const [displaySubtotal, setDisplaySubtotal] = useState(0);
+  const [pulseCart, setPulseCart] = useState(false);
+  const [flyer, setFlyer] = useState<{ x: number; y: number; key: number } | null>(null);
 
-  const { addItem, items, updateQty, removeItem } = useDealerCart();
+  const {
+    items: cartItems,
+    subtotal,
+    addItem,
+    updateQty,
+    removeItem,
+  } = useDealerCart();
 
-  useEffect(() => {
-    setQuery(queryParam);
-  }, [queryParam]);
-
-  const applySearch = (value: string) => {
-    setQuery(value);
-    setPage(1);
-    const nextParams = new URLSearchParams(params.toString());
-    if (value) {
-      nextParams.set("q", value);
-    } else {
-      nextParams.delete("q");
-    }
-    router.push(`/dealer/search?${nextParams.toString()}`);
-  };
-
-  useEffect(() => {
-    const fetchResults = async () => {
-      if (!debouncedQuery.trim()) {
-        setResults({ items: [], total: 0 });
-        setExpandedPartId(null);
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      const response = await searchParts({
-        query: debouncedQuery,
-        page,
-        pageSize: 6,
-        stock,
-        partType,
-      });
-      setResults(response);
-      setLoading(false);
-    };
-    fetchResults();
-  }, [debouncedQuery, page, partType, stock]);
-
-  const hasQuery = debouncedQuery.trim().length > 0;
-  const totalPages = Math.max(1, Math.ceil(results.total / 6));
-  const showZeroStockNote = results.items.some((item) => item.stockQty <= 0);
-  const showOrderedOnDemandNote = results.items.some((item) => item.orderedOnDemand);
-
-  const columns = [
-    { key: "sku", label: "Part", width: "30%" },
-    { key: "stock", label: "Stock", width: "20%" },
-    { key: "price", label: "Price", align: "right" as const },
-    { key: "action", label: "", align: "right" as const, width: "20%" },
-  ];
-
-  const getStockLabel = (stockQty: number, orderedOnDemand?: boolean) => {
-    if (orderedOnDemand) return "Ordered on Demand";
-    if (stockQty <= 0) return "0 in stock";
-    if (stockQty >= 200) return "200+ in stock";
-    return `${stockQty} in stock`;
-  };
-
-  const getStockTone = (stockQty: number, orderedOnDemand?: boolean) => {
-    if (orderedOnDemand) return "amber";
-    if (stockQty <= 0) return "slate";
-    return "green";
-  };
-
-  const rows = useMemo(
-    () =>
-      results.items.map((part) => ({
-        id: part.id,
-        onClick: () => setExpandedPartId(part.id === expandedPartId ? null : part.id),
-        cells: [
-          <div key={`${part.id}-name`}>
-            <div className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-              {part.sku}
-              {part.supersededBy && (
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
-                  Superseded
-                </span>
-              )}
-            </div>
-            {part.supersededBy && (
-              <div className="text-xs text-amber-700">
-                Superseded by{" "}
-                <button
-                  type="button"
-                  className="text-blue-600 hover:underline"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    applySearch(part.supersededBy || "");
-                  }}
-                >
-                  {part.supersededBy}
-                </button>
-                {part.replacementExists === false && " (not currently stocked online)"}
-              </div>
-            )}
-            <div className="text-xs text-slate-500">{part.name}</div>
-            <div className="text-xs text-slate-400">{part.description}</div>
-          </div>,
-          <div key={`${part.id}-stock`} className="space-y-2">
-            <StatusChip
-              label={getStockLabel(part.stockQty, part.orderedOnDemand)}
-              tone={getStockTone(part.stockQty, part.orderedOnDemand)}
-            />
-          </div>,
-          <div key={`${part.id}-price`} className="text-right">
-            {Number.isFinite(part.price) && part.price > 0 ? (
-              <>
-                <div className="text-sm font-semibold text-slate-900">
-                  GBP {part.price.toFixed(2)}
-                </div>
-                <div className="text-xs text-slate-400">{part.band}</div>
-              </>
-            ) : (
-              <div className="text-sm font-semibold text-slate-400">Price unavailable</div>
-            )}
-          </div>,
-          <div key={`${part.id}-action`} className="flex justify-end">
-            <Button
-              size="sm"
-              className="bg-blue-600 text-white hover:bg-blue-700"
-              onClick={(event) => {
-                event.stopPropagation();
-                if (part.supersededBy && part.replacementExists) {
-                  const replacement = getPartBySku(part.supersededBy);
-                  if (replacement) {
-                    addItem(replacement);
-                  }
-                  return;
-                }
-                if (part.supersededBy && part.replacementExists === false) {
-                  return;
-                }
-                addItem(part);
-              }}
-              disabled={!!part.supersededBy && part.replacementExists === false}
-            >
-              {part.supersededBy && part.replacementExists ? "Add Replacement" : "Add to Cart"}
-            </Button>
-          </div>,
-        ],
-      })),
-    [results.items, addItem, expandedPartId],
+  const cartItemCount = useMemo(
+    () => cartItems.reduce((sum, item) => sum + item.qty, 0),
+    [cartItems],
   );
 
-  return (
-    <>
-      <div className="rounded-3xl border border-slate-200 bg-white shadow-sm p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-semibold text-slate-900">Search Parts</h1>
-            <p className="text-slate-500 mt-1">Live stock and pricing for your account.</p>
-          </div>
-          <DensityToggle value={density} onChange={setDensity} />
-        </div>
-        <div className="mt-6 grid items-end gap-4 lg:grid-cols-[2fr_1fr_1fr]">
-          <div className="flex flex-col gap-2">
-            <div className="text-xs font-semibold text-slate-500">Search</div>
-            <SearchInput
-              key={query}
-              defaultValue={query}
-              onSearch={(value) => applySearch(value)}
-              size="lg"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label
-              className="block text-xs font-semibold text-slate-500"
-              htmlFor="part-type-filter"
-            >
-              Part Type
-            </label>
-            <select
-              id="part-type-filter"
-              value={partType}
-              onChange={(event) => {
-                setPartType(event.target.value as SearchParams["partType"]);
-                setPage(1);
-              }}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
-            >
-              <option value="All">All Part Types</option>
-              <option value="Genuine">Genuine</option>
-              <option value="Aftermarket">Aftermarket</option>
-              <option value="Branded">Branded</option>
-            </select>
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="block text-xs font-semibold text-slate-500" htmlFor="stock-filter">
-              Stock Status
-            </label>
-            <select
-              id="stock-filter"
-              value={stock}
-              onChange={(event) => {
-                setStock(event.target.value as SearchParams["stock"]);
-                setPage(1);
-              }}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
-            >
-              <option value="All">All Stock</option>
-              <option value="In Stock">In Stock</option>
-              <option value="Low Stock">Low Stock</option>
-              <option value="Backorder">Backorder</option>
-            </select>
-          </div>
-        </div>
-      </div>
+  useEffect(() => {
+    const target = cartItemCount;
+    const timer = window.setInterval(() => {
+      setDisplayCount((prev) => {
+        if (prev === target) return prev;
+        return prev + Math.sign(target - prev);
+      });
+    }, 35);
+    return () => window.clearInterval(timer);
+  }, [cartItemCount]);
 
-      <div className="grid gap-6 xl:grid-cols-[2.2fr_1fr]">
-        <div className="space-y-4">
-          <StockNotesBanner
-            showZeroStock={showZeroStockNote}
-            showOrderedOnDemand={showOrderedOnDemandNote}
-          />
-          {loading ? (
-            <Card>
-              <CardContent className="py-16 text-center text-slate-500">
-                Loading results...
-              </CardContent>
-            </Card>
-          ) : !hasQuery ? (
-            <Card>
-              <CardContent className="py-16 text-center">
-                <div className="text-slate-400 mb-4">
-                  <svg
-                    className="mx-auto h-12 w-12"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-slate-700 mb-1">Search for parts</h3>
-                <p className="text-slate-500">
-                  Enter a part number, SKU, or description to see live stock and pricing.
-                </p>
-              </CardContent>
-            </Card>
-          ) : rows.length === 0 ? (
-            <Card>
-              <CardContent className="py-16 text-center">
-                <div className="text-slate-400 mb-4">
-                  <svg
-                    className="mx-auto h-12 w-12"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-slate-700 mb-1">No results found</h3>
-                <p className="text-slate-500 mb-2">
-                  We couldn&apos;t find any parts matching &quot;{debouncedQuery}&quot;.
-                </p>
-                <p className="text-sm text-slate-400">
-                  Try checking your spelling or using a different search term.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <DataTable columns={columns} rows={rows} density={density} />
-          )}
-          {expandedPartId && (
-            <Card>
-              <CardContent className="py-6 text-sm text-slate-600">
-                Details for this part will appear here (supersessions, fitment notes, and lead
-                time).
-              </CardContent>
-            </Card>
-          )}
-          {hasQuery && rows.length > 0 && (
-            <div className="flex items-center justify-between text-sm text-slate-500">
-              <span>
-                Showing page {page} of {totalPages}
-              </span>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 1}
-                  onClick={() => setPage(page - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === totalPages}
-                  onClick={() => setPage(page + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+  useEffect(() => {
+    const target = subtotal;
+    const timer = window.setInterval(() => {
+      setDisplaySubtotal((prev) => {
+        const diff = target - prev;
+        if (Math.abs(diff) < 0.05) return target;
+        return prev + diff * 0.2;
+      });
+    }, 30);
+    return () => window.clearInterval(timer);
+  }, [subtotal]);
+
+  useEffect(() => {
+    setPulseCart(true);
+    const timer = window.setTimeout(() => setPulseCart(false), 260);
+    return () => window.clearTimeout(timer);
+  }, [cartItemCount]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setHeroIndex((prev) => (prev + 1) % heroSlides.length);
+    }, 3500);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setSideIndex((prev) => (prev + 1) % sideSlides.length);
+    }, 4200);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    setQuery(initialQuery);
+    if (initialQuery.trim()) {
+      void runSearch(initialQuery);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuery]);
+
+  const runSearch = async (value: string) => {
+    const cleanQuery = value.trim();
+    setSearched(true);
+
+    const next = new URLSearchParams(searchParams.toString());
+    if (cleanQuery) {
+      next.set("q", cleanQuery);
+    } else {
+      next.delete("q");
+    }
+    router.replace(`/dealer/search${next.toString() ? `?${next.toString()}` : ""}`);
+
+    if (!cleanQuery) {
+      setItems([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await searchParts({
+        query: cleanQuery,
+        page: 1,
+        pageSize: 50,
+        stock: "All",
+        partType: "All",
+      });
+      setItems(response.items);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setQtyById((prev) => {
+      const next = { ...prev };
+      for (const part of items) {
+        if (!next[part.id]) next[part.id] = 1;
+      }
+      return next;
+    });
+  }, [items]);
+
+  const logout = () => {
+    clearAuthToken();
+    router.push("/dealer/login");
+  };
+
+  const handleAddToCart = async (event: MouseEvent<HTMLButtonElement>, part: Part, qty: number) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setFlyer({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, key: Date.now() });
+    await addItem(part, qty);
+  };
+
+  return (
+    <div className={styles.root}>
+      {flyer ? (
+        <div
+          key={flyer.key}
+          className={styles.flyer}
+          style={{ left: flyer.x, top: flyer.y }}
+          onAnimationEnd={() => setFlyer(null)}
+        >
+          +1
         </div>
-        <Card className="h-fit">
-          <CardHeader className="pb-2">
-            <h2 className="text-lg font-semibold text-slate-900">Cart Preview</h2>
-            <p className="text-xs text-slate-400">Updates instantly as you add items.</p>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {items.length === 0 ? (
-              <div className="text-sm text-slate-500">No items yet.</div>
+      ) : null}
+      <header className={styles.topbar}>
+        <div className={styles.logo}>HOTBRAY</div>
+        <nav className={styles.topnav}>
+          <Link href="/dealer/dashboard" className={styles.toplink}>
+            Dashboard
+          </Link>
+          <Link href="/dealer/search" className={`${styles.toplink} ${styles.toplinkActive}`}>
+            Search
+          </Link>
+          <Link href="/dealer/orders" className={styles.toplink}>
+            Orders
+          </Link>
+          <Link href="/dealer/cart" className={styles.toplink}>
+            Cart
+          </Link>
+          <Link href="/dealer/account" className={styles.toplink}>
+            Account
+          </Link>
+          <button type="button" className={styles.toplinkButton} onClick={logout}>
+            Logout
+          </button>
+        </nav>
+      </header>
+
+      <section className={styles.hero}>
+        {heroSlides.map((slide, index) => (
+          <div
+            key={slide.image}
+            className={`${styles.heroSlide} ${index === heroIndex ? styles.heroSlideActive : ""}`}
+            style={{ backgroundImage: `url(${slide.image})` }}
+          />
+        ))}
+        <div className={styles.heroOverlay}>
+          <div className={styles.heroText}>{heroSlides[heroIndex].title}</div>
+        </div>
+      </section>
+
+      <section className={styles.workspace}>
+        <aside className={styles.sidebar}>
+          {sideSlides.map((image, index) => (
+            <div
+              key={image}
+              className={`${styles.sidebarSlide} ${index === sideIndex ? styles.sidebarSlideActive : ""}`}
+              style={{ backgroundImage: `url(${image})` }}
+            />
+          ))}
+          <div className={styles.sidebarLabel}>Defender</div>
+        </aside>
+
+        <main className={styles.center}>
+          <div className={styles.searchRow}>
+            <div className={styles.searchWrap}>
+              <span className={styles.searchIcon}>Search</span>
+              <input
+                className={styles.searchInput}
+                placeholder="Part Number..."
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    void runSearch(query);
+                  }
+                }}
+              />
+            </div>
+            <button className={styles.searchButton} onClick={() => void runSearch(query)}>
+              Search
+            </button>
+          </div>
+
+          <div className={styles.tableHead}>
+            <div>Img</div>
+            <div>Part Details</div>
+            <div>Description</div>
+            <div>Stock</div>
+            <div>Price</div>
+            <div>Qty</div>
+            <div>Action</div>
+          </div>
+
+          <div className={styles.results}>
+            {!searched ? (
+              <div className={styles.empty}>Search by part number or keyword.</div>
+            ) : loading ? (
+              <div className={styles.empty}>Loading search results...</div>
+            ) : items.length === 0 ? (
+              <div className={styles.empty}>No results found for "{query}".</div>
             ) : (
-              items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3"
-                >
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-slate-900">{item.part.sku}</div>
-                    <div className="text-xs text-slate-400 truncate">{item.part.name}</div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      className="text-xs text-slate-400 hover:text-slate-600"
-                      onClick={() => removeItem(item.id)}
-                    >
-                      Remove
+              items.map((part) => {
+                const qty = qtyById[part.id] || 1;
+                const imageSrc =
+                  (part as Part & { image?: string }).image ||
+                  "https://images.unsplash.com/photo-1486262715619-01b8c247a552?q=80&w=100";
+
+                return (
+                  <div key={part.id} className={styles.row}>
+                    <img className={styles.thumb} src={imageSrc} alt={part.sku} />
+                    <div>
+                      <div className={styles.sku}>{part.sku}</div>
+                      <div className={styles.dim}>{part.partType || "Part"}</div>
+                    </div>
+                    <div className={styles.desc}>{part.name}</div>
+                    <div className={`${styles.stock} ${getStockClass(part.stockStatus)}`}>
+                      {part.stockStatus}
+                    </div>
+                    <div className={styles.price}>GBP {Number(part.price || 0).toFixed(2)}</div>
+                    <div className={styles.qtyCtrl}>
+                      <button
+                        className={styles.qtyBtn}
+                        onClick={() =>
+                          setQtyById((prev) => ({
+                            ...prev,
+                            [part.id]: Math.max(1, (prev[part.id] || 1) - 1),
+                          }))
+                        }
+                      >
+                        -
+                      </button>
+                      <div className={styles.qtyVal}>{qty}</div>
+                      <button
+                        className={styles.qtyBtn}
+                        onClick={() =>
+                          setQtyById((prev) => ({
+                            ...prev,
+                            [part.id]: (prev[part.id] || 1) + 1,
+                          }))
+                        }
+                      >
+                        +
+                      </button>
+                    </div>
+                    <button className={styles.addBtn} onClick={(event) => void handleAddToCart(event, part, qty)}>
+                      Add
                     </button>
-                    <QtyStepper value={item.qty} onChange={(value) => updateQty(item.id, value)} />
                   </div>
+                );
+              })
+            )}
+          </div>
+        </main>
+
+        <aside className={styles.sideCart}>
+          <div className={styles.sideCartHead}>
+            <span>Cart</span>
+            <span className={`${styles.badge} ${pulseCart ? styles.badgePulse : ""}`}>{displayCount}</span>
+          </div>
+
+          <div className={styles.cartList}>
+            {cartItems.length === 0 ? (
+              <div className={styles.empty}>Cart is empty.</div>
+            ) : (
+              cartItems.map((item) => (
+                <div key={item.id} className={styles.cartItem}>
+                  <div>
+                    <div className={styles.cartSku}>{item.part.sku}</div>
+                    <div className={styles.cartPrice}>GBP {Number(item.part.price).toFixed(2)}</div>
+                  </div>
+                  <div className={styles.cartQty}>
+                    <button onClick={() => void updateQty(item.id, Math.max(1, item.qty - 1))}>-</button>
+                    <span>{item.qty}</span>
+                    <button onClick={() => void updateQty(item.id, item.qty + 1)}>+</button>
+                  </div>
+                  <div className={styles.cartLineTotal}>GBP {(item.part.price * item.qty).toFixed(0)}</div>
+                  <button className={styles.removeItem} onClick={() => void removeItem(item.id)}>
+                    Remove
+                  </button>
                 </div>
               ))
             )}
-            <div className="pt-2">
-              <Link
-                href="/dealer/cart"
-                className="inline-flex w-full items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
-              >
-                Go to Cart
-              </Link>
+          </div>
+
+          <div className={styles.cartFooter}>
+            <div className={styles.totalRow}>
+              <span>Total</span>
+              <span>GBP {displaySubtotal.toFixed(2)}</span>
             </div>
-          </CardContent>
-        </Card>
+            <button className={styles.checkout} onClick={() => router.push("/dealer/cart")}>
+              Checkout
+            </button>
+          </div>
+        </aside>
+      </section>
+
+      <div className={styles.ticker}>
+        <div className={styles.tickerTrack}>
+          {tickerItems.concat(tickerItems).map((item, index) => (
+            <span key={`${item}-${index}`}>* {item}</span>
+          ))}
+        </div>
       </div>
-    </>
+
+      <footer className={styles.footer}>Hotbray Global</footer>
+    </div>
   );
 }

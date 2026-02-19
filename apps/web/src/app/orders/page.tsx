@@ -28,7 +28,9 @@ export default async function CustomerOrdersPage() {
                 <CardTitle className="text-xl">{order.orderNo}</CardTitle>
                 <p className="text-sm text-gray-500">{format(new Date(order.createdAt), "PPpp")}</p>
               </div>
-              <Badge variant={order.status === "COMPLETED" ? "default" : "secondary"}>
+              <Badge
+                variant={String(order.status).toLowerCase() === "completed" ? "default" : "secondary"}
+              >
                 {order.status}
               </Badge>
             </CardHeader>
@@ -41,11 +43,6 @@ export default async function CustomerOrdersPage() {
                 </div>
                 <div className="text-lg font-bold">GBP {order.total.toFixed(2)}</div>
               </div>
-              {order.comments && (
-                <div className="mt-2 p-2 bg-slate-50 rounded text-xs text-slate-600 font-mono">
-                  {order.comments}
-                </div>
-              )}
             </CardContent>
           </Card>
         ))}

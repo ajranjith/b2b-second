@@ -67,6 +67,13 @@ export type SearchParams = {
 
 const delay = (ms = 240) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const unwrapBff = <T>(payload: unknown): T => {
+  if (payload && typeof payload === "object" && "data" in (payload as Record<string, unknown>)) {
+    return (payload as { data: T }).data;
+  }
+  return payload as T;
+};
+
 const calcSubtotal = (items: CartItem[]) =>
   items.reduce((sum, item) => sum + item.part.price * item.qty, 0);
 
@@ -124,7 +131,9 @@ export async function searchParts(params: SearchParams): Promise<{ items: Part[]
       },
     });
 
-    const items = (response.data.results || []).map((item: any) => {
+    const data = unwrapBff<any>(response.data);
+    const rawItems = data.items || data.results || [];
+    const items = rawItems.map((item: any) => {
       const freeStock = item.freeStock ?? 0;
       const stockStatus = freeStock <= 0 ? "Backorder" : freeStock < 10 ? "Low Stock" : "In Stock";
       const partTypeLabel =
@@ -154,7 +163,7 @@ export async function searchParts(params: SearchParams): Promise<{ items: Part[]
       params.stock && params.stock !== "All"
         ? items.filter((item: Part) => item.stockStatus === params.stock)
         : items;
-    return { items: filtered, total: response.data.pagination?.total || filtered.length };
+    return { items: filtered, total: data.total || data.pagination?.total || filtered.length };
   } catch (error) {
     console.error("Search failed, falling back to mock data.", error);
     await delay(180);
@@ -182,8 +191,9 @@ export async function searchParts(params: SearchParams): Promise<{ items: Part[]
 export async function getCart(): Promise<CartSummary> {
   try {
     const response = await api.get("/dealer/cart");
-    const items = response.data.items.map(convertApiCartItem);
-    return { items, subtotal: response.data.subtotal };
+    const data = unwrapBff<any>(response.data);
+    const items = (data.items || []).map(convertApiCartItem);
+    return { items, subtotal: data.subtotal || 0 };
   } catch (error) {
     console.error("Failed to fetch cart:", error);
     return { items: [], subtotal: 0 };
@@ -223,7 +233,8 @@ export async function removeCartItem(itemId: string): Promise<CartSummary> {
 export async function getOrders(): Promise<Order[]> {
   try {
     const response = await api.get("/dealer/orders");
-    const apiOrders = response.data.orders || [];
+    const data = unwrapBff<any>(response.data);
+    const apiOrders = data.orders || [];
     return apiOrders.map((order: any) => ({
       id: order.id,
       orderNo: order.orderNo,
@@ -250,7 +261,7 @@ export async function getOrders(): Promise<Order[]> {
 export async function getOrderById(id: string): Promise<Order | null> {
   try {
     const response = await api.get(`/dealer/orders/${id}`);
-    const order = response.data;
+    const order = unwrapBff<any>(response.data);
     return {
       id: order.id,
       orderNo: order.orderNo,
@@ -287,7 +298,8 @@ export function getPartBySku(sku: string): Part | null {
 export async function getBackorders(): Promise<any[]> {
   try {
     const response = await api.get("/dealer/backorders");
-    return response.data.backorders || [];
+    const data = unwrapBff<any>(response.data);
+    return data.backorders || [];
   } catch (error) {
     console.error("Failed to fetch backorders:", error);
     return [];
@@ -296,8 +308,16 @@ export async function getBackorders(): Promise<any[]> {
 
 export async function getPricingContext(): Promise<DealerPricingContext | null> {
   try {
-    const response = await api.get("/pricing/context");
-    return response.data;
+    // Pricing context is included in dealer account response
+    const response = await api.get("/dealer/account");
+    const data = unwrapBff<any>(response.data);
+    if (!data) return null;
+    return {
+      dealerAccountId: data.dealerAccountId || data.id,
+      genuineTier: data.genuineTier || data.pricingTier?.genuine || "A",
+      aftermarketEsTier: data.aftermarketEsTier || data.pricingTier?.aftermarketEs || "A",
+      aftermarketBTier: data.aftermarketBTier || data.pricingTier?.aftermarketB || "A",
+    };
   } catch (error) {
     console.error("Failed to fetch pricing context:", error);
     return null;
@@ -306,8 +326,8 @@ export async function getPricingContext(): Promise<DealerPricingContext | null> 
 
 export async function getDealerProfile(): Promise<DealerProfile | null> {
   try {
-    const response = await api.get("/dealer/profile");
-    return response.data;
+    const response = await api.get("/dealer/account");
+    return unwrapBff<any>(response.data);
   } catch (error) {
     console.error("Failed to fetch dealer profile:", error);
     return null;
@@ -317,7 +337,8 @@ export async function getDealerProfile(): Promise<DealerProfile | null> {
 export async function getNewsArticles(): Promise<NewsArticle[]> {
   try {
     const response = await api.get("/dealer/news");
-    return response.data.news || [];
+    const data = unwrapBff<any>(response.data);
+    return data.news || [];
   } catch (error) {
     console.error("Failed to fetch news:", error);
     return [];

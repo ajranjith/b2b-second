@@ -25,7 +25,7 @@ export async function checkoutDealerCart(accountId: string, dealerUserId: string
 
   const total = items.reduce((acc, item) => acc + toNumber(item.net1Price) * item.qty, 0);
   const orderId = crypto.randomUUID();
-  const orderNo = `B2B-${Date.now()}-${orderId.slice(0, 4)}`;
+  const orderNo = `ORD-${Date.now()}-${orderId.slice(0, 4)}`;
 
   const client = await writeClient.connect();
   try {
@@ -75,11 +75,9 @@ export async function checkoutDealerCart(accountId: string, dealerUserId: string
             "unitPriceSnapshot",
             "lineTotalSnapshot",
             "bandCodeSnapshot",
-            "minPriceApplied",
-            "createdAt",
-            "updatedAt"
+            "minPriceApplied"
           ) VALUES (
-            $1,$2,$3,$4,$5,$6,$7,$8,$9,'NET1',false,NOW(),NOW()
+            $1,$2,$3,$4,$5,$6,$7,$8,$9,'NET1',false
           );
         `,
         [

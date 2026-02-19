@@ -1,5 +1,4 @@
-import { runWithDbContext, getCurrentDbId } from "../lib/dbContext";
-import { QUERIES } from "@repo/identity";
+import { runWithDbId, getDbId } from "../lib/runtimeContext";
 
 console.log("Testing with deferred async...");
 
@@ -7,7 +6,7 @@ console.log("Testing with deferred async...");
 function createLazyPromise<T>(fn: () => Promise<T>): Promise<T> {
   return {
     then(resolve: (value: T) => void, reject: (error: unknown) => void) {
-      console.log("then() called, dbId:", getCurrentDbId());
+      console.log("then() called, dbId:", getDbId());
       fn().then(resolve, reject);
     },
   } as Promise<T>;
@@ -15,21 +14,21 @@ function createLazyPromise<T>(fn: () => Promise<T>): Promise<T> {
 
 const target = {
   query() {
-    console.log("query() called (sync part), dbId:", getCurrentDbId());
+    console.log("query() called (sync part), dbId:", getDbId());
     return createLazyPromise(async () => {
-      console.log("Lazy promise executing, dbId:", getCurrentDbId());
+      console.log("Lazy promise executing, dbId:", getDbId());
       return { value: 1 };
     });
   },
 };
 
 // Wrap without preserving async context
-function wrapValueBroken(value: unknown, scope: { dbId: string; allowedModels: readonly string[] }, parent: object): unknown {
+function wrapValueBroken(value: unknown, dbId: string, parent: object): unknown {
   if (typeof value === "function") {
     return (...args: unknown[]) => {
-      console.log("Wrapper called, setting dbId:", scope.dbId);
-      return runWithDbContext(scope, () => {
-        console.log("Inside runWithDbContext, dbId:", getCurrentDbId());
+      console.log("Wrapper called, setting dbId:", dbId);
+      return runWithDbId(dbId, () => {
+        console.log("Inside runWithDbId, dbId:", getDbId());
         return (value as (...args: unknown[]) => unknown).apply(parent, args);
         // This returns the lazy promise, but context is lost when it's awaited
       });
@@ -39,15 +38,15 @@ function wrapValueBroken(value: unknown, scope: { dbId: string; allowedModels: r
 }
 
 // Wrap WITH preserving async context
-function wrapValueFixed(value: unknown, scope: { dbId: string; allowedModels: readonly string[] }, parent: object): unknown {
+function wrapValueFixed(value: unknown, dbId: string, parent: object): unknown {
   if (typeof value === "function") {
     return (...args: unknown[]) => {
-      console.log("Fixed wrapper called, setting dbId:", scope.dbId);
+      console.log("Fixed wrapper called, setting dbId:", dbId);
       // Return a promise that maintains the context
-      return runWithDbContext(scope, async () => {
-        console.log("Inside async runWithDbContext, dbId:", getCurrentDbId());
+      return runWithDbId(dbId, async () => {
+        console.log("Inside async runWithDbId, dbId:", getDbId());
         const result = await (value as (...args: unknown[]) => unknown).apply(parent, args);
-        console.log("After await, dbId:", getCurrentDbId());
+        console.log("After await, dbId:", getDbId());
         return result;
       });
     };
@@ -59,7 +58,7 @@ async function testBroken() {
   console.log("\n--- Testing BROKEN wrapper ---");
   const wrapped = wrapValueBroken(
     target.query,
-    { dbId: QUERIES.ADMIN_DASHBOARD_DEALER_STATS.id, allowedModels: QUERIES.ADMIN_DASHBOARD_DEALER_STATS.models },
+    "DB-A-TEMP",
     target,
   ) as () => Promise<{ value: number }>;
   try {
@@ -74,7 +73,7 @@ async function testFixed() {
   console.log("\n--- Testing FIXED wrapper ---");
   const wrapped = wrapValueFixed(
     target.query,
-    { dbId: QUERIES.ADMIN_DEALERS_USERS_LIST.id, allowedModels: QUERIES.ADMIN_DEALERS_USERS_LIST.models },
+    "DB-A-TEMP",
     target,
   ) as () => Promise<{ value: number }>;
   try {

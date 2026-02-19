@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Badge,
   Button,
@@ -107,7 +107,7 @@ interface ImportModernViewProps {
   ) => Promise<{ success: boolean; error?: string; batchId?: string }>;
   onResetUpload: () => void;
   onDownloadTemplate: (template: UploadTemplate) => void;
-  getTemplate: (importType: ImportType) => UploadTemplate | null;
+  getTemplate: (importType: ImportType) => Promise<UploadTemplate | null>;
 
   // Utilities
   getSuccessRate: (batch: ImportBatch) => number;
@@ -137,8 +137,20 @@ export function ImportModernView({
   const [specialStartDate, setSpecialStartDate] = useState("");
   const [specialEndDate, setSpecialEndDate] = useState("");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [activeTemplate, setActiveTemplate] = useState<UploadTemplate | null>(null);
 
-  const activeTemplate = getTemplate(uploadType);
+  // Fetch template when upload type changes
+  useEffect(() => {
+    let cancelled = false;
+    getTemplate(uploadType).then((template) => {
+      if (!cancelled) {
+        setActiveTemplate(template);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [uploadType, getTemplate]);
 
   const handleUploadClick = async () => {
     if (!selectedFile) return;
@@ -543,13 +555,9 @@ function EmptyState({ onUploadClick }: { onUploadClick: () => void }) {
         prices, and more.
       </p>
 
-      <Button
-        onClick={onUploadClick}
-        className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/25"
-      >
-        <Upload className="mr-2 h-4 w-4" />
-        Upload Your First File
-      </Button>
+      <div className="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold uppercase text-slate-500">
+        Use “New Import” above to start
+      </div>
     </div>
   );
 }

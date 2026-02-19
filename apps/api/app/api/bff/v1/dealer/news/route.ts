@@ -1,16 +1,11 @@
 import type { NextRequest } from "next/server";
 
-import { cacheLife, cacheTag } from "next/cache";
-
 import { requireRole } from "@/auth/requireRole";
 import { fail, ok } from "@/lib/response";
 import { listDealerNews } from "@/services/newsService";
 import { withEnvelope } from "@/lib/withEnvelope";
 
 async function handleGET(request: NextRequest) {
-  cacheTag("dealer-news");
-  cacheLife({ revalidate: 60, expire: 300 });
-
   const auth = requireRole(request, "DEALER");
   if (!auth.ok) {
     return fail({ message: auth.message }, auth.status);

@@ -23,6 +23,13 @@ interface Cart {
   subtotal: number;
 }
 
+const unwrap = <T>(payload: unknown): T => {
+  if (payload && typeof payload === "object" && "data" in (payload as Record<string, unknown>)) {
+    return (payload as { data: T }).data;
+  }
+  return payload as T;
+};
+
 export function useCart() {
   const queryClient = useQueryClient();
 
@@ -34,14 +41,14 @@ export function useCart() {
     queryKey: ["cart"],
     queryFn: async () => {
       const response = await api.get("/dealer/cart");
-      return response.data;
+      return unwrap<Cart>(response.data);
     },
   });
 
   const addItemMutation = useMutation({
     mutationFn: async ({ productId, qty }: { productId: string; qty: number }) => {
       const response = await api.post("/dealer/cart/items", { productId, qty });
-      return response.data;
+      return unwrap<Cart>(response.data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });

@@ -26,7 +26,7 @@ import { StockNotesBanner } from "@/components/portal/StockNotesBanner";
 
 export default function DealerCartPage() {
   const router = useRouter();
-  const { items, subtotal, isLoading, updateQty, removeItem, addItem } = useDealerCart();
+  const { items, subtotal, isLoading, updateQty, removeItem, addItem, clearCart } = useDealerCart();
   const [showCheckout, setShowCheckout] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
@@ -79,13 +79,19 @@ export default function DealerCartPage() {
     try {
       setIsPlacing(true);
       const response = await api.post("/dealer/checkout", {
-        dispatchMethod,
+        shippingMethod: dispatchMethod,
         poRef,
         notes,
       });
-      setOrderNumber(response.data.orderNo);
+      const orderNo = response.data?.orderNo ?? response.data?.data?.orderNo;
+      if (!orderNo) {
+        throw new Error("Order number missing in checkout response");
+      }
+      setOrderNumber(orderNo);
+      clearCart();
       setShowCheckout(false);
       setShowConfirmation(true);
+      toast.success(`Order ${orderNo} placed successfully`);
       setTimeout(() => {
         router.push("/dealer/orders");
       }, 3000);

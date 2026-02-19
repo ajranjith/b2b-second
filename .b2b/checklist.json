@@ -1,0 +1,13 @@
+{
+  "generatedAtUtc": "2026-02-03T20:42:23Z",
+  "items": [
+    "Boundary rules (contracts-only / no-leak)",
+    "BFF mandatory + wrapper enforcement + policy call",
+    "Registry correctness + ID namespaces",
+    "Atomic ingestion checks",
+    "Evidence signing checks",
+    "UI registry coverage",
+    "Dealer LLID contract + UI LLID display enforcement",
+    "Phase 1-4 rule groups"
+  ]
+}

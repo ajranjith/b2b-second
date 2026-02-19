@@ -1,31 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3001";
 
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const query = searchParams.get("q") || "";
-    const partType = searchParams.get("partType") || undefined;
-
-    const products = await prisma.product.findMany({
-      where: {
-        OR: [
-          { productCode: { contains: query, mode: "insensitive" } },
-          { description: { contains: query, mode: "insensitive" } },
-        ],
-        ...(partType ? { partType: partType as any } : {}),
-      },
-      include: {
-        stock: true,
-        refPrice: true,
-        bandPrices: true,
-      },
-      take: 50,
+    const upstreamUrl = `${API_BASE}/api/bff/v1/dealer/search${req.nextUrl.search}`;
+    const auth = req.headers.get("authorization");
+    const upstream = await fetch(upstreamUrl, {
+      method: "GET",
+      headers: auth ? { authorization: auth } : undefined,
+      cache: "no-store",
     });
+    const payload = await upstream.text();
 
-    return NextResponse.json(products);
+    return new NextResponse(payload, {
+      status: upstream.status,
+      headers: {
+        "content-type": upstream.headers.get("content-type") || "application/json",
+      },
+    });
   } catch (error: any) {
-    console.error("💥 [Search API] Search failed:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Upstream search failed" }, { status: 500 });
   }
 }
+
+export const runtime = "nodejs";

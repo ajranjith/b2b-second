@@ -1,36 +1,30 @@
-import { db, prisma } from "../lib/prisma";
-import { runWithContext } from "../lib/runtimeContext";
-import { getCurrentDbId } from "../lib/dbContext";
-import { buildEnvelope, newSessionId, newTraceId, QUERIES } from "@repo/identity";
+import { db } from "../lib/prisma";
+import { runWithEnvelope, getDbId } from "../lib/runtimeContext";
+import { newSessionId } from "@repo/identity";
 
-const envelope = buildEnvelope({
-  namespace: "A",
-  traceId: newTraceId("A"),
-  sessionId: newSessionId("A"),
-  featureId: "REF-A-01",
-  operationId: "API-A-01-01",
-  method: "GET",
+const envelope = {
+  ns: "A",
+  sid: newSessionId("A"),
+  role: "ADMIN",
+  userId: "test-user",
   path: "/test",
-});
+};
 
 console.log("Testing db() proxy...");
 
 async function test() {
-  await runWithContext(envelope, async () => {
+  await runWithEnvelope(envelope, async () => {
     console.log("Inside runWithContext");
-    console.log("dbId before db() call:", getCurrentDbId());
-
-    const client = db(QUERIES.ADMIN_DASHBOARD_DEALER_STATS);
-    console.log("Got client, dbId:", getCurrentDbId());
+    console.log("dbId before db() call:", getDbId());
 
     try {
       console.log("Calling $queryRaw...");
-      const result = await client.$queryRaw`SELECT 1 as value`;
+      const result = await db("DB-A-TEMP", (p) => p.$queryRaw`SELECT 1 as value`);
       console.log("Result:", result);
-      console.log("dbId after call:", getCurrentDbId());
+      console.log("dbId after call:", getDbId());
     } catch (e: any) {
       console.log("Error:", e.message);
-      console.log("dbId after error:", getCurrentDbId());
+      console.log("dbId after error:", getDbId());
     }
   });
 }

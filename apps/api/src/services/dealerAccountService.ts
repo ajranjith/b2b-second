@@ -81,20 +81,28 @@ const buildPayload = (record: Awaited<ReturnType<typeof fetchDealerAccountById>>
   };
 };
 
-const attachTiers = async (payload: DealerAccountPayload, accountNo: string) => {
-  const assignments = await fetchDealerTierAssignments(accountNo);
+const attachTiers = async (payload: DealerAccountPayload, accountNo: string | null | undefined) => {
   const tiers: DealerAccountDTO["tiers"] = {
     genuine: null,
     aftermarketEs: null,
     aftermarketBr: null,
   };
 
-  assignments.forEach((assignment) => {
-    const key = tierKeys[assignment.categoryCode.toUpperCase()] as keyof typeof tiers;
-    if (key) {
-      tiers[key] = assignment.netTier;
+  if (accountNo) {
+    try {
+      const assignments = await fetchDealerTierAssignments(accountNo);
+      assignments.forEach((assignment) => {
+        const category = assignment.categoryCode?.toUpperCase?.();
+        if (!category) return;
+        const key = tierKeys[category] as keyof typeof tiers;
+        if (key) {
+          tiers[key] = assignment.netTier ?? null;
+        }
+      });
+    } catch {
+      // Keep null tiers when assignments are unavailable; account payload remains usable.
     }
-  });
+  }
 
   return DealerAccountResponseSchema.parse({
     account: payload.account,
@@ -118,7 +126,7 @@ export async function getDealerAccount(accountId: string | null): Promise<Dealer
     return emptyAccountDTO();
   }
 
-  return attachTiers(payload, record.accountNo);
+  return attachTiers(payload, record.accountNo ?? null);
 }
 
 export async function updateDealerAccount(accountId: string, payload: DealerAccountUpdateDTO): Promise<DealerAccountDTO | null> {
@@ -159,7 +167,7 @@ export async function updateDealerAccount(accountId: string, payload: DealerAcco
     return null;
   }
 
-  return attachTiers(updatedPayload, updated.accountNo);
+  return attachTiers(updatedPayload, updated.accountNo ?? null);
 }
 
 export async function resetDealerAccountPassword(

@@ -333,7 +333,7 @@ export async function fetchDealerOrdersInProgressCount(accountId: string): Promi
       SELECT COUNT(*)::int AS count
       FROM "OrderHeader"
       WHERE "dealerAccountId" = $1
-        AND status IN ('PROCESSING', 'READY', 'SUSPENDED');
+        AND status IN ('PROCESSING', 'SUSPENDED');
     `,
     [accountId],
   );

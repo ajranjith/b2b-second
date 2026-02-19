@@ -18,7 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/ui";
-import api from "@/lib/api";
+import { authApi } from "@/lib/api";
 import { decodeJwtPayload, setAuthToken, setMustChangePassword } from "@/lib/auth";
 
 const loginSchema = z.object({
@@ -49,7 +49,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await api.post("/auth/login", {
+      const response = await authApi.post("/auth/login", {
         email: data.emailOrAccount,
         password: data.password,
       });

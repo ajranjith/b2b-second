@@ -1,29 +1,29 @@
 :root {
-  --dgs-bg: rgb(255, 255, 255);
-  --dgs-bg-image: none;
-  --dgs-surface: rgb(243, 243, 243);
-  --dgs-surface-2: rgb(243, 243, 243);
-  --dgs-border: rgb(106, 106, 106);
-  --dgs-text: rgb(106, 106, 106);
-  --dgs-muted: rgb(106, 106, 106);
-  --dgs-primary: #f5710f;
-  --dgs-primary-hover: #e86400;
-  --dgs-primary-active: #cc5500;
-  --dgs-accent: #f5710f;
-  --dgs-ring: rgba(245, 113, 15, 0.18);
-  --dgs-nav-bg: rgb(255, 255, 255);
-  --dgs-nav-hover-bg: rgba(245, 113, 15, 0.1);
-  --dgs-nav-active-bg: rgba(245, 113, 15, 0.14);
-  --dgs-nav-active-indicator: #f5710f;
-  --dgs-table-head-bg: rgb(255, 255, 255);
-  --dgs-radius-sm: 3px;
-  --dgs-radius-md: 0px;
-  --dgs-shadow-1: 0 6px 14px rgba(0, 0, 0, 0.08);
-  --dgs-shadow-2: 0 12px 24px rgba(245, 113, 15, 0.18);
-  --dgs-font-sans: Roboto, sans-serif;
-  --dgs-banner-overlay: linear-gradient(90deg, rgba(245, 113, 15, 0.35), rgba(0, 0, 0, 0.12));
-  --dgs-banner-tint: rgba(245, 113, 15, 0.18);
-  --dgs-click-overlay: rgba(245, 113, 15, 0.92);
+  --dgs-bg: #f5eddb;
+  --dgs-bg-image: linear-gradient(180deg, #f8f1e0 0%, #efe3c5 45%, #e6d9bb 100%);
+  --dgs-surface: #fff8ea;
+  --dgs-surface-2: #f6ead0;
+  --dgs-border: #d0b075;
+  --dgs-text: #6e4f21;
+  --dgs-muted: #8f6b34;
+  --dgs-primary: #b88b3f;
+  --dgs-primary-hover: #a27834;
+  --dgs-primary-active: #89642c;
+  --dgs-accent: #c99a4d;
+  --dgs-ring: rgba(184, 139, 63, 0.24);
+  --dgs-nav-bg: linear-gradient(180deg, #86622a 0%, #6c4d21 100%);
+  --dgs-nav-hover-bg: rgba(214, 175, 102, 0.26);
+  --dgs-nav-active-bg: rgba(237, 202, 130, 0.26);
+  --dgs-nav-active-indicator: #f2d394;
+  --dgs-table-head-bg: #f4e7cb;
+  --dgs-radius-sm: 8px;
+  --dgs-radius-md: 10px;
+  --dgs-shadow-1: 0 8px 18px rgba(82, 57, 20, 0.16);
+  --dgs-shadow-2: 0 14px 26px rgba(129, 93, 35, 0.2);
+  --dgs-font-sans: "Inter", "Segoe UI", Arial, sans-serif;
+  --dgs-banner-overlay: linear-gradient(90deg, rgba(105, 74, 31, 0.45), rgba(0, 0, 0, 0.1));
+  --dgs-banner-tint: rgba(183, 136, 58, 0.24);
+  --dgs-click-overlay: rgba(183, 136, 58, 0.75);
 }
 
 :root {
@@ -228,7 +228,7 @@ nav {
 
 header nav a,
 header nav button {
-  color: var(--dgs-text);
+  color: #ffeec8;
 }
 
 header nav a:hover,
@@ -248,4 +248,21 @@ thead {
 
 thead th {
   color: var(--dgs-text);
+}
+
+/* Rollover micro-interactions for clickable controls outside search/dashboard full-theme pages */
+a[href],
+button {
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+
+a[href]:hover,
+button:hover {
+  transform: translateY(-1px);
+}
+
+.rounded-full:hover,
+.rounded-xl:hover,
+.rounded-2xl:hover {
+  box-shadow: var(--dgs-shadow-2);
 }

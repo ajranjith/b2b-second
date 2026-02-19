@@ -24,16 +24,16 @@ export async function fetchAuthUserByEmail(
         u.email,
         u."passwordHash",
         u.role,
-        u."adminRole",
-        u."mustChangePassword",
-        u."isActive",
+        (to_jsonb(u)->>'adminRole') AS "adminRole",
+        COALESCE((to_jsonb(u)->>'mustChangePassword')::boolean, false) AS "mustChangePassword",
+        COALESCE((to_jsonb(u)->>'isActive')::boolean, true) AS "isActive",
         du.id AS "dealerUserId",
         du."dealerAccountId",
         da."companyName"
       FROM "AppUser" u
       LEFT JOIN "DealerUser" du ON du."userId" = u.id
       LEFT JOIN "DealerAccount" da ON da.id = du."dealerAccountId"
-      WHERE u.email = $1 OR u."emailNormalized" = $2
+      WHERE u.email = $1 OR COALESCE((to_jsonb(u)->>'emailNormalized'), LOWER(u.email)) = $2
       LIMIT 1;
     `,
     [email, emailNormalized],
@@ -43,12 +43,19 @@ export async function fetchAuthUserByEmail(
 }
 
 export async function updateLastLogin(userId: string) {
-  await writeClient.query(
-    `
-      UPDATE "AppUser"
-      SET "lastLoginAt" = NOW()
-      WHERE id = $1;
-    `,
-    [userId],
-  );
+  try {
+    await writeClient.query(
+      `
+        UPDATE "AppUser"
+        SET "lastLoginAt" = NOW()
+        WHERE id = $1;
+      `,
+      [userId],
+    );
+  } catch (error: any) {
+    // Backward-compat for older DBs without lastLoginAt column.
+    if (error?.code !== "42703") {
+      throw error;
+    }
+  }
 }

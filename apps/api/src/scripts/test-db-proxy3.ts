@@ -1,15 +1,14 @@
-import { runWithDbContext, getCurrentDbId } from "../lib/dbContext";
-import { QUERIES } from "@repo/identity";
+import { runWithDbId, getDbId } from "../lib/runtimeContext";
 
 console.log("Testing proxy function wrapping...");
 
 // Simulate the proxy wrapper
-function wrapValue(value: unknown, scope: { dbId: string; allowedModels: readonly string[] }, parent: object): unknown {
+function wrapValue(value: unknown, dbId: string, parent: object): unknown {
   if (typeof value === "function") {
     const wrapped = (...args: unknown[]) => {
-      console.log("Wrapped function called, setting dbId:", scope.dbId);
-      return runWithDbContext(scope, () => {
-        console.log("Inside runWithDbContext, dbId:", getCurrentDbId());
+      console.log("Wrapped function called, setting dbId:", dbId);
+      return runWithDbId(dbId, () => {
+        console.log("Inside runWithDbId, dbId:", getDbId());
         const result = (value as (...args: unknown[]) => unknown).apply(parent, args);
         console.log("Function result type:", typeof result);
         return result;
@@ -23,25 +22,22 @@ function wrapValue(value: unknown, scope: { dbId: string; allowedModels: readonl
 // Test with a simple async function
 const target = {
   async query() {
-    console.log("query() called, dbId inside:", getCurrentDbId());
+    console.log("query() called, dbId inside:", getDbId());
     return { value: 1 };
   },
 };
 
 const wrappedQuery = wrapValue(
   target.query,
-  {
-    dbId: QUERIES.ADMIN_DASHBOARD_DEALER_STATS.id,
-    allowedModels: QUERIES.ADMIN_DASHBOARD_DEALER_STATS.models,
-  },
+  "DB-A-TEMP",
   target,
 ) as () => Promise<{ value: number }>;
 
 async function test() {
-  console.log("Before call, dbId:", getCurrentDbId());
+  console.log("Before call, dbId:", getDbId());
   const result = await wrappedQuery();
   console.log("Result:", result);
-  console.log("After call, dbId:", getCurrentDbId());
+  console.log("After call, dbId:", getDbId());
 }
 
 test()

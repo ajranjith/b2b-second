@@ -1,4 +1,4 @@
-import { test, expect, Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const dealerEmail = process.env.DEALER_EMAIL;
 const dealerPassword = process.env.DEALER_PASSWORD;
@@ -7,141 +7,170 @@ async function login(page: Page) {
   await page.goto("/login");
   await page.getByLabel("Email or Account Number").fill(dealerEmail || "");
   await page.getByLabel("Password").fill(dealerPassword || "");
-  await page.getByRole("button", { name: "Sign In" }).click({ force: true });
+  await page.getByRole("button", { name: "Sign In" }).click();
   await page.waitForURL(/\/dealer\//, { timeout: 20000 });
 }
 
-test.describe("dealer ui contract", () => {
-  test.beforeEach(async ({ page }) => {
-    if (!dealerEmail || !dealerPassword) {
-      test.skip(true, "Set DEALER_EMAIL and DEALER_PASSWORD to run dealer e2e tests.");
-    }
-    await login(page);
-  });
+async function token(page: Page) {
+  return page.evaluate(() => localStorage.getItem("token"));
+}
 
-  test("navigation links resolve", async ({ page }) => {
-    const navLinks = [
-      { label: "Dashboard", href: "/dealer/dashboard" },
-      { label: "Search Parts", href: "/dealer/search" },
-      { label: "Cart", href: "/dealer/cart" },
-      { label: "Orders", href: "/dealer/orders" },
-      { label: "News", href: "/dealer/news" },
-      { label: "Account", href: "/dealer/account" },
-    ];
-    for (const item of navLinks) {
-      await page.getByRole("complementary").getByRole("link", { name: item.label }).first().click();
-      await expect(page).toHaveURL(new RegExp(`${item.href}$`));
-    }
-  });
+async function dealerFetch(page: Page, path: string, options?: { method?: string; body?: unknown }) {
+  const currentToken = await token(page);
+  return page.evaluate(
+    async ({ path, method, body, token }) => {
+      const response = await fetch(`/api/bff/v1/dealer${path}`, {
+        method: method || "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "X-App-Namespace": "D",
+          "Content-Type": "application/json",
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const text = await response.text();
+      let json: any = null;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        json = null;
+      }
+      return { status: response.status, ok: response.ok, json, text };
+    },
+    { path, method: options?.method, body: options?.body, token: currentToken },
+  );
+}
 
-  test("dashboard displays stats cards", async ({ page }) => {
-    await page.goto("/dealer/dashboard");
-    await expect(page.getByText("Backorders")).toBeVisible();
-    await expect(page.getByText("Orders in Progress")).toBeVisible();
-    await expect(page.getByText("Account Summary")).toBeVisible();
-  });
+async function clearCart(page: Page) {
+  const cart = await dealerFetch(page, "/cart");
+  const items = cart.json?.data?.items || [];
+  for (const item of items) {
+    await dealerFetch(page, `/cart/items/${item.id}`, { method: "DELETE" });
+  }
+}
 
-  test("search page has filters and search input", async ({ page }) => {
-    await page.goto("/dealer/search");
-    await expect(page.getByRole("heading", { name: "Search Parts" })).toBeVisible();
-    await expect(page.getByPlaceholder(/Search/i)).toBeVisible();
-    await expect(page.locator("#part-type-filter")).toBeVisible();
-    await expect(page.locator("#stock-filter")).toBeVisible();
-  });
+test.describe.configure({ mode: "serial" });
 
-  test("search returns results and can add to cart", async ({ page }) => {
-    await page.goto("/dealer/search");
-    await page.getByPlaceholder(/Search/i).fill("Product");
-    await page.keyboard.press("Enter");
-
-    // Wait for results
-    const addButton = page.getByRole("button", { name: /Add to Cart/i }).first();
-    const noResults = page.getByText("No results found");
-
-    // Either we get results or a "no results" message
-    await expect(addButton.or(noResults)).toBeVisible({ timeout: 10000 });
-
-    // If we have results, try adding to cart
-    if (await addButton.isVisible()) {
-      await addButton.click();
-      // Cart preview should update
-      await expect(page.getByRole("heading", { name: "Cart Preview" })).toBeVisible();
-    }
-  });
-
-  test("orders page shows table or empty state", async ({ page }) => {
-    await page.goto("/dealer/orders");
-    await expect(page.getByRole("heading", { name: "Orders" })).toBeVisible();
-
-    // Either we have orders table or empty state
-    const ordersTable = page.locator("table");
-    const emptyState = page.getByText(/No orders/i);
-
-    await expect(ordersTable.or(emptyState)).toBeVisible();
-  });
-
-  test("orders page has export button", async ({ page }) => {
-    await page.goto("/dealer/orders");
-    await expect(page.getByRole("button", { name: /Export Orders/i })).toBeVisible();
-  });
-
-  test("cart page shows items or empty state", async ({ page }) => {
-    await page.goto("/dealer/cart");
-    await expect(page.getByRole("heading", { name: "Shopping Cart" })).toBeVisible();
-
-    // Either we have cart items or empty state
-    const checkoutButton = page.getByRole("button", { name: /Proceed to Checkout/i });
-    const emptyCart = page.getByText(/cart is empty|no items/i);
-
-    await expect(checkoutButton.or(emptyCart)).toBeVisible();
-  });
-
-  test("account page displays dealer info", async ({ page }) => {
-    await page.goto("/dealer/account");
-    await expect(page.getByRole("heading", { name: /Account/i })).toBeVisible();
-  });
-
-  test("news page loads without errors", async ({ page }) => {
-    await page.goto("/dealer/news");
-    await expect(page.getByRole("heading", { name: /News/i })).toBeVisible();
-  });
+test.beforeEach(async ({ page }) => {
+  if (!dealerEmail || !dealerPassword) {
+    test.skip(true, "Set DEALER_EMAIL and DEALER_PASSWORD to run dealer e2e tests.");
+  }
+  await login(page);
 });
 
-test.describe("dealer search flow", () => {
-  test.beforeEach(async ({ page }) => {
-    if (!dealerEmail || !dealerPassword) {
-      test.skip(true, "Set DEALER_EMAIL and DEALER_PASSWORD to run dealer e2e tests.");
-    }
-    await login(page);
+test("dealer routes load without runtime errors", async ({ page }) => {
+  const routes = [
+    "/dealer/dashboard",
+    "/dealer/search",
+    "/dealer/cart",
+    "/dealer/checkout",
+    "/dealer/orders",
+    "/dealer/backorders",
+    "/dealer/news",
+    "/dealer/account",
+  ];
+
+  for (const route of routes) {
+    await page.goto(route);
+    await page.waitForTimeout(400);
+    await expect(page).toHaveURL(new RegExp(`${route}$`));
+    const html = await page.content();
+    expect(html).not.toContain("Unhandled Runtime Error");
+    expect(html).not.toContain("Build Error");
+    expect(html).not.toContain("404 Not Found");
+  }
+});
+
+test("dealer bff endpoints return success and namespace is set", async ({ page }) => {
+  const apiChecks = [
+    "/dashboard",
+    "/account",
+    "/search?q=LR164821ES&page=1&limit=10",
+    "/cart",
+    "/orders",
+    "/backorders",
+    "/news",
+  ];
+
+  for (const path of apiChecks) {
+    const response = await dealerFetch(page, path);
+    expect(response.status).toBe(200);
+  }
+});
+
+test("all actionable dealer controls include data-fid and data-action-id", async ({ page }) => {
+  const routes = [
+    "/dealer/dashboard",
+    "/dealer/search",
+    "/dealer/cart",
+    "/dealer/checkout",
+    "/dealer/orders",
+    "/dealer/backorders",
+    "/dealer/news",
+    "/dealer/account",
+  ];
+
+  for (const route of routes) {
+    await page.goto(route);
+    await page.waitForTimeout(500);
+    const audit = await page.evaluate(() => {
+      const actionable = Array.from(document.querySelectorAll('button, a[href], [role="button"]'));
+      const missing = actionable.filter(
+        (element) => !element.getAttribute("data-fid") || !element.getAttribute("data-action-id"),
+      );
+      return { total: actionable.length, missing: missing.length };
+    });
+
+    expect(audit.total).toBeGreaterThan(0);
+    expect(audit.missing).toBe(0);
+  }
+});
+
+test("search and add to cart works for dealer", async ({ page }) => {
+  await clearCart(page);
+
+  await page.goto("/dealer/search");
+  await page.locator("main input[placeholder*='Search']").first().fill("LR164821ES");
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(900);
+
+  await expect(page.getByRole("button", { name: /Add to Cart|Add Replacement/i }).first()).toBeVisible();
+
+  const search = await dealerFetch(page, "/search?q=LR164821ES&page=1&limit=10");
+  const firstProductCode = search.json?.data?.items?.[0]?.productCode;
+  expect(firstProductCode).toBeTruthy();
+  const productId = firstProductCode === "LR164821ES" ? "prd-lr164821es" : "prd-lr186413";
+  const add = await dealerFetch(page, "/cart/items", {
+    method: "POST",
+    body: { productId, qty: 1 },
+  });
+  expect(add.status).toBe(200);
+
+  await page.goto("/dealer/cart");
+  await expect(page.getByRole("heading", { name: "Shopping Cart" })).toBeVisible();
+  const cart = await dealerFetch(page, "/cart");
+  expect((cart.json?.data?.items || []).length).toBeGreaterThan(0);
+});
+
+test("checkout creates order and order is visible in dealer orders api", async ({ page }) => {
+  await clearCart(page);
+  await dealerFetch(page, "/cart/items", {
+    method: "POST",
+    body: { productId: "prd-lr164821es", qty: 1 },
   });
 
-  test("search with part type filter", async ({ page }) => {
-    await page.goto("/dealer/search");
-    await page.getByPlaceholder(/Search/i).fill("Product");
+  await page.goto("/dealer/checkout");
+  await page.getByRole("button", { name: /Standard/i }).first().click();
+  await page.getByRole("button", { name: "Continue" }).first().click();
+  await page.getByRole("button", { name: /Continue|Processing/i }).first().click();
 
-    // Select part type filter
-    await page.locator("#part-type-filter").selectOption("Genuine");
-    await page.keyboard.press("Enter");
-
-    // Wait for search to complete
-    await page.waitForTimeout(1000);
-
-    // Page should still be functional
-    await expect(page.getByRole("heading", { name: "Search Parts" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Order Confirmed" })).toBeVisible({
+    timeout: 15000,
   });
+  const orderNo = (await page.locator("text=/ORD-/").first().textContent())?.trim() || "";
+  expect(orderNo).toContain("ORD-");
 
-  test("search with stock filter", async ({ page }) => {
-    await page.goto("/dealer/search");
-    await page.getByPlaceholder(/Search/i).fill("Product");
-
-    // Select stock filter
-    await page.locator("#stock-filter").selectOption("In Stock");
-    await page.keyboard.press("Enter");
-
-    // Wait for search to complete
-    await page.waitForTimeout(1000);
-
-    // Page should still be functional
-    await expect(page.getByRole("heading", { name: "Search Parts" })).toBeVisible();
-  });
+  const orders = await dealerFetch(page, "/orders");
+  const orderNos = (orders.json?.data?.orders || []).map((order: any) => order.orderNo);
+  expect(orderNos).toContain(orderNo);
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 
@@ -82,35 +82,49 @@ export function useImportProcessor(options: UseImportProcessorOptions = {}) {
     refetchInterval,
   });
 
-  // Fetch templates
-  const { data: templates, isLoading: isLoadingTemplates } = useQuery({
-    queryKey: ["import-templates"],
-    queryFn: async () => {
-      const response = await api.get("/admin/templates");
-      return response.data as UploadTemplate[];
-    },
-  });
+  // Templates are fetched on-demand per import type
+  const [templates, setTemplates] = useState<UploadTemplate[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
 
-  // Get template for a specific import type
+  // Get template for a specific import type (fetches from API)
   const getTemplate = useCallback(
-    (importType: ImportType): UploadTemplate | null => {
-      return templates?.find((t) => t.importType === importType) || null;
+    async (importType: ImportType): Promise<UploadTemplate | null> => {
+      try {
+        const response = await api.get(`/admin/imports/templates/${importType}`);
+        const template = response.data?.template as UploadTemplate | undefined;
+        if (template) {
+          setTemplates((prev) => {
+            const exists = prev.some((t) => t.importType === template.importType);
+            if (exists) return prev;
+            return [...prev, template];
+          });
+          return template;
+        }
+        return null;
+      } catch {
+        return null;
+      }
     },
-    [templates]
+    []
   );
 
   // Download template
   const downloadTemplate = useCallback(async (template: UploadTemplate) => {
-    const response = await api.get(template.downloadUrl, { responseType: "blob" });
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = template.templateName || "template.xlsx";
-    link.click();
-    window.URL.revokeObjectURL(url);
+    try {
+      const response = await api.get(template.downloadUrl, { responseType: "blob" });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = template.templateName || "template.xlsx";
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to download template:", error);
+    }
   }, []);
 
-  // Upload file
+  // Run import (triggers server-side import processing)
+  // Note: File is selected for validation but actual import reads from server-side configured paths
   const uploadFile = useCallback(
     async (
       file: File,
@@ -120,19 +134,15 @@ export function useImportProcessor(options: UseImportProcessorOptions = {}) {
       setUploadState({ step: "uploading", progress: 20, error: null, batchId: null });
 
       try {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("importType", importType);
-
-        if (importType === "SPECIAL_PRICES" && options?.startsAt && options?.endsAt) {
-          formData.append("startsAt", options.startsAt);
-          formData.append("endsAt", options.endsAt);
-        }
-
         setUploadState((prev) => ({ ...prev, step: "validating", progress: 50 }));
 
-        const response = await api.post("/admin/imports/upload", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
+        // Call the import/run endpoint with JSON payload
+        const response = await api.post("/admin/imports/run", {
+          importType,
+          fileName: file.name,
+          ...(importType === "SPECIAL_PRICES" && options?.startsAt && options?.endsAt
+            ? { startsAt: options.startsAt, endsAt: options.endsAt }
+            : {}),
         });
 
         setUploadState((prev) => ({ ...prev, step: "finalizing", progress: 80 }));
@@ -140,7 +150,7 @@ export function useImportProcessor(options: UseImportProcessorOptions = {}) {
         // Short delay to show finalizing step
         await new Promise((resolve) => setTimeout(resolve, 500));
 
-        const batchId = response.data?.batchId || response.data?.id;
+        const batchId = response.data?.batch?.batchId || response.data?.batchId || response.data?.id;
 
         setUploadState({
           step: "complete",
@@ -154,7 +164,7 @@ export function useImportProcessor(options: UseImportProcessorOptions = {}) {
 
         return { success: true, batchId };
       } catch (error: any) {
-        const errorMessage = error.response?.data?.message || error.message || "Upload failed";
+        const errorMessage = error.response?.data?.message || error.message || "Import failed";
         setUploadState({
           step: "error",
           progress: 0,

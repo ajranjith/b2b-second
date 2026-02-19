@@ -9,6 +9,8 @@ import {
   type CartItem,
 } from "@/lib/services/dealerApi";
 
+const CART_STORAGE_KEY = "dealer_cart_v1";
+
 type CartState = {
   items: CartItem[];
   subtotal: number;
@@ -29,46 +31,95 @@ export function DealerCartProvider({ children }: { children: React.ReactNode }) 
   const computeSubtotal = (nextItems: CartItem[]) =>
     nextItems.reduce((sum, item) => sum + item.part.price * item.qty, 0);
 
+  const loadPersistedCart = (): CartSummary | null => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem(CART_STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as CartSummary;
+      if (!Array.isArray(parsed.items)) return null;
+      return { items: parsed.items, subtotal: Number(parsed.subtotal || 0) };
+    } catch {
+      return null;
+    }
+  };
+
+  const persistCart = (nextItems: CartItem[], nextSubtotal: number) => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify({ items: nextItems, subtotal: nextSubtotal }),
+    );
+  };
+
   const syncCart = async () => {
     const cart = await getCart();
+    if (cart.items.length === 0) {
+      setItems((prev) => prev);
+      setSubtotal((prev) => prev);
+      return;
+    }
     setItems([...cart.items]);
     setSubtotal(cart.subtotal);
   };
 
   useEffect(() => {
+    const persisted = loadPersistedCart();
+    if (persisted && persisted.items.length > 0) {
+      setItems(persisted.items);
+      setSubtotal(persisted.subtotal || computeSubtotal(persisted.items));
+    }
     syncCart().finally(() => setIsLoading(false));
   }, []);
 
+  useEffect(() => {
+    persistCart(items, subtotal);
+  }, [items, subtotal]);
+
   const addItem = async (part: CartItem["part"], qty = 1) => {
+    let optimisticItems: CartItem[] = [];
     setItems((prev) => {
       const existing = prev.find((item) => item.part.id === part.id);
-      const nextItems = existing
+      optimisticItems = existing
         ? prev.map((item) => (item.part.id === part.id ? { ...item, qty: item.qty + qty } : item))
         : [...prev, { id: `cart-${Date.now()}`, part, qty }];
-      setSubtotal(computeSubtotal(nextItems));
-      return nextItems;
+      setSubtotal(computeSubtotal(optimisticItems));
+      return optimisticItems;
     });
     try {
       const updated = await addToCart(part, qty);
-      setItems([...updated.items]);
-      setSubtotal(updated.subtotal);
+      if (updated.items.length > 0) {
+        setItems([...updated.items]);
+        setSubtotal(updated.subtotal);
+      }
     } catch (error) {
       console.error("Cart add failed, keeping local state.", error);
+      setItems(optimisticItems);
+      setSubtotal(computeSubtotal(optimisticItems));
     }
   };
 
   const updateQty = async (itemId: string, qty: number) => {
+    let optimisticItems: CartItem[] = [];
     setItems((prev) => {
-      const nextItems = prev.map((item) => (item.id === itemId ? { ...item, qty } : item));
-      setSubtotal(computeSubtotal(nextItems));
-      return nextItems;
+      optimisticItems = prev.map((item) => (item.id === itemId ? { ...item, qty } : item));
+      setSubtotal(computeSubtotal(optimisticItems));
+      return optimisticItems;
     });
     try {
       const updated = await updateCartItem(itemId, qty);
-      setItems([...updated.items]);
-      setSubtotal(updated.subtotal);
+      if (updated.items.length > 0) {
+        setItems([...updated.items]);
+        setSubtotal(updated.subtotal);
+      } else {
+        // Ignore empty server snapshots for qty updates; keep optimistic UI.
+        setItems(optimisticItems);
+        setSubtotal(computeSubtotal(optimisticItems));
+      }
     } catch (error) {
       console.error("Cart update failed, keeping local state.", error);
+      setItems(optimisticItems);
+      setSubtotal(computeSubtotal(optimisticItems));
     }
   };
 
@@ -90,6 +141,9 @@ export function DealerCartProvider({ children }: { children: React.ReactNode }) 
   const clearCart = () => {
     setItems([]);
     setSubtotal(0);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(CART_STORAGE_KEY);
+    }
     // TODO: Call API to clear cart on server
   };
 

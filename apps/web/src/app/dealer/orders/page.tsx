@@ -234,13 +234,6 @@ export default function DealerOrdersPage() {
         <DataTable columns={columns} rows={rows} density={density} />
       )}
 
-      {filteredOrders[0]?.id && (
-        <div className="flex justify-end">
-          <Link href={`/dealer/process-order?id=${filteredOrders[0].id}`}>
-            <Button variant="outline">Process an Order</Button>
-          </Link>
-        </div>
-      )}
     </>
   );
 }

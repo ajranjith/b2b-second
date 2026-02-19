@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { getOrderById, getOrderTimeline } from "@/lib/services/dealerApi";
@@ -80,9 +79,6 @@ export default function DealerOrderDetailPage() {
         </div>
         <div className="flex items-center gap-3">
           <StatusChip label={order.status} tone={statusTone[order.status]} />
-          <Link href={`/dealer/process-order?id=${order.id}`}>
-            <Button variant="outline">Process Order</Button>
-          </Link>
           <Button className="bg-blue-600 text-white hover:bg-blue-700">Download PDF</Button>
         </div>
       </div>

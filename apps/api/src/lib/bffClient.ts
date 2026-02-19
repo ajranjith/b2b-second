@@ -8,14 +8,11 @@
  * These enforce namespace isolation at the client level.
  */
 
-import { Namespace } from "@repo/identity";
-import { getContext, getTraceIdOrThrow } from "./runtimeContext";
+import type { Namespace } from "@repo/identity";
+import { getEnvelope } from "./runtimeContext";
 
-const TRACE_HEADER = "x-trace-id";
 const SESSION_HEADER = "x-session-id";
 const NAMESPACE_HEADER = "x-app-namespace";
-const FEATURE_HEADER = "x-feature-id";
-const OPERATION_HEADER = "x-operation-id";
 
 export interface BffClientOptions {
   baseUrl?: string;
@@ -33,28 +30,21 @@ export interface BffRequestOptions extends RequestInit {
  * Throws if trace ID is not available or namespace mismatch
  */
 function getTraceHeaders(requiredNamespace?: Namespace): Record<string, string> {
-  const ctx = getContext();
-
-  // Always enforce trace ID presence
-  getTraceIdOrThrow();
+  const ctx = getEnvelope();
 
   if (!ctx) {
     throw new Error("BffClientContextMissing: Cannot make internal request without runtime context");
   }
 
-  // Enforce namespace if specified
-  if (requiredNamespace && ctx.namespace !== requiredNamespace) {
+  if (requiredNamespace && ctx.ns !== requiredNamespace) {
     throw new Error(
-      `BffClientNamespaceMismatch: Current context namespace '${ctx.namespace}' does not match required namespace '${requiredNamespace}'`,
+      `BffClientNamespaceMismatch: Current context namespace '${ctx.ns}' does not match required namespace '${requiredNamespace}'`,
     );
   }
 
   return {
-    [TRACE_HEADER]: ctx.traceId,
-    [SESSION_HEADER]: ctx.sessionId,
-    [NAMESPACE_HEADER]: ctx.namespace,
-    [FEATURE_HEADER]: ctx.featureId,
-    [OPERATION_HEADER]: ctx.operationId,
+    [SESSION_HEADER]: ctx.sid,
+    [NAMESPACE_HEADER]: ctx.ns,
   };
 }
 
@@ -62,12 +52,7 @@ function getTraceHeaders(requiredNamespace?: Namespace): Record<string, string> 
  * Get trace headers with optional validation skip (use sparingly)
  */
 function getTraceHeadersOptional(skipValidation = false): Record<string, string> {
-  const ctx = getContext();
-
-  if (!skipValidation) {
-    getTraceIdOrThrow();
-  }
-
+  const ctx = getEnvelope();
   if (!ctx) {
     if (skipValidation) {
       return {};
@@ -76,11 +61,8 @@ function getTraceHeadersOptional(skipValidation = false): Record<string, string>
   }
 
   return {
-    [TRACE_HEADER]: ctx.traceId,
-    [SESSION_HEADER]: ctx.sessionId,
-    [NAMESPACE_HEADER]: ctx.namespace,
-    [FEATURE_HEADER]: ctx.featureId,
-    [OPERATION_HEADER]: ctx.operationId,
+    [SESSION_HEADER]: ctx.sid,
+    [NAMESPACE_HEADER]: ctx.ns,
   };
 }
 
@@ -297,9 +279,6 @@ export const dealerFetch = dealerClient;
  * Export header constants for consistency
  */
 export const HEADERS = {
-  TRACE: TRACE_HEADER,
   SESSION: SESSION_HEADER,
   NAMESPACE: NAMESPACE_HEADER,
-  FEATURE: FEATURE_HEADER,
-  OPERATION: OPERATION_HEADER,
 } as const;

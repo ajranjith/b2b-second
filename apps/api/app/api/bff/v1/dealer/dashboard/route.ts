@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { requireRole } from "@/auth/requireRole";
 import { fail, ok } from "@/lib/response";
 import { getDealerDashboard } from "@/services/dashboardService";
+import { getDealerAccount } from "@/services/dealerAccountService";
 import { withEnvelope } from "@/lib/withEnvelope";
 
 const resolveAccountNo = (request: NextRequest) => {
@@ -25,7 +26,12 @@ async function handleGET(request: NextRequest) {
     return fail({ message: auth.message }, auth.status);
   }
 
-  const accountNo = resolveAccountNo(request);
+  let accountNo = resolveAccountNo(request);
+  if (!accountNo && auth.user?.dealerAccountId) {
+    const dealerAccount = await getDealerAccount(auth.user.dealerAccountId);
+    accountNo = dealerAccount.account.accountNo || null;
+  }
+
   const data = await getDealerDashboard(accountNo);
   return ok(data);
 }

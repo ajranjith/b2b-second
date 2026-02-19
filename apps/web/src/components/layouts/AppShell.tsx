@@ -7,14 +7,25 @@ import { AnnouncementTicker } from "@/components/global/AnnouncementTicker";
 import { SideNav } from "@/components/layouts/SideNav";
 import { BottomNav } from "@/components/layouts/BottomNav";
 import { MessageDrawer } from "@/components/global/MessageDrawer";
+import { cn } from "@/lib/utils";
 import type { Announcement } from "@/types/dealer";
 
 interface AppShellProps {
   children: React.ReactNode;
-  announcements: Announcement[];
+  announcements?: Announcement[];
+  header?: React.ReactNode;
+  ticker?: React.ReactNode;
+  sideNav?: React.ReactNode;
+  bottomNav?: React.ReactNode;
 }
 
-export function AppShell({ children, announcements }: AppShellProps) {
+interface AppShellBlockProps {
+  children: React.ReactNode;
+  className?: string;
+  spacing?: "none" | "small" | "medium" | "large";
+}
+
+export function AppShell({ children, announcements = [], header, ticker, sideNav, bottomNav }: AppShellProps) {
   const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
@@ -52,19 +63,21 @@ export function AppShell({ children, announcements }: AppShellProps) {
       )}
 
       <div className="sticky top-0 z-50 bg-white">
-        <ReferenceHeader />
+        {header ?? <ReferenceHeader />}
         <div className="h-10 border-b border-slate-200">
-          <AnnouncementTicker
-            announcements={announcements}
-            onAnnouncementClick={handleAnnouncementClick}
-            autoRotateInterval={8}
-          />
+          {ticker ?? (
+            <AnnouncementTicker
+              announcements={announcements}
+              onAnnouncementClick={handleAnnouncementClick}
+              autoRotateInterval={8}
+            />
+          )}
         </div>
       </div>
 
       <div className="flex">
         <aside className="hidden lg:block fixed left-0 top-[152px] bottom-0 w-[260px] bg-white border-r border-slate-200 overflow-y-auto">
-          <SideNav />
+          {sideNav ?? <SideNav />}
         </aside>
 
         {isSideNavOpen && (
@@ -74,7 +87,7 @@ export function AppShell({ children, announcements }: AppShellProps) {
               onClick={() => setIsSideNavOpen(false)}
             />
             <aside className="lg:hidden fixed left-0 top-0 bottom-0 w-[260px] bg-white z-50 overflow-y-auto">
-              <SideNav onNavigate={() => setIsSideNavOpen(false)} />
+              {sideNav ?? <SideNav onNavigate={() => setIsSideNavOpen(false)} />}
             </aside>
           </>
         )}
@@ -87,7 +100,7 @@ export function AppShell({ children, announcements }: AppShellProps) {
       </div>
 
       <div className="lg:hidden">
-        <BottomNav />
+        {bottomNav ?? <BottomNav />}
       </div>
 
       <MessageDrawer
@@ -97,4 +110,20 @@ export function AppShell({ children, announcements }: AppShellProps) {
       />
     </div>
   );
+}
+
+export function AppShellContent({ children, className }: AppShellBlockProps) {
+  return <div className={className}>{children}</div>;
+}
+
+export function AppShellSection({ children, className, spacing = "none" }: AppShellBlockProps) {
+  const spacingClass =
+    spacing === "small"
+      ? "space-y-3"
+      : spacing === "medium"
+        ? "space-y-6"
+        : spacing === "large"
+          ? "space-y-8"
+          : "";
+  return <section className={cn(spacingClass, className)}>{children}</section>;
 }
