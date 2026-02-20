@@ -7,7 +7,6 @@ import { ReferenceHeader } from '@/components/layouts/ReferenceHeader';
 import { AnnouncementTicker, MessageDrawer } from '@/components/global';
 import { LoadingProvider } from '@/components/global/LoadingProvider';
 import type { Announcement } from '@/types/dealer';
-import { mockAnnouncements } from '@/mocks/dealer-data';
 import { Toaster } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
 
@@ -54,7 +53,7 @@ function DealerLayoutContent({ children }: { children: React.ReactNode }) {
       >
         <div className="h-10">
           <AnnouncementTicker
-            announcements={mockAnnouncements}
+            announcements={[] /* TODO: fetch from API */}
             onAnnouncementClick={handleAnnouncementClick}
           />
         </div>

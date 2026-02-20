@@ -7,7 +7,7 @@ import { DealerHeaderBar } from '@/components/portal/DealerHeaderBar';
 import { SideNav } from '@/components/portal/SideNav';
 import { BottomNav } from '@/components/portal/BottomNav';
 import { fetchAnnouncements } from '@/lib/services/dealerApi';
-import { type Announcement } from '@/lib/mock/dealerData';
+import { type Announcement } from '@/types/portal';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);

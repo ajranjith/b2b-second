@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { type Announcement } from '@/lib/mock/dealerData';
+import { type Announcement } from '@/types/portal';
 
 type AnnouncementTickerProps = {
   announcements: Announcement[];

@@ -1,7 +1,7 @@
 'use client';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/ui';
-import { type Announcement } from '@/lib/mock/dealerData';
+import { type Announcement } from '@/types/portal';
 import { Paperclip } from 'lucide-react';
 
 type MessageDrawerProps = {

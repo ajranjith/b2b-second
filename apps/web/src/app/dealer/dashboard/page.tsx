@@ -14,23 +14,8 @@ const statusTone: Record<string, 'blue' | 'green' | 'amber' | 'red' | 'slate'> =
   Backorder: 'red',
 };
 
-const newsItems = [
-  {
-    id: 'news-1',
-    title: 'Jaguar V6 stock uplift this week',
-    summary: 'Priority pick waves start 13:00. Confirm any hotlines with support.',
-  },
-  {
-    id: 'news-2',
-    title: 'Aftermarket band refresh',
-    summary: 'Pricing refresh runs overnight with minimal downtime.',
-  },
-  {
-    id: 'news-3',
-    title: 'Dispatch SLA reminder',
-    summary: 'Express cutoff is 14:00. Standard dispatch runs at 16:30.',
-  },
-];
+// TODO: Fetch news items from API
+const newsItems: { id: string; title: string; summary: string }[] = [];
 
 export default function DealerDashboard() {
   const [orders, setOrders] = useState<Awaited<ReturnType<typeof getOrders>>>([]);

@@ -11,7 +11,6 @@ import { OrderConfirmation } from '@/components/dealer/OrderConfirmation';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { showToast, commonToasts } from '@/components/global';
-import { mockProducts } from '@/mocks/dealer-data';
 
 /**
  * Checkout Page
@@ -29,21 +28,8 @@ export default function CheckoutPage() {
   const [orderNumber, setOrderNumber] = useState('');
   const [showEmailWarning] = useState(true); // Non-blocking warning
 
-  // Mock cart items (in real app, get from context)
-  const [cartItems] = useState<CartItem[]>([
-    {
-      id: 'cart-1',
-      product: mockProducts[0],
-      quantity: 2,
-      lineTotal: mockProducts[0].dealerPrice * 2,
-    },
-    {
-      id: 'cart-2',
-      product: mockProducts[1],
-      quantity: 1,
-      lineTotal: mockProducts[1].dealerPrice * 1,
-    },
-  ]);
+  // TODO: Load cart items from cart context
+  const [cartItems] = useState<CartItem[]>([]);
 
   const calculateSubtotal = () => {
     return cartItems.reduce((sum, item) => sum + item.lineTotal, 0);

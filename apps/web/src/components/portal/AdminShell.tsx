@@ -8,7 +8,7 @@ import { AdminHeaderBar } from '@/components/portal/AdminHeaderBar';
 import { AdminSideNav } from '@/components/portal/AdminSideNav';
 import { AdminBottomNav } from '@/components/portal/AdminBottomNav';
 import { fetchAnnouncements } from '@/lib/services/dealerApi';
-import { type Announcement } from '@/lib/mock/dealerData';
+import { type Announcement } from '@/types/portal';
 import { useLoadingCursor } from '@/hooks/useLoadingCursor';
 
 export function AdminShell({ children }: { children: React.ReactNode }) {

@@ -8,7 +8,6 @@ import { CartTable } from '@/components/dealer/CartTable';
 import { OrderSummary } from '@/components/dealer/OrderSummary';
 import { showToast, commonToasts } from '@/components/global';
 import { Button } from '@/components/ui/button';
-import { mockProducts } from '@/mocks/dealer-data';
 
 /**
  * Cart Page
@@ -22,27 +21,8 @@ import { mockProducts } from '@/mocks/dealer-data';
 export default function CartPage() {
   const router = useRouter();
 
-  // Mock cart items for demonstration
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: 'cart-1',
-      product: mockProducts[0],
-      quantity: 2,
-      lineTotal: mockProducts[0].dealerPrice * 2,
-    },
-    {
-      id: 'cart-2',
-      product: mockProducts[1],
-      quantity: 1,
-      lineTotal: mockProducts[1].dealerPrice * 1,
-    },
-    {
-      id: 'cart-3',
-      product: mockProducts[3],
-      quantity: 5,
-      lineTotal: mockProducts[3].dealerPrice * 5,
-    },
-  ]);
+  // TODO: Load cart items from API / cart context
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
   const handleUpdateQuantity = (itemId: string, quantity: number) => {
     setCartItems((prev) =>

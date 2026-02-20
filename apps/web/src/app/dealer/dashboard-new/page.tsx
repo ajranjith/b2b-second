@@ -15,12 +15,6 @@ import { NewsFeed, NewsFeedSkeleton } from '@/components/dealer/NewsFeed';
 import { AppShellSection } from '@/components/layouts';
 import { showToast } from '@/components/global';
 import type { DashboardKPI, Order, NewsItem } from '@/types/dealer';
-import { dashboardAPI, orderAPI } from '@/services/dealer-api';
-import {
-  mockDashboardKPI,
-  mockOrders,
-  mockNewsItems,
-} from '@/mocks/dealer-data';
 
 /**
  * Dealer Dashboard Page
@@ -46,15 +40,6 @@ export default function DealerDashboardPage() {
         setError(null);
 
         // TODO: Replace with real API calls
-        // Simulating API delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Use mock data for now
-        setKpis(mockDashboardKPI);
-        setRecentOrders(mockOrders.slice(0, 10));
-        setNews(mockNewsItems);
-
-        // Real API calls (commented out for now):
         // const [kpisData, ordersData, newsData] = await Promise.all([
         //   dashboardAPI.getKPIs(),
         //   dashboardAPI.getRecentOrders(),

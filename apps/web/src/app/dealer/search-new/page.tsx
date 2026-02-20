@@ -7,8 +7,6 @@ import { SearchFilters } from '@/components/dealer/SearchFilters';
 import { ProductResultsTable } from '@/components/dealer/ProductResultsTable';
 import { CartPreview } from '@/components/dealer/CartPreview';
 import { showToast, commonToasts } from '@/components/global';
-import { productAPI } from '@/services/dealer-api';
-import { mockProducts } from '@/mocks/dealer-data';
 import { Skeleton } from '@/components/ui/skeleton';
 
 /**
@@ -48,44 +46,9 @@ export default function SearchPartsPage() {
         setError(null);
 
         // TODO: Replace with real API call
-        // Simulating API delay
-        await new Promise((resolve) => setTimeout(resolve, 800));
-
-        // Use mock data for now
-        const filtered = mockProducts.filter((p) => {
-          const matchesQuery =
-            p.lrNo.toLowerCase().includes(filters.query.toLowerCase()) ||
-            p.jagAlt?.toLowerCase().includes(filters.query.toLowerCase()) ||
-            p.description.toLowerCase().includes(filters.query.toLowerCase());
-
-          const matchesAvailability =
-            !filters.availability ||
-            filters.availability.length === 0 ||
-            filters.availability.includes(p.availability);
-
-          const matchesPrice =
-            !filters.priceRange ||
-            ((!filters.priceRange.min || p.dealerPrice >= filters.priceRange.min) &&
-              (!filters.priceRange.max || p.dealerPrice <= filters.priceRange.max));
-
-          return matchesQuery && matchesAvailability && matchesPrice;
-        });
-
-        // Apply sorting
-        let sorted = [...filtered];
-        if (filters.sortBy === 'price_asc') {
-          sorted.sort((a, b) => a.dealerPrice - b.dealerPrice);
-        } else if (filters.sortBy === 'price_desc') {
-          sorted.sort((a, b) => b.dealerPrice - a.dealerPrice);
-        } else if (filters.sortBy === 'part_number') {
-          sorted.sort((a, b) => a.lrNo.localeCompare(b.lrNo));
-        }
-
-        setProducts(sorted);
-
-        // Real API call (commented out):
         // const response = await productAPI.search(filters, 1, 50);
         // setProducts(response.data);
+        setProducts([]);
       } catch (err) {
         console.error('Failed to fetch products:', err);
         setError('Failed to load products');

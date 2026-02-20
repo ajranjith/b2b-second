@@ -9,7 +9,6 @@ import {
   MessageDrawer,
 } from '@/components/global';
 import type { Announcement } from '@/types/dealer';
-import { mockAnnouncements } from '@/mocks/dealer-data';
 import { Toaster } from '@/components/ui/sonner';
 
 function DealerLayoutContent({ children }: { children: React.ReactNode }) {
@@ -43,7 +42,7 @@ function DealerLayoutContent({ children }: { children: React.ReactNode }) {
         }
         ticker={
           <AnnouncementTicker
-            announcements={mockAnnouncements}
+            announcements={[] /* TODO: fetch from API */}
             onAnnouncementClick={handleAnnouncementClick}
           />
         }
