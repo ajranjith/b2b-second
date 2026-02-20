@@ -150,3 +150,52 @@ body.app-loading * {
         text-wrap: balance;
     }
 }
+
+/* ── Garaze-style scroll-triggered animations ─────────────────── */
+[data-scroll] {
+    opacity: 0;
+    transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-scroll="fade-up"] {
+    transform: translateY(40px);
+}
+[data-scroll="fade-down"] {
+    transform: translateY(-40px);
+}
+[data-scroll="fade-left"] {
+    transform: translateX(40px);
+}
+[data-scroll="fade-right"] {
+    transform: translateX(-40px);
+}
+[data-scroll="zoom-in"] {
+    transform: scale(0.9);
+}
+[data-scroll="flip-up"] {
+    transform: perspective(800px) rotateX(10deg) translateY(30px);
+}
+
+[data-scroll].scroll-visible {
+    opacity: 1;
+    transform: translateY(0) translateX(0) scale(1) rotateX(0);
+}
+
+/* ── Garaze keyframes ────────────────────────────────────────────── */
+@keyframes garaze-slideDown {
+    from { opacity: 0; transform: translateY(-100%); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes garaze-pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.05); }
+}
+@keyframes garaze-float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+}
+@keyframes garaze-spin-slow {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
