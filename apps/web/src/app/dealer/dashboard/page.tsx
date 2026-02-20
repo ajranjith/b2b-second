@@ -320,13 +320,24 @@ export default function DealerDashboard() {
 
   const recentOrders = useMemo(() => {
     if (orders.length === 0) return [];
-    return Array.from({ length: Math.min(10, orders.length) }, (_, i) => orders[i % orders.length]).map(
-      (order, idx) => ({
+    const nonBackorders = orders.filter((o) => o.status !== 'Backorder');
+    return nonBackorders.slice(0, 3).map((order, idx) => ({
+      ...order,
+      rowId: `${order.id}-${idx}`,
+      total: order.lines.reduce((sum, line) => sum + line.qty * line.unitPrice, 0),
+    }));
+  }, [orders]);
+
+  const recentBackorders = useMemo(() => {
+    if (orders.length === 0) return [];
+    return orders
+      .filter((o) => o.status === 'Backorder')
+      .slice(0, 3)
+      .map((order, idx) => ({
         ...order,
-        rowId: `${order.id}-${idx}`,
+        rowId: `${order.id}-bo-${idx}`,
         total: order.lines.reduce((sum, line) => sum + line.qty * line.unitPrice, 0),
-      })
-    );
+      }));
   }, [orders]);
 
   /* ── Loading state ── */
@@ -416,44 +427,94 @@ export default function DealerDashboard() {
 
         {/* ── Main Content Grid ── */}
         <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-          {/* ── Recent Orders Table ── */}
-          <div
-            className="rounded-2xl border border-slate-200/60 bg-white shadow-sm overflow-hidden
-                        opacity-0 animate-[fadeSlideUp_0.5s_ease-out_forwards]"
-            style={{ animationDelay: '500ms' }}
-          >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">Recent Orders</h3>
-                <p className="text-sm text-slate-500 mt-0.5">Hover an order to see line items</p>
+          {/* ── Left Column: Recent Orders + Backorders ── */}
+          <div className="space-y-6">
+            {/* ── Recent Orders Table (3 items) ── */}
+            <div
+              className="rounded-2xl border border-slate-200/60 bg-white shadow-sm overflow-hidden
+                          opacity-0 animate-[fadeSlideUp_0.5s_ease-out_forwards]"
+              style={{ animationDelay: '500ms' }}
+            >
+              <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Recent Orders</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">Hover an order to see line items</p>
+                </div>
+                <Link
+                  href="/dealer/orders"
+                  className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  View all
+                  <ArrowUpRight className="h-4 w-4" />
+                </Link>
               </div>
-              <Link
-                href="/dealer/orders"
-                className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-              >
-                View all
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/50">
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Order</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Dispatch</th>
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</th>
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 w-10" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentOrders.map((order, idx) => (
+                      <OrderRow key={order.rowId} order={order} delay={550 + idx * 50} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/50">
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Order</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Dispatch</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 w-10" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentOrders.map((order, idx) => (
-                    <OrderRow key={order.rowId} order={order} delay={550 + idx * 50} />
-                  ))}
-                </tbody>
-              </table>
+            {/* ── Recent Backorders Table (3 items) ── */}
+            <div
+              className="rounded-2xl border border-slate-200/60 bg-white shadow-sm overflow-hidden
+                          opacity-0 animate-[fadeSlideUp_0.5s_ease-out_forwards]"
+              style={{ animationDelay: '700ms' }}
+            >
+              <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Recent Backorders</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">Items awaiting stock</p>
+                </div>
+                <Link
+                  href="/dealer/backorders"
+                  className="inline-flex items-center gap-1 text-sm font-semibold text-rose-600 hover:text-rose-700 transition-colors"
+                >
+                  View all
+                  <ArrowUpRight className="h-4 w-4" />
+                </Link>
+              </div>
+
+              {recentBackorders.length === 0 ? (
+                <div className="px-6 py-8 text-center text-sm text-slate-400">
+                  No backorders — all items are in stock.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50/50">
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Order</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Dispatch</th>
+                        <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</th>
+                        <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 w-10" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentBackorders.map((order, idx) => (
+                        <OrderRow key={order.rowId} order={order} delay={750 + idx * 50} />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
 
