@@ -62,8 +62,37 @@ export async function removeCartItem(itemId: string): Promise<CartSummary> {
 }
 
 export async function getOrders(): Promise<Order[]> {
-  // TODO: fetch from API
-  return [];
+  // TODO: Replace with real API call — e.g. apiClient.getOrders(dealerAccountId)
+  // Stub data mirrors the seed script's 20 sample orders
+  const statuses: Order["status"][] = ["Processing", "Ready", "Shipped", "Backorder"];
+  const methods: Order["dispatchMethod"][] = ["Standard", "Express", "Collection"];
+
+  return Array.from({ length: 20 }, (_, i) => {
+    const idx = i + 1;
+    const lineCount = (i % 3) + 1;
+    return {
+      id: `order-${idx}`,
+      orderNo: `ORD-${String(1000 + idx)}`,
+      createdAt: new Date(2025, 0, idx).toISOString().split("T")[0],
+      status: statuses[i % statuses.length],
+      dispatchMethod: methods[i % methods.length],
+      poRef: `PO-${String(5000 + idx)}`,
+      notes: "",
+      lines: Array.from({ length: lineCount }, (__, j) => ({
+        id: `line-${idx}-${j}`,
+        sku: `P-${String(j * 11 + idx).padStart(4, "0")}`,
+        description: [
+          "Timing Chain Kit",
+          "Brake Disc Set Front",
+          "Oil Filter Element",
+          "Alternator Assembly",
+          "Suspension Bush Kit",
+        ][(idx + j) % 5],
+        qty: (j + 1) * 2,
+        unitPrice: +(((idx * 7 + j * 13) % 200) + 15).toFixed(2),
+      })),
+    };
+  });
 }
 
 export async function getOrderById(id: string): Promise<Order | null> {

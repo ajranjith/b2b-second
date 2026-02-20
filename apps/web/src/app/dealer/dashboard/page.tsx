@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -43,14 +43,15 @@ const statusIcon: Record<string, typeof Package> = {
 /* ── Animated counter hook ───────────────────────────────────── */
 function useAnimatedCounter(target: number, duration = 1200) {
   const [count, setCount] = useState(0);
-  const started = useRef(false);
 
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    if (target === 0) return;
-    const step = Math.max(1, Math.ceil(target / (duration / 16)));
+    if (target === 0) {
+      setCount(0);
+      return;
+    }
+    setCount(0);
     let current = 0;
+    const step = Math.max(1, Math.ceil(target / (duration / 16)));
     const timer = setInterval(() => {
       current = Math.min(current + step, target);
       setCount(current);
@@ -356,31 +357,23 @@ export default function DealerDashboard() {
 
   if (!orders.length) {
     return (
-      <div className="space-y-8">
-        <DealerBanner />
-        <Card>
-          <CardContent className="py-16 text-center text-slate-500">
-            No orders yet. Start by searching for parts and placing your first order.
-          </CardContent>
-        </Card>
-      </div>
+      <>
+        <AnimationStyles />
+        <div className="space-y-8">
+          <DealerBanner />
+          <Card>
+            <CardContent className="py-16 text-center text-slate-500">
+              No orders yet. Start by searching for parts and placing your first order.
+            </CardContent>
+          </Card>
+        </div>
+      </>
     );
   }
 
   return (
     <>
-      {/* Inject keyframe animation */}
-      <style>{`
-        @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes shimmer {
-          0%   { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-      `}</style>
-
+      <AnimationStyles />
       <div className="space-y-8">
         {/* ── Dealer Welcome Banner ── */}
         <DealerBanner />
@@ -550,6 +543,22 @@ export default function DealerDashboard() {
         </div>
       </div>
     </>
+  );
+}
+
+/* ── Shared animation keyframes ───────────────────────────────── */
+function AnimationStyles() {
+  return (
+    <style>{`
+      @keyframes fadeSlideUp {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes shimmer {
+        0%   { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+      }
+    `}</style>
   );
 }
 
