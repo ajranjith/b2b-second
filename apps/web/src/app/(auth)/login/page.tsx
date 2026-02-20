@@ -57,16 +57,15 @@ export default function LoginPage() {
 
             // Redirect based on role
             if (role === 'ADMIN') {
-                router.push('/admin');
+                router.replace('/admin/dashboard');
             } else if (role === 'DEALER') {
-                router.push('/dealer/search');
+                router.replace('/dealer/dashboard');
             } else {
-                router.push('/');
+                router.replace('/');
             }
         } catch (error: any) {
             const message = error.response?.data?.message || 'Invalid credentials. Please try again.';
             toast.error(message);
-        } finally {
             setIsLoading(false);
         }
     };
