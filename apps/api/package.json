@@ -3,7 +3,7 @@
     "version": "0.0.0",
     "private": true,
     "scripts": {
-        "dev": "tsx watch src/index.ts"
+        "dev": "tsx watch --env-file=../../packages/db/.env src/index.ts"
     },
     "dependencies": {
         "@fastify/cors": "^11.2.0",
