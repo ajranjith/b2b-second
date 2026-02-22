@@ -28,6 +28,7 @@ import {
 } from '@/ui';
 import { Upload, Package, Clock, Truck, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import api from '@/lib/api';
+import { toast } from 'sonner';
 import { DensityToggle } from '@/components/portal/DensityToggle';
 import { useLoadingCursor } from '@/hooks/useLoadingCursor';
 
@@ -87,18 +88,28 @@ export default function ImportsPage() {
 
     useLoadingCursor(isLoading);
 
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
     const handleUpload = async () => {
+        if (!selectedFile) {
+            toast.error('Please select a file to upload.');
+            return;
+        }
+
         setIsUploading(true);
         try {
-            const mockFilePath = `C:/uploads/mock_${Date.now()}.xlsx`;
-            await api.post('/admin/import', {
-                type: uploadType.startsWith('PRODUCTS') ? uploadType.split('_')[1] : uploadType,
-                filePath: mockFilePath
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('importType', uploadType);
+
+            await api.post('/admin/import', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
             });
             setIsUploadModalOpen(false);
-            alert('Import started successfully!');
+            setSelectedFile(null);
+            toast.success('Import started successfully!');
         } catch (e: any) {
-            alert('Upload failed: ' + e.message);
+            toast.error('Upload failed: ' + (e.response?.data?.message || e.message));
         } finally {
             setIsUploading(false);
         }
@@ -275,10 +286,18 @@ export default function ImportsPage() {
                                     <option value="BACKORDERS">Backorders</option>
                                 </select>
                             </div>
-                            <div className="border-2 border-dashed border-slate-200 rounded-lg p-8 text-center bg-slate-50">
+                            <label className="block border-2 border-dashed border-slate-200 rounded-lg p-8 text-center bg-slate-50 cursor-pointer hover:border-blue-400 transition-colors">
                                 <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
-                                <p className="text-sm text-slate-500">Click to select or drag and drop XLSX file</p>
-                            </div>
+                                <p className="text-sm text-slate-500">
+                                    {selectedFile ? selectedFile.name : 'Click to select or drag and drop XLSX file'}
+                                </p>
+                                <input
+                                    type="file"
+                                    accept=".xlsx,.xls,.csv"
+                                    className="hidden"
+                                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                                />
+                            </label>
                             <div className="flex justify-end gap-2">
                                 <Button variant="ghost" onClick={() => setIsUploadModalOpen(false)}>Cancel</Button>
                                 <Button

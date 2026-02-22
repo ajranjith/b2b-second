@@ -10,7 +10,6 @@ import {
   Crown,
   Eye,
   Package,
-  ShieldCheck,
   ShoppingCart,
   TrendingUp,
   Truck,
@@ -625,10 +624,28 @@ function AnimationStyles() {
 
 /* ═══════════════════════════════════════════════════════════════
    DEALER WELCOME BANNER
-   Shows account number, tier/band, and status
-   Data matches backend: Dealer.code, DealerBandAssignment.bandCode
+   Shows account number and status — all from API
    ═══════════════════════════════════════════════════════════════ */
 function DealerBanner() {
+  const [bannerData, setBannerData] = useState<{
+    accountNo: string;
+    companyName: string;
+    status: string;
+  } | null>(null);
+
+  useEffect(() => {
+    import('@/lib/api').then(({ default: apiClient }) => {
+      apiClient.get('/auth/me').then((res) => {
+        const u = res.data.user;
+        setBannerData({
+          accountNo: u.dealerAccountId || '-',
+          companyName: u.companyName || u.dealerInfo?.companyName || '',
+          status: 'Active',
+        });
+      }).catch(() => {});
+    });
+  }, []);
+
   return (
     <div
       className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900
@@ -653,10 +670,12 @@ function DealerBanner() {
             <h1 className="text-2xl md:text-3xl font-bold text-white">
               Welcome back
             </h1>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 border border-amber-500/30 px-3 py-1 text-xs font-semibold text-amber-300">
-              <Crown className="h-3.5 w-3.5" />
-              Premium Dealer
-            </span>
+            {bannerData?.companyName && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 border border-amber-500/30 px-3 py-1 text-xs font-semibold text-amber-300">
+                <Crown className="h-3.5 w-3.5" />
+                {bannerData.companyName}
+              </span>
+            )}
           </div>
           <p className="text-slate-400 text-sm max-w-md">
             Here&apos;s what needs your attention today. Hover over orders for detailed line items.
@@ -664,22 +683,16 @@ function DealerBanner() {
         </div>
 
         {/* Account Details */}
-        <div className="mt-6 md:mt-0 flex flex-wrap gap-4 md:gap-6">
-          <AccountDetail label="Account No." value="HB-2847" />
-          <AccountDetail label="Pricing Band" value="Band 1" />
-          <AccountDetail label="Terms" value="Net 30" />
-          <AccountDetail label="Status" value="Active" valueClassName="text-emerald-400" />
-        </div>
+        {bannerData && (
+          <div className="mt-6 md:mt-0 flex flex-wrap gap-4 md:gap-6">
+            <AccountDetail label="Account No." value={bannerData.accountNo} />
+            <AccountDetail label="Status" value={bannerData.status} valueClassName="text-emerald-400" />
+          </div>
+        )}
       </div>
 
-      {/* Band breakdown bar */}
+      {/* Manage Account link */}
       <div className="relative border-t border-slate-700/50 px-8 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">
-        <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Tier Pricing</span>
-        <div className="flex flex-wrap items-center gap-3">
-          <BandPill label="Genuine" band="Band 1" color="bg-blue-500/20 text-blue-300 border-blue-500/30" />
-          <BandPill label="Aftermarket" band="Band 2" color="bg-emerald-500/20 text-emerald-300 border-emerald-500/30" />
-          <BandPill label="Branded" band="Band 1" color="bg-purple-500/20 text-purple-300 border-purple-500/30" />
-        </div>
         <div className="ml-auto">
           <Link
             href="/dealer/account"
@@ -707,22 +720,5 @@ function AccountDetail({
       <p className="text-[11px] text-slate-500 uppercase tracking-wider">{label}</p>
       <p className={cn('text-sm font-semibold text-white mt-0.5', valueClassName)}>{value}</p>
     </div>
-  );
-}
-
-function BandPill({
-  label,
-  band,
-  color,
-}: {
-  label: string;
-  band: string;
-  color: string;
-}) {
-  return (
-    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium', color)}>
-      <ShieldCheck className="h-3 w-3" />
-      {label}: {band}
-    </span>
   );
 }

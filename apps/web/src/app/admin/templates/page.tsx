@@ -14,12 +14,6 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
 } from '@/ui';
 import { Download, FileSpreadsheet, FileText, Eye } from 'lucide-react';
 import api from '@/lib/api';
@@ -36,65 +30,6 @@ interface Template {
     templateType: string;
 }
 
-const sampleData: Record<string, { headers: string[]; rows: string[][]; notes: string[] }> = {
-    GENUINE_PARTS: {
-        headers: ['PartNo', 'Description', 'Band1Price', 'Band2Price', 'Band3Price', 'Band4Price', 'FreeStock', 'AllocatedStock'],
-        rows: [
-            ['LPB000010', 'Oil Filter - 2.5L Diesel', '12.50', '11.25', '10.00', '8.75', '150', '25'],
-            ['BP1001', 'Brake Pad Set - Front', '45.00', '40.50', '36.00', '31.50', '80', '12'],
-            ['STC1234', 'Spark Plug Set', '28.00', '25.20', '22.40', '19.60', '200', '0'],
-        ],
-        notes: [
-            'PartNo: Required - Unique part identifier',
-            'Description: Required - Part description',
-            'Band1-4Price: Required - Pricing for each band tier',
-            'FreeStock: Required - Available inventory',
-            'AllocatedStock: Optional - Reserved inventory',
-        ],
-    },
-    AFTERMARKET_PARTS: {
-        headers: ['PartNo', 'Description', 'Brand', 'Band1Price', 'Band2Price', 'Band3Price', 'Band4Price', 'FreeStock'],
-        rows: [
-            ['AM-123', 'Air Filter - Universal', 'Premium Auto', '8.50', '7.65', '6.80', '5.95', '300'],
-            ['AM-456', 'Wiper Blade Set', 'ClearView', '15.00', '13.50', '12.00', '10.50', '120'],
-        ],
-        notes: [
-            'PartNo: Required - Aftermarket part number',
-            'Description: Required - Part description',
-            'Brand: Required - Manufacturer brand',
-            'Band1-4Price: Required - Aftermarket pricing tiers',
-            'FreeStock: Required - Current stock level',
-        ],
-    },
-    BACKORDERS: {
-        headers: ['PartNo', 'DealerAccountNo', 'Quantity', 'ExpectedDate', 'Status'],
-        rows: [
-            ['LPB000010', 'DLR001', '50', '2024-02-15', 'CONFIRMED'],
-            ['BP1001', 'DLR002', '25', '2024-02-20', 'PENDING'],
-        ],
-        notes: [
-            'PartNo: Required - Part identifier from catalog',
-            'DealerAccountNo: Required - Dealer account reference',
-            'Quantity: Required - Number of units on backorder',
-            'ExpectedDate: Required - Estimated delivery date (YYYY-MM-DD)',
-            'Status: Required - CONFIRMED, PENDING, or CANCELLED',
-        ],
-    },
-    FULFILLMENT: {
-        headers: ['OrderNo', 'TrackingNumber', 'Carrier', 'ShippedDate', 'Status'],
-        rows: [
-            ['ORD-2024-001', 'TRK123456789', 'DPD', '2024-01-10', 'DISPATCHED'],
-            ['ORD-2024-002', 'TRK987654321', 'Royal Mail', '2024-01-11', 'IN_TRANSIT'],
-        ],
-        notes: [
-            'OrderNo: Required - Order reference number',
-            'TrackingNumber: Required - Carrier tracking ID',
-            'Carrier: Required - Shipping carrier name',
-            'ShippedDate: Required - Dispatch date (YYYY-MM-DD)',
-            'Status: Required - DISPATCHED, IN_TRANSIT, or DELIVERED',
-        ],
-    },
-};
 
 export default function TemplatesPage() {
     const [previewTemplate, setPreviewTemplate] = useState<string | null>(null);
@@ -134,9 +69,6 @@ export default function TemplatesPage() {
         return fileName.endsWith('.xlsx') ? FileSpreadsheet : FileText;
     };
 
-    const getPreviewData = (templateType: string) => {
-        return sampleData[templateType] || sampleData.GENUINE_PARTS;
-    };
 
     if (isLoading) {
         return (
@@ -222,69 +154,20 @@ export default function TemplatesPage() {
 
             {/* Preview Dialog */}
             <Dialog open={!!previewTemplate} onOpenChange={() => setPreviewTemplate(null)}>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>Template Format Preview</DialogTitle>
+                        <DialogTitle>Template Preview</DialogTitle>
                         <DialogDescription>
-                            Sample data showing the required format and column structure
+                            Download the template to see column structure and expected format.
                         </DialogDescription>
                     </DialogHeader>
 
-                    {previewTemplate && (
-                        <div className="space-y-6">
-                            {/* Sample Data Table */}
-                            <div className="border rounded-lg overflow-hidden">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="bg-blue-50">
-                                            {getPreviewData(previewTemplate).headers.map((header) => (
-                                                <TableHead
-                                                    key={header}
-                                                    className={`font-semibold text-blue-900 ${density === 'dense' ? 'py-2' : 'py-4'}`}
-                                                >
-                                                    {header}
-                                                </TableHead>
-                                            ))}
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                            {getPreviewData(previewTemplate).rows.map((row, idx) => (
-                                                <TableRow key={idx}>
-                                                    {row.map((cell, cellIdx) => (
-                                                        <TableCell
-                                                            key={cellIdx}
-                                                            className={`font-mono text-sm ${density === 'dense' ? 'py-2' : 'py-4'}`}
-                                                        >
-                                                            {cell}
-                                                        </TableCell>
-                                                    ))}
-                                                </TableRow>
-                                            ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
-
-                            {/* Column Descriptions */}
-                            <div className="bg-slate-50 rounded-lg p-4">
-                                <h4 className="font-semibold mb-3">Column Descriptions</h4>
-                                <ul className="space-y-2">
-                                    {getPreviewData(previewTemplate).notes.map((note, idx) => (
-                                        <li key={idx} className="text-sm text-slate-700 flex items-start">
-                                            <span className="text-blue-600 mr-2">•</span>
-                                            <span>{note}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <p className="text-sm text-blue-900">
-                                    <strong>Note:</strong> Ensure all required fields are filled and data formats match
-                                    the examples shown above. Invalid rows will be flagged during the import process.
-                                </p>
-                            </div>
-                        </div>
-                    )}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-sm text-blue-900">
+                            <strong>Tip:</strong> Download the template file to view the exact column headers and expected data format.
+                            Invalid rows will be flagged during the import process.
+                        </p>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>

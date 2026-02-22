@@ -5,7 +5,10 @@ import { orderEngine } from '@/services/OrderEngine';
 // GET /api/dealer/cart
 export async function GET(req: NextRequest) {
     try {
-        const dealerAccountId = req.headers.get('x-dealer-account-id') || 'D-001'; // Mock for now until full session middleware
+        const dealerAccountId = req.headers.get('x-dealer-account-id');
+        if (!dealerAccountId) {
+            return NextResponse.json({ error: 'Dealer account ID is required' }, { status: 401 });
+        }
 
         let cart = await prisma.cart.findFirst({
             where: { dealerAccountId },
@@ -34,7 +37,7 @@ export async function GET(req: NextRequest) {
                 description: item.product.description,
                 partType: item.product.partType
             },
-            price: 100 // Simplified
+            price: item.price ?? 0
         }));
 
         return NextResponse.json({
@@ -51,7 +54,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const { productId, qty } = await req.json();
-        const dealerAccountId = req.headers.get('x-dealer-account-id') || 'D-001';
+        const dealerAccountId = req.headers.get('x-dealer-account-id');
+        if (!dealerAccountId) {
+            return NextResponse.json({ error: 'Dealer account ID is required' }, { status: 401 });
+        }
 
         let cart = await prisma.cart.findFirst({ where: { dealerAccountId } });
         if (!cart) {

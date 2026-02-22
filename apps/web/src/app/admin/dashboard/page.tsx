@@ -1,13 +1,32 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BarChart3, Package, UploadCloud, Users } from 'lucide-react';
 import { getUser } from '@/lib/auth';
+import api from '@/lib/api';
+
+interface DashboardData {
+    dealers: { total: number; active: number; inactive: number; suspended: number };
+    orders: { today: number; thisWeek: number; thisMonth: number; totalRevenue: number };
+    products: { total: number; genuine: number; aftermarket: number; branded: number; lowStock: number };
+    imports: { todayCount: number; lastSuccessful: string | null; failedToday: number };
+    recentOrders: Array<{
+        id: string;
+        orderNo: string;
+        createdAt: string;
+        status: string;
+        total: number;
+        dealerAccount: { companyName: string; accountNo: string };
+    }>;
+}
 
 export default function AdminDashboard() {
     const router = useRouter();
+    const [data, setData] = useState<DashboardData | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const user = getUser();
@@ -15,20 +34,42 @@ export default function AdminDashboard() {
             router.push('/login');
             return;
         }
+
+        api.get('/admin/dashboard')
+            .then((res) => setData(res.data))
+            .catch(() => setError('Failed to load dashboard data.'))
+            .finally(() => setIsLoading(false));
     }, [router]);
 
-    const stats = [
-        { label: 'Total Dealers', value: '142', change: '+8', trend: 'up', icon: Users },
-        { label: 'Active Orders', value: '89', change: '+12', trend: 'up', icon: Package },
-        { label: 'Pending Imports', value: '3', change: '0', trend: 'neutral', icon: UploadCloud },
-        { label: 'Revenue (MTD)', value: 'GBP 245K', change: '+18%', trend: 'up', icon: BarChart3 },
-    ];
+    if (isLoading) {
+        return (
+            <div className="space-y-8">
+                <div className="mb-8">
+                    <div className="h-8 w-48 bg-slate-200 rounded animate-pulse" />
+                    <div className="h-4 w-64 bg-slate-100 rounded animate-pulse mt-2" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 h-32 animate-pulse" />
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
-    const recentActivity = [
-        { type: 'import', message: 'Genuine parts import completed', time: '10 mins ago', status: 'success' },
-        { type: 'dealer', message: 'New dealer account created: Acme Motors', time: '1 hour ago', status: 'info' },
-        { type: 'order', message: 'Large order placed by Premium Parts Ltd', time: '2 hours ago', status: 'warning' },
-        { type: 'import', message: 'Backorder data updated', time: '3 hours ago', status: 'success' },
+    if (error || !data) {
+        return (
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-16 text-center text-slate-500">
+                {error || 'Unable to load dashboard.'}
+            </div>
+        );
+    }
+
+    const stats = [
+        { label: 'Total Dealers', value: String(data.dealers.total), change: `${data.dealers.active} active`, trend: 'up' as const, icon: Users },
+        { label: 'Orders This Month', value: String(data.orders.thisMonth), change: `${data.orders.today} today`, trend: 'up' as const, icon: Package },
+        { label: 'Imports Today', value: String(data.imports.todayCount), change: `${data.imports.failedToday} failed`, trend: data.imports.failedToday > 0 ? 'down' as const : 'neutral' as const, icon: UploadCloud },
+        { label: 'Revenue (Total)', value: `GBP ${Math.round(data.orders.totalRevenue).toLocaleString()}`, change: `${data.orders.thisWeek} orders this week`, trend: 'up' as const, icon: BarChart3 },
     ];
 
     return (
@@ -94,47 +135,33 @@ export default function AdminDashboard() {
                                 </button>
                             </div>
                         </div>
-
-                        {/* System Health */}
-                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                            <h3 className="text-lg font-bold text-slate-900 mb-4">System Health</h3>
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-slate-600">API Status</span>
-                                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">Operational</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-slate-600">Database</span>
-                                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">Healthy</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-slate-600">Import Queue</span>
-                                    <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">3 Pending</span>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
-                    {/* Recent Activity */}
+                    {/* Recent Orders */}
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                        <h3 className="text-lg font-bold text-slate-900 mb-4">Recent Activity</h3>
+                        <h3 className="text-lg font-bold text-slate-900 mb-4">Recent Orders</h3>
                         <div className="space-y-4">
-                            {recentActivity.map((activity, index) => (
-                                <div key={index} className="flex items-start space-x-3 pb-4 border-b border-slate-100 last:border-0 last:pb-0">
-                                    <div className={`w-2 h-2 mt-2 rounded-full ${activity.status === 'success' ? 'bg-green-500' :
-                                            activity.status === 'warning' ? 'bg-orange-500' :
-                                                'bg-blue-500'
-                                        }`}></div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm text-slate-900">{activity.message}</p>
-                                        <p className="text-xs text-slate-500 mt-1">{activity.time}</p>
+                            {data.recentOrders.length === 0 ? (
+                                <p className="text-sm text-slate-500 text-center py-4">No recent orders.</p>
+                            ) : (
+                                data.recentOrders.slice(0, 5).map((order) => (
+                                    <div key={order.id} className="flex items-start space-x-3 pb-4 border-b border-slate-100 last:border-0 last:pb-0">
+                                        <div className="w-2 h-2 mt-2 rounded-full bg-blue-500" />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm text-slate-900">
+                                                {order.orderNo} — {order.dealerAccount.companyName}
+                                            </p>
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                {new Date(order.createdAt).toLocaleDateString()} · {order.status}
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
-                        <button className="w-full mt-4 text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                            View all activity
-                        </button>
+                        <Link href="/admin/orders" className="block w-full mt-4 text-sm text-indigo-600 hover:text-indigo-800 font-medium text-center">
+                            View all orders
+                        </Link>
                     </div>
                 </div>
             </main>

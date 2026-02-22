@@ -1,26 +1,86 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { User, Building2, CreditCard, Mail, Phone, MapPin, Calendar, Shield } from 'lucide-react';
+import api from '@/lib/api';
+import { getUser } from '@/lib/auth';
+
+interface AccountInfo {
+    dealerName: string;
+    dealerCode: string;
+    contactName: string;
+    email: string;
+    phone: string;
+    address: string;
+    joinedDate: string;
+    accountType: string;
+    creditLimit: number;
+    currentBalance: number;
+    availableCredit: number;
+    paymentTerms: string;
+    defaultDispatch: string;
+}
 
 export default function DealerAccountPage() {
-  const [accountInfo] = useState({
-    dealerName: 'Premium Auto Parts Ltd',
-    dealerCode: 'PAP-2024-001',
-    contactName: 'John Smith',
-    email: 'john.smith@premiumauto.co.uk',
-    phone: '+44 20 7123 4567',
-    address: '123 High Street, London, W1A 1AA',
-    joinedDate: 'January 2024',
-    accountType: 'Premium Dealer',
-    creditLimit: 50000,
-    currentBalance: 12450,
-    availableCredit: 37550,
-    paymentTerms: 'Net 30',
-    defaultDispatch: 'Standard',
-  });
+    const [accountInfo, setAccountInfo] = useState<AccountInfo | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-  const creditUsagePercent = (accountInfo.currentBalance / accountInfo.creditLimit) * 100;
+    useEffect(() => {
+        const user = getUser();
+        if (!user || user.role !== 'DEALER') {
+            setError('Unauthorized access.');
+            setIsLoading(false);
+            return;
+        }
+
+        api.get('/auth/me')
+            .then((res) => {
+                const u = res.data.user;
+                setAccountInfo({
+                    dealerName: u.companyName || u.dealerInfo?.companyName || '-',
+                    dealerCode: u.dealerAccountId || '-',
+                    contactName: u.firstName ? `${u.firstName} ${u.lastName || ''}`.trim() : u.email,
+                    email: u.email || '-',
+                    phone: u.phone || '-',
+                    address: u.address || '-',
+                    joinedDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) : '-',
+                    accountType: u.entitlement || 'Dealer',
+                    creditLimit: u.creditLimit ?? 0,
+                    currentBalance: u.currentBalance ?? 0,
+                    availableCredit: (u.creditLimit ?? 0) - (u.currentBalance ?? 0),
+                    paymentTerms: u.paymentTerms || '-',
+                    defaultDispatch: u.defaultDispatch || 'Standard',
+                });
+            })
+            .catch(() => setError('Unable to load account information.'))
+            .finally(() => setIsLoading(false));
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="h-8 w-48 bg-slate-200 rounded animate-pulse" />
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {[1, 2, 3].map((i) => (
+                        <div key={i} className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 h-40 animate-pulse" />
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !accountInfo) {
+        return (
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-16 text-center text-slate-500">
+                {error || 'Unable to load account information.'}
+            </div>
+        );
+    }
+
+    const creditUsagePercent = accountInfo.creditLimit > 0
+        ? (accountInfo.currentBalance / accountInfo.creditLimit) * 100
+        : 0;
 
   return (
     <div className="space-y-6">
