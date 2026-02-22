@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useCart } from '@/hooks/useCart';
 import { Card, CardContent, CardHeader, CardTitle, Button } from '@/ui';
 import { StatusChip } from '@/components/portal/StatusChip';
+import api from '@/lib/api';
+import { toast } from 'sonner';
 
 const steps = ['Dispatch', 'Review', 'Confirmation'] as const;
 
@@ -15,12 +17,26 @@ export default function DealerCheckoutPage() {
   const [poRef, setPoRef] = useState('');
   const [notes, setNotes] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const next = () => {
+  const next = async () => {
     if (step === 0 && !dispatchMethod) return;
     if (step === 1 && !orderNumber) {
-      const nextOrder = `HB-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`;
-      setOrderNumber(nextOrder);
+      setIsSubmitting(true);
+      try {
+        const res = await api.post('/dealer/checkout', {
+          dispatchMethod,
+          poRef: poRef || undefined,
+          notes: notes || undefined,
+        });
+        setOrderNumber(res.data.order?.orderNo || res.data.orderNo || '');
+        setStep(2);
+      } catch (e: any) {
+        toast.error('Failed to place order: ' + (e.response?.data?.message || e.message));
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
     }
     setStep((prev) => Math.min(prev + 1, steps.length - 1));
   };
@@ -161,8 +177,8 @@ export default function DealerCheckoutPage() {
           Back
         </Button>
         {step < steps.length - 1 ? (
-          <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={next}>
-            Continue
+          <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={next} disabled={isSubmitting}>
+            {isSubmitting ? 'Placing Order...' : step === 1 ? 'Place Order' : 'Continue'}
           </Button>
         ) : (
           <Link href="/dealer/orders">

@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { Button, Input, Label, Card, CardHeader, CardTitle, CardContent } from '@/ui';
 import { submitOrderAction } from './actions';
 import { toast } from 'sonner';
+import { getUser } from '@/lib/auth';
 
 export default function AdminOrderEntry() {
+    const user = getUser();
     const [dealerId, setDealerId] = useState('');
     const [sku, setSku] = useState('');
     const [qty, setQty] = useState(1);
@@ -15,7 +17,7 @@ export default function AdminOrderEntry() {
         setIsSubmitting(true);
         const result = await submitOrderAction({
             dealerAccountId: dealerId,
-            dealerUserId: 'ADMIN-PORTAL', // Simulated admin user
+            dealerUserId: user?.id || '',
             source: 'ADMIN',
             items: [{ productCode: sku, qty }]
         });
