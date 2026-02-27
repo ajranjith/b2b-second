@@ -11,5 +11,3 @@ jobs:
         run: |
           echo "Runner is working on $(hostname)"
           uname -a
-
-Add runner test workflow
