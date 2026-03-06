@@ -213,6 +213,8 @@ PublishScripts/
 *.snupkg
 **/[Pp]ackages/*
 !**/[Pp]ackages/build/
+# Re-include monorepo packages directory (negates NuGet rule above)
+!/packages/**
 *.nuget.props
 *.nuget.targets
 csx/
