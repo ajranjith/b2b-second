@@ -1,80 +1,54 @@
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { orderEngine } from '@/services/OrderEngine';
+import { NextRequest, NextResponse } from "next/server";
 
-// GET /api/dealer/cart
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3001";
+
+function authHeaders(req: NextRequest) {
+  const auth = req.headers.get("authorization");
+  return auth ? { authorization: auth } : undefined;
+}
+
 export async function GET(req: NextRequest) {
-    try {
-        const dealerAccountId = req.headers.get('x-dealer-account-id') || 'D-001'; // Mock for now until full session middleware
-
-        let cart = await prisma.cart.findFirst({
-            where: { dealerAccountId },
-            include: {
-                items: {
-                    include: {
-                        product: true
-                    }
-                }
-            }
-        });
-
-        if (!cart) {
-            cart = await prisma.cart.create({
-                data: { dealerAccountId },
-                include: { items: { include: { product: true } } }
-            });
-        }
-
-        const items = cart.items.map((item: any) => ({
-            id: item.id,
-            productId: item.productId,
-            qty: item.qty,
-            product: {
-                productCode: item.product.productCode,
-                description: item.product.description,
-                partType: item.product.partType
-            },
-            price: 100 // Simplified
-        }));
-
-        return NextResponse.json({
-            items,
-            subtotal: items.reduce((sum: number, i: any) => sum + (i.price * i.qty), 0),
-            itemCount: items.length
-        });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+  try {
+    const upstream = await fetch(`${API_BASE}/api/bff/v1/dealer/cart`, {
+      method: "GET",
+      headers: authHeaders(req),
+      cache: "no-store",
+    });
+    const payload = await upstream.text();
+    return new NextResponse(payload, {
+      status: upstream.status,
+      headers: {
+        "content-type": upstream.headers.get("content-type") || "application/json",
+      },
+    });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "Upstream cart failed" }, { status: 500 });
+  }
 }
 
-// POST /api/dealer/cart/items (Consolidated for simplicity)
+// Compatibility shim for callers posting to /api/dealer/cart as add-to-cart.
 export async function POST(req: NextRequest) {
-    try {
-        const { productId, qty } = await req.json();
-        const dealerAccountId = req.headers.get('x-dealer-account-id') || 'D-001';
+  try {
+    const body = await req.text();
+    const headers = new Headers(authHeaders(req) || {});
+    headers.set("content-type", "application/json");
 
-        let cart = await prisma.cart.findFirst({ where: { dealerAccountId } });
-        if (!cart) {
-            cart = await prisma.cart.create({ data: { dealerAccountId } });
-        }
-
-        const item = await prisma.cartItem.upsert({
-            where: {
-                cartId_productId: {
-                    cartId: cart.id,
-                    productId
-                }
-            },
-            update: { qty: { increment: qty } },
-            create: {
-                cartId: cart.id,
-                productId,
-                qty
-            }
-        });
-
-        return NextResponse.json(item);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    const upstream = await fetch(`${API_BASE}/api/bff/v1/dealer/cart/items`, {
+      method: "POST",
+      headers,
+      body,
+      cache: "no-store",
+    });
+    const payload = await upstream.text();
+    return new NextResponse(payload, {
+      status: upstream.status,
+      headers: {
+        "content-type": upstream.headers.get("content-type") || "application/json",
+      },
+    });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "Upstream cart add failed" }, { status: 500 });
+  }
 }
+
+export const runtime = "nodejs";

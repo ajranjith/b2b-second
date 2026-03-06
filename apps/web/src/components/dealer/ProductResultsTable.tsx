@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { ChevronDown, ChevronUp, Plus, Minus, Image as ImageIcon } from 'lucide-react';
-import type { Product } from '@/types/dealer';
-import { StockStatusChip } from '@/components/global';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { useState } from "react";
+import { ChevronDown, ChevronUp, Plus, Minus, Image as ImageIcon } from "lucide-react";
+import type { Product } from "@/types/dealer";
+import { StockStatusChip } from "@/components/global";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -14,8 +14,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 interface ProductResultsTableProps {
   products: Product[];
@@ -77,15 +77,20 @@ export function ProductResultsTable({
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: 'GBP',
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: "GBP",
     }).format(amount);
   };
 
   if (products.length === 0) {
     return (
-      <div className={cn('text-center py-12 rounded-lg border-2 border-dashed border-slate-300', className)}>
+      <div
+        className={cn(
+          "text-center py-12 rounded-lg border-2 border-dashed border-slate-300",
+          className,
+        )}
+      >
         <p className="text-slate-600 mb-2">No products found</p>
         <p className="text-sm text-slate-500">Try adjusting your search or filters</p>
       </div>
@@ -93,7 +98,7 @@ export function ProductResultsTable({
   }
 
   return (
-    <div className={cn('rounded-lg border border-slate-200 overflow-hidden', className)}>
+    <div className={cn("rounded-lg border border-slate-200 overflow-hidden", className)}>
       <Table>
         <TableHeader>
           <TableRow className="bg-slate-50">
@@ -109,17 +114,13 @@ export function ProductResultsTable({
         <TableBody>
           {products.map((product) => {
             const isExpanded = expandedRows.has(product.id);
-            const hasDetails =
-              product.supersededBy || product.notes || product.imageUrl;
+            const hasDetails = product.supersededBy || product.notes || product.imageUrl;
             const quantity = getQuantity(product.id);
 
             return (
               <>
                 {/* Main Row */}
-                <TableRow
-                  key={product.id}
-                  className="hover:bg-slate-50"
-                >
+                <TableRow key={product.id} className="hover:bg-slate-50">
                   {/* Expand Toggle */}
                   <TableCell>
                     {hasDetails && (
@@ -141,9 +142,7 @@ export function ProductResultsTable({
                   {/* Part Number + JagAlt */}
                   <TableCell>
                     <div className="space-y-1">
-                      <div className="font-medium text-slate-900">
-                        {product.lrNo}
-                      </div>
+                      <div className="font-medium text-slate-900">{product.lrNo}</div>
                       {product.jagAlt && (
                         <Badge variant="outline" className="text-xs">
                           {product.jagAlt}
@@ -194,9 +193,7 @@ export function ProductResultsTable({
                         type="number"
                         min="1"
                         value={quantity}
-                        onChange={(e) =>
-                          setQuantity(product.id, parseInt(e.target.value) || 1)
-                        }
+                        onChange={(e) => setQuantity(product.id, parseInt(e.target.value) || 1)}
                         className="h-8 w-16 text-center"
                       />
                       <Button
@@ -215,7 +212,7 @@ export function ProductResultsTable({
                     <Button
                       size="sm"
                       onClick={() => onAddToCart(product, quantity)}
-                      disabled={product.availability === 'unknown'}
+                      disabled={product.availability === "unknown"}
                     >
                       Add to Cart
                     </Button>
@@ -244,22 +241,16 @@ export function ProductResultsTable({
                                 Supersession
                               </h4>
                               <p className="text-sm text-slate-600">
-                                This part has been superseded by:{' '}
-                                <span className="font-medium">
-                                  {product.supersededBy}
-                                </span>
+                                This part has been superseded by:{" "}
+                                <span className="font-medium">{product.supersededBy}</span>
                               </p>
                             </div>
                           )}
 
                           {product.notes && (
                             <div>
-                              <h4 className="text-sm font-semibold text-slate-900 mb-1">
-                                Notes
-                              </h4>
-                              <p className="text-sm text-slate-600">
-                                {product.notes}
-                              </p>
+                              <h4 className="text-sm font-semibold text-slate-900 mb-1">Notes</h4>
+                              <p className="text-sm text-slate-600">{product.notes}</p>
                             </div>
                           )}
                         </div>

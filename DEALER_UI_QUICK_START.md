@@ -9,6 +9,7 @@
 ### Option 1: View New Pages Immediately (2 minutes)
 
 1. **Start your dev server:**
+
    ```bash
    cd apps/web
    pnpm dev
@@ -30,16 +31,16 @@
 **Step 1:** Replace `apps/web/src/app/dealer/layout.tsx` with:
 
 ```tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { CartProvider } from '@/context/CartContext';
-import { AppShell, DealerHeader, SideNav, BottomNav } from '@/components/layouts';
-import { AnnouncementTicker, MessageDrawer } from '@/components/global';
-import type { Announcement } from '@/types/dealer';
-import { mockAnnouncements } from '@/mocks/dealer-data';
-import { Toaster } from '@/components/ui/sonner';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { CartProvider } from "@/context/CartContext";
+import { AppShell, DealerHeader, SideNav, BottomNav } from "@/components/layouts";
+import { AnnouncementTicker, MessageDrawer } from "@/components/global";
+import type { Announcement } from "@/types/dealer";
+import { mockAnnouncements } from "@/mocks/dealer-data";
+import { Toaster } from "@/components/ui/sonner";
 
 function DealerLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -52,13 +53,25 @@ function DealerLayoutContent({ children }: { children: React.ReactNode }) {
     <>
       <AppShell
         header={<DealerHeader cartItemCount={cartItemCount} dealerName="Premium Motors Ltd" />}
-        ticker={<AnnouncementTicker announcements={mockAnnouncements} onAnnouncementClick={(a) => { setSelectedAnnouncement(a); setIsMessageDrawerOpen(true); }} />}
+        ticker={
+          <AnnouncementTicker
+            announcements={mockAnnouncements}
+            onAnnouncementClick={(a) => {
+              setSelectedAnnouncement(a);
+              setIsMessageDrawerOpen(true);
+            }}
+          />
+        }
         sideNav={<SideNav badgeCounts={{ cart: cartItemCount, backorders: 7 }} />}
         bottomNav={<BottomNav cartItemCount={cartItemCount} />}
       >
         {children}
       </AppShell>
-      <MessageDrawer isOpen={isMessageDrawerOpen} announcement={selectedAnnouncement} onClose={() => setIsMessageDrawerOpen(false)} />
+      <MessageDrawer
+        isOpen={isMessageDrawerOpen}
+        announcement={selectedAnnouncement}
+        onClose={() => setIsMessageDrawerOpen(false)}
+      />
       <Toaster position="top-right" />
     </>
   );
@@ -76,6 +89,7 @@ export default function DealerLayout({ children }: { children: React.ReactNode }
 **Step 2:** Visit http://localhost:3000/dealer/dashboard
 
 You'll now see:
+
 - ✅ New sticky header with search
 - ✅ Auto-rotating announcement ticker
 - ✅ Sidebar navigation (desktop)
@@ -89,12 +103,14 @@ You'll now see:
 ### Files Created (50+)
 
 **Foundation:**
+
 - `styles/tokens.ts` - Design system
 - `types/dealer.ts` - TypeScript types
 - `mocks/dealer-data.ts` - Mock data
 - `services/dealer-api.ts` - API layer
 
 **Layouts (6 files):**
+
 - `components/layouts/AppShell.tsx`
 - `components/layouts/DealerHeader.tsx`
 - `components/layouts/SideNav.tsx`
@@ -103,6 +119,7 @@ You'll now see:
 - `app/dealer/layout-new.tsx`
 
 **Global Components (6 files):**
+
 - `components/global/AnnouncementTicker.tsx`
 - `components/global/MessageDrawer.tsx`
 - `components/global/StatusChip.tsx`
@@ -111,23 +128,27 @@ You'll now see:
 - `components/global/index.ts`
 
 **Dashboard (4 files):**
+
 - `components/dealer/DashboardKPICard.tsx`
 - `components/dealer/RecentOrdersTable.tsx`
 - `components/dealer/NewsFeed.tsx`
 - `app/dealer/dashboard-new/page.tsx`
 
 **Search (4 files):**
+
 - `components/dealer/SearchFilters.tsx`
 - `components/dealer/ProductResultsTable.tsx`
 - `components/dealer/CartPreview.tsx`
 - `app/dealer/search-new/page.tsx`
 
 **Cart (3 files):**
+
 - `components/dealer/CartTable.tsx`
 - `components/dealer/OrderSummary.tsx`
 - `app/dealer/cart-new/page.tsx`
 
 **Documentation (4 files):**
+
 - `DEALER_UI_IMPLEMENTATION_GUIDE.md`
 - `DEALER_UI_TESTING_GUIDE.md`
 - `DEALER_UI_REVIEW.md`
@@ -138,6 +159,7 @@ You'll now see:
 ## 🎯 Test Each Feature
 
 ### Dashboard
+
 1. Open http://localhost:3000/dealer/dashboard-new
 2. **See:**
    - 3 KPI cards (Backorders, Orders, Account)
@@ -149,6 +171,7 @@ You'll now see:
    - Click a news item
 
 ### Search
+
 1. Open http://localhost:3000/dealer/search-new
 2. **Try:**
    - Search for "oil" or "filter"
@@ -161,6 +184,7 @@ You'll now see:
    - Remove item from cart preview
 
 ### Cart
+
 1. Open http://localhost:3000/dealer/cart-new
 2. **See:**
    - 3 items pre-loaded (mock data)
@@ -172,6 +196,7 @@ You'll now see:
    - Click "Browse Parts"
 
 ### Layout Features
+
 1. **Announcement Ticker:**
    - Watch it auto-rotate (every 8 seconds)
    - Hover to pause
@@ -193,15 +218,15 @@ You'll now see:
 ## 💡 Quick Tips
 
 ### Using Design Tokens
-```tsx
-import { tokens } from '@/styles/tokens';
 
-<div style={{ padding: tokens.spacing.lg }}>
-  Content
-</div>
+```tsx
+import { tokens } from "@/styles/tokens";
+
+<div style={{ padding: tokens.spacing.lg }}>Content</div>;
 ```
 
 ### Using Status Chips
+
 ```tsx
 import { OrderStatusChip, StockStatusChip } from '@/components/global';
 
@@ -210,11 +235,12 @@ import { OrderStatusChip, StockStatusChip } from '@/components/global';
 ```
 
 ### Using Toasts
-```tsx
-import { showToast, commonToasts } from '@/components/global';
 
-showToast.success('Saved!');
-commonToasts.addedToCart('Oil Filter');
+```tsx
+import { showToast, commonToasts } from "@/components/global";
+
+showToast.success("Saved!");
+commonToasts.addedToCart("Oil Filter");
 ```
 
 ---
@@ -222,21 +248,26 @@ commonToasts.addedToCart('Oil Filter');
 ## 🐛 Troubleshooting
 
 **"Cannot find module '@/types/dealer'"**
+
 - Restart TypeScript server in IDE
 - Check tsconfig.json has `@/*` path mapping
 
 **"Toaster not showing"**
+
 - Add `<Toaster />` to layout
 - Import from `@/components/ui/sonner`
 
 **"Styles not working"**
+
 - Check globals.css is imported in root layout
 - Verify Tailwind is configured
 
 **"Cart count shows 0"**
+
 - Expected! Connect to your cart context:
+
 ```tsx
-import { useCart } from '@/hooks/useCart';
+import { useCart } from "@/hooks/useCart";
 const { itemCount } = useCart();
 ```
 
@@ -247,6 +278,7 @@ const { itemCount } = useCart();
 ✅ **60% Complete** (6 of 10 tasks done)
 
 **Completed:**
+
 - ✅ Task 1: Project structure + design tokens
 - ✅ Task 2: AppShell layout system
 - ✅ Task 3: Global components
@@ -255,6 +287,7 @@ const { itemCount } = useCart();
 - ✅ Task 6: Cart page
 
 **Remaining:**
+
 - 🚧 Task 7: Checkout flow (3-step)
 - 🚧 Task 8: Orders list + detail
 - 🚧 Task 9: Responsive + accessibility
@@ -286,6 +319,7 @@ const { itemCount } = useCart();
 ## 🎉 You're Ready!
 
 The foundation is solid. You have:
+
 - ✅ 23+ reusable components
 - ✅ Complete design system
 - ✅ 3 working pages

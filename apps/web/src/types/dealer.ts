@@ -3,7 +3,7 @@
  */
 
 // === ANNOUNCEMENT / TICKER ===
-export type AnnouncementType = 'info' | 'promo' | 'warning' | 'urgent';
+export type AnnouncementType = "info" | "promo" | "warning" | "urgent";
 
 export interface Announcement {
   id: string;
@@ -23,20 +23,20 @@ export interface Announcement {
 }
 
 // === ORDER STATUS ===
-export type OrderStatus = 'submitted' | 'processing' | 'completed' | 'cancelled';
+export type OrderStatus = "submitted" | "processing" | "completed" | "cancelled";
 
 // === STOCK STATUS ===
-export type StockStatus = 'in_stock' | 'low_stock' | 'backorder' | 'unknown';
+export type StockStatus = "in_stock" | "low_stock" | "backorder" | "unknown";
 
 // === PRODUCT ===
 export interface Product {
   id: string;
-  lrNo: string;          // Part number
-  jagAlt?: string;       // Alternative Jaguar part number
+  lrNo: string; // Part number
+  jagAlt?: string; // Alternative Jaguar part number
   description: string;
   dealerPrice: number;
   availability: StockStatus;
-  eta?: string;          // Expected arrival date
+  eta?: string; // Expected arrival date
   quantityAvailable?: number;
   supersededBy?: string; // Supersession info
   notes?: string;
@@ -88,7 +88,7 @@ export interface Order {
 
 export interface OrderTimelineEvent {
   id: string;
-  type: 'created' | 'processing' | 'dispatched' | 'completed' | 'note';
+  type: "created" | "processing" | "dispatched" | "completed" | "note";
   title: string;
   description?: string;
   timestamp: string;
@@ -97,7 +97,7 @@ export interface OrderTimelineEvent {
 }
 
 // === DISPATCH ===
-export type DispatchMethod = 'standard' | 'express' | 'collection';
+export type DispatchMethod = "standard" | "express" | "collection";
 
 export interface DispatchOption {
   id: DispatchMethod;
@@ -121,7 +121,7 @@ export interface Dealer {
     postcode: string;
     country: string;
   };
-  accountStatus: 'active' | 'suspended' | 'inactive';
+  accountStatus: "active" | "suspended" | "inactive";
 }
 
 // === KPI / DASHBOARD ===
@@ -139,12 +139,12 @@ export interface NewsItem {
   summary: string;
   fullText?: string;
   publishedAt: string;
-  category: 'product' | 'service' | 'general';
+  category: "product" | "service" | "general";
   imageUrl?: string;
 }
 
 // === TABLE DENSITY ===
-export type TableDensity = 'comfortable' | 'dense';
+export type TableDensity = "comfortable" | "dense";
 
 // === SEARCH / FILTER ===
 export interface SearchFilters {
@@ -154,7 +154,7 @@ export interface SearchFilters {
     min: number;
     max: number;
   };
-  sortBy?: 'relevance' | 'price_asc' | 'price_desc' | 'part_number';
+  sortBy?: "relevance" | "price_asc" | "price_desc" | "part_number";
 }
 
 // === API RESPONSES ===
@@ -182,7 +182,7 @@ export interface LoadingState {
 
 export interface ToastMessage {
   id: string;
-  type: 'success' | 'error' | 'warning' | 'info';
+  type: "success" | "error" | "warning" | "info";
   title: string;
   description?: string;
   duration?: number;

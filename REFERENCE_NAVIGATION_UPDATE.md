@@ -18,12 +18,14 @@ Updated the Dealer Portal navigation to match the reference video style with a p
 **Structure:**
 
 #### Row 1: Utility Strip (Optional)
+
 - Height: 28-32px
 - Light grey background (`bg-slate-50`)
 - Left: Support links ("📞 Call Support", "Live Chat")
 - Right: Promo text ("Dealer Portal Updates")
 
 #### Row 2: Main Header Row
+
 - Height: 72px
 - White background
 - Left: Brand logo "Hotbray Portal"
@@ -32,6 +34,7 @@ Updated the Dealer Portal navigation to match the reference video style with a p
 - Mobile: Hamburger menu button
 
 #### Row 3: Secondary Nav Row
+
 - Height: 56px
 - Left: **Black "Menu" pill button** with dropdown
   - Includes hamburger icon + label + chevron
@@ -50,6 +53,7 @@ Updated the Dealer Portal navigation to match the reference video style with a p
 **Component:** [AnnouncementTicker](apps/web/src/components/global/AnnouncementTicker.tsx)
 
 **Behavior:**
+
 - Auto-rotates announcements every 8 seconds
 - Pauses on hover/focus
 - Click opens message details (currently alert, can be replaced with MessageDrawer)
@@ -58,6 +62,7 @@ Updated the Dealer Portal navigation to match the reference video style with a p
 - Pagination dots if multiple announcements
 
 **Mock Announcements:**
+
 1. **Info** - System Update: Platform updates this weekend
 2. **Promo** - Special Offer: 10% off genuine parts
 3. **Warning** - Stock Alert: Limited brake pad inventory
@@ -67,36 +72,40 @@ Updated the Dealer Portal navigation to match the reference video style with a p
 ## 3. Global Loading States
 
 ### CSS Implementation
+
 Added to [globals.css](apps/web/src/app/globals.css:3-7):
+
 ```css
 /* Global loading cursor state */
 body.app-loading,
 body.app-loading * {
-    cursor: progress !important;
+  cursor: progress !important;
 }
 ```
 
 ### Loading Indicators:
+
 1. **Top loading bar** - Blue progress bar at top of screen
 2. **Cursor change** - All elements show progress cursor
 3. **Route transitions** - Triggered on pathname change
 
 ### Implementation in Layout:
+
 ```typescript
 // Detect route change
 useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => setIsLoading(false), 300);
-    return () => clearTimeout(timer);
+  setIsLoading(true);
+  const timer = setTimeout(() => setIsLoading(false), 300);
+  return () => clearTimeout(timer);
 }, [pathname]);
 
 // Apply loading class
 useEffect(() => {
-    if (isLoading) {
-        document.body.classList.add('app-loading');
-    } else {
-        document.body.classList.remove('app-loading');
-    }
+  if (isLoading) {
+    document.body.classList.add("app-loading");
+  } else {
+    document.body.classList.remove("app-loading");
+  }
 }, [isLoading]);
 ```
 
@@ -105,12 +114,14 @@ useEffect(() => {
 ## 4. Mobile Responsive Behavior
 
 ### Desktop (≥ 768px):
+
 - Full 2-row header visible
 - Horizontal nav links in center
 - Search bar prominent in main row
 - Cart + user icons always visible
 
 ### Mobile (< 768px):
+
 - Utility strip hidden
 - Logo + hamburger menu only
 - Collapsible mobile menu with:
@@ -124,6 +135,7 @@ useEffect(() => {
 ## 5. Navigation Features
 
 ### Black Menu Pill Button:
+
 - Background: `bg-slate-900`
 - Rounded full (`rounded-full`)
 - Contains:
@@ -133,21 +145,25 @@ useEffect(() => {
 - Dropdown shows all pages with icons
 
 ### Horizontal Nav Links:
+
 - Dashboard (📊 LayoutDashboard icon)
 - Search Parts (🔍 Search icon)
 - Orders (📦 Package icon)
 - Account (👤 User icon)
 
 ### Active State:
+
 - Blue text (`text-blue-600`)
 - Bottom border (`absolute bottom-0 h-0.5 bg-blue-600`)
 
 ### Cart Badge:
+
 - Shows item count from `useCart()` hook
 - Blue badge (`bg-blue-600`)
 - Positioned top-right of cart icon
 
 ### User Dropdown:
+
 - Account Settings link
 - Logout button (red text)
 
@@ -192,6 +208,7 @@ useEffect(() => {
 ## 7. Visual Design
 
 ### Colors:
+
 - **Header background**: White (`bg-white`)
 - **Utility strip**: Light grey (`bg-slate-50`)
 - **Menu pill**: Black (`bg-slate-900`, hover: `bg-slate-800`)
@@ -200,18 +217,21 @@ useEffect(() => {
 - **Badge**: Blue (`bg-blue-600`)
 
 ### Spacing:
+
 - Utility strip height: `h-8` (32px)
 - Main header height: `h-18` (72px)
 - Secondary nav height: `h-14` (56px)
 - Ticker height: `h-12` (48px)
 
 ### Typography:
+
 - Logo: `text-2xl font-bold`
 - Nav links: `text-sm font-medium`
 - Search placeholder: Standard input
 - Utility text: `text-xs`
 
 ### Borders:
+
 - All borders: `border-slate-200`
 - Bottom borders for separation
 - Rounded corners: `rounded-lg` for buttons, `rounded-full` for menu pill
@@ -221,19 +241,23 @@ useEffect(() => {
 ## 8. Accessibility Features
 
 ✅ **Keyboard Navigation:**
+
 - Tab through all interactive elements
 - Enter/Space to activate buttons
 - Escape to close dropdowns
 
 ✅ **Focus States:**
+
 - Visible focus rings (`focus:ring-2 focus:ring-blue-500`)
 - Focus trap in mobile menu
 
 ✅ **ARIA Labels:**
+
 - Dropdown triggers have proper ARIA attributes
 - Icons have descriptive labels
 
 ✅ **Ticker Accessibility:**
+
 - Pauses on focus (not just hover)
 - Keyboard navigable pagination dots
 - Screen reader friendly
@@ -243,15 +267,18 @@ useEffect(() => {
 ## 9. Performance Optimizations
 
 ✅ **Loading States:**
+
 - 300ms debounce on route transitions
 - Cleanup timers on unmount
 - No unnecessary re-renders
 
 ✅ **Memoization:**
+
 - NavLinks array defined outside render
 - Dropdown content memoized by Radix UI
 
 ✅ **Ticker:**
+
 - Single interval timer
 - Cleanup on unmount
 - Pauses when not visible
@@ -261,6 +288,7 @@ useEffect(() => {
 ## 10. Testing Checklist
 
 ### Desktop:
+
 - ✅ Header displays with all 3 rows
 - ✅ Search bar functional and prominent
 - ✅ Horizontal nav links display
@@ -272,6 +300,7 @@ useEffect(() => {
 - ✅ Active page highlights correctly
 
 ### Mobile:
+
 - ✅ Hamburger menu toggles
 - ✅ Mobile search bar appears in menu
 - ✅ Vertical nav list displays with icons
@@ -279,6 +308,7 @@ useEffect(() => {
 - ✅ Logout button accessible
 
 ### Interactions:
+
 - ✅ Click ticker opens announcement details
 - ✅ Ticker pauses on hover/focus
 - ✅ Pagination dots navigate announcements
@@ -317,6 +347,7 @@ apps/web/src/
 ## 12. Next Steps (Optional Enhancements)
 
 ### Recommended:
+
 1. **MessageDrawer Component**
    - Replace `alert()` with proper drawer
    - Show full announcement text
@@ -348,12 +379,14 @@ apps/web/src/
 ## 13. Comparison: Before vs After
 
 ### Before:
+
 - Simple 1-row header (logo + nav links + cart badge)
 - No announcement ticker
 - No loading states
 - Basic mobile menu
 
 ### After:
+
 - ✅ 3-row professional header (utility strip + main + nav)
 - ✅ Black "Menu" pill button with dropdown
 - ✅ Prominent search bar in header
@@ -370,11 +403,13 @@ apps/web/src/
 ## 14. Browser Compatibility
 
 Tested and working in:
+
 - ✅ Chrome/Edge (Chromium)
 - ✅ Firefox
 - ✅ Safari (WebKit)
 
 CSS Features Used:
+
 - CSS Grid (nav layout)
 - Flexbox (all rows)
 - CSS custom properties (Tailwind)
@@ -386,6 +421,7 @@ CSS Features Used:
 ## Status: ✅ Complete
 
 The reference navigation has been successfully implemented with:
+
 - 2-row header matching reference video style
 - Black category pill button with dropdown menu
 - Horizontal nav links with active states

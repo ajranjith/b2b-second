@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { ShoppingCart } from 'lucide-react';
-import { Button, Badge } from '@/ui';
+import { useEffect, useState } from "react";
+import { ShoppingCart } from "lucide-react";
+import { Button, Badge } from "@/ui";
 
 interface MiniCartButtonProps {
   isOpen: boolean;
@@ -37,10 +37,10 @@ export default function MiniCartButton({ isOpen, onToggle, itemCount }: MiniCart
           <Badge
             variant="outline"
             className={`absolute -top-2 -right-2 h-6 min-w-[24px] px-1 rounded-full bg-red-500 text-white border-2 border-white flex items-center justify-center font-bold text-xs
-              ${animateBadge ? 'animate-bounce-scale' : ''}
+              ${animateBadge ? "animate-bounce-scale" : ""}
             `}
           >
-            {itemCount > 99 ? '99+' : itemCount}
+            {itemCount > 99 ? "99+" : itemCount}
           </Badge>
         )}
 
@@ -52,7 +52,8 @@ export default function MiniCartButton({ isOpen, onToggle, itemCount }: MiniCart
 
       <style jsx>{`
         @keyframes bounce-scale {
-          0%, 100% {
+          0%,
+          100% {
             transform: scale(1);
           }
           25% {
@@ -65,7 +66,7 @@ export default function MiniCartButton({ isOpen, onToggle, itemCount }: MiniCart
             transform: scale(1.15);
           }
         }
-        
+
         .animate-bounce-scale {
           animation: bounce-scale 0.6s ease-in-out;
         }

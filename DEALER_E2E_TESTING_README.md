@@ -11,14 +11,18 @@ This is a **comprehensive end-to-end testing framework** for the dealer process 
 ## 📋 What's Included
 
 ### 1. **Automated Test Suite** ⚡
+
 **File:** `test-dealer-flow.ts`
+
 - 13 automated test cases
 - Validates entire dealer process flow
 - Execution time: 3-5 seconds
 - Run with: `npx ts-node test-dealer-flow.ts`
 
 ### 2. **Test Documentation** 📖
+
 **File:** `DEALER_TEST_GUIDE.md`
+
 - Comprehensive setup instructions
 - Test prerequisites
 - Detailed phase descriptions
@@ -26,7 +30,9 @@ This is a **comprehensive end-to-end testing framework** for the dealer process 
 - Business rules reference
 
 ### 3. **Manual Testing Checklist** ✅
+
 **File:** `DEALER_MANUAL_TEST_CHECKLIST.md`
+
 - 150+ manual test checkpoints
 - 10 testing phases
 - Step-by-step instructions
@@ -34,7 +40,9 @@ This is a **comprehensive end-to-end testing framework** for the dealer process 
 - Sign-off section
 
 ### 4. **Test Scenarios** 🎯
+
 **File:** `DEALER_TEST_SCENARIOS.md`
+
 - 9 detailed test scenarios
 - Real-world use cases
 - Expected outcomes for each step
@@ -42,7 +50,9 @@ This is a **comprehensive end-to-end testing framework** for the dealer process 
 - Edge case handling
 
 ### 5. **Complete Overview** 📚
+
 **File:** `DEALER_TESTING_OVERVIEW.md`
+
 - Full summary of testing framework
 - Coverage matrix
 - Integration guide
@@ -50,7 +60,9 @@ This is a **comprehensive end-to-end testing framework** for the dealer process 
 - Next steps and enhancements
 
 ### 6. **Quick Start Guide** 🚀
+
 **File:** `DEALER_TESTING_QUICK_START.md`
+
 - Quick reference card
 - Test execution options
 - Expected results
@@ -62,6 +74,7 @@ This is a **comprehensive end-to-end testing framework** for the dealer process 
 ## 🎯 Quick Start (5 Minutes)
 
 ### 1. Prepare Environment
+
 ```bash
 # Migrate database
 npm run db:migrate
@@ -77,11 +90,13 @@ npm run dev:web
 ```
 
 ### 2. Run Automated Tests
+
 ```bash
 npx ts-node test-dealer-flow.ts
 ```
 
 **Expected Output:**
+
 ```
 🚀 STARTING DEALER E2E TESTS
 
@@ -97,6 +112,7 @@ Total Tests: 13
 ```
 
 ### 3. Review Results
+
 - ✅ All tests passed = Dealer flow is working!
 - ❌ Some failed = See troubleshooting in DEALER_TEST_GUIDE.md
 
@@ -105,23 +121,27 @@ Total Tests: 13
 ## 🔍 Testing Phases
 
 ### Phase 1: Authentication ✅
+
 - Dealer login
 - Token generation
 - Authorization
 
 ### Phase 2: Product Search ✅
+
 - Keyword search
 - Part type filtering
 - Stock filtering
 - Entitlement filtering
 
 ### Phase 3: Pricing ✅
+
 - Product detail retrieval
 - Price calculation
 - Band assignment
 - Minimum price rules
 
 ### Phase 4: Cart Management ✅
+
 - Cart retrieval
 - Add to cart
 - Update quantities
@@ -129,12 +149,14 @@ Total Tests: 13
 - Calculate totals
 
 ### Phase 5: Order Placement ✅
+
 - Checkout initiation
 - Order confirmation
 - Order number generation
 - Order storage
 
 ### Phase 6: Order History ✅
+
 - List orders
 - View details
 - Track status
@@ -143,15 +165,15 @@ Total Tests: 13
 
 ## 📊 Test Coverage
 
-| Functionality | Tests | Status |
-|---|---|---|
-| **Authentication** | 1 | ✅ Covered |
-| **Search** | 3 | ✅ Covered |
-| **Pricing** | 2 | ✅ Covered |
-| **Cart** | 5 | ✅ Covered |
-| **Orders** | 2 | ✅ Covered |
-| **Edge Cases** | 8+ | ✅ Covered |
-| **Business Rules** | 15+ | ✅ Covered |
+| Functionality      | Tests | Status     |
+| ------------------ | ----- | ---------- |
+| **Authentication** | 1     | ✅ Covered |
+| **Search**         | 3     | ✅ Covered |
+| **Pricing**        | 2     | ✅ Covered |
+| **Cart**           | 5     | ✅ Covered |
+| **Orders**         | 2     | ✅ Covered |
+| **Edge Cases**     | 8+    | ✅ Covered |
+| **Business Rules** | 15+   | ✅ Covered |
 
 ---
 
@@ -179,26 +201,31 @@ Total Tests: 13
 ## 🎮 Testing Options
 
 ### Option A: Automated Only (3-5 minutes)
+
 ```bash
 npx ts-node test-dealer-flow.ts
 ```
+
 - Quick validation
 - Good for CI/CD
 - Regression testing
 
 ### Option B: Manual Only (45 minutes)
+
 1. Open `DEALER_MANUAL_TEST_CHECKLIST.md`
 2. Follow each step in browser
 3. Mark items as complete
 4. Document issues
 
 ### Option C: Scenarios Only (30 minutes)
+
 1. Open `DEALER_TEST_SCENARIOS.md`
 2. Execute each scenario
 3. Verify business rules
 4. Check edge cases
 
 ### Option D: Full Suite (1.5 hours)
+
 1. Run automated tests
 2. Complete manual checklist
 3. Execute all scenarios
@@ -209,6 +236,7 @@ npx ts-node test-dealer-flow.ts
 ## ✅ What Gets Tested
 
 ### Core Features
+
 ✅ Dealer login & authentication
 ✅ Product search (keyword, filters)
 ✅ Product pricing (band-based)
@@ -218,6 +246,7 @@ npx ts-node test-dealer-flow.ts
 ✅ Order history & tracking
 
 ### Business Rules
+
 ✅ Entitlements (GENUINE_ONLY, AFTERMARKET_ONLY, SHOW_ALL)
 ✅ Pricing bands (Band 1, 2, 3, 4)
 ✅ Minimum price enforcement
@@ -226,6 +255,7 @@ npx ts-node test-dealer-flow.ts
 ✅ Order validation
 
 ### Edge Cases
+
 ✅ Empty search results
 ✅ Out-of-stock items
 ✅ Backorder handling
@@ -239,18 +269,22 @@ npx ts-node test-dealer-flow.ts
 ## 🔧 Prerequisites
 
 ### Required
+
 - Node.js 18+
 - PostgreSQL 14+
 - npm or pnpm
 
 ### Database Setup
+
 ```bash
 npm run db:migrate      # Create schema
 npm run db:seed         # Add sample data
 ```
 
 ### Test Data
+
 The seed creates:
+
 - ✅ Test dealer account (dealer@example.com / password123)
 - ✅ 50+ sample products across all types
 - ✅ Products with varying stock levels
@@ -262,6 +296,7 @@ The seed creates:
 ## 📈 Running in CI/CD
 
 ### GitHub Actions
+
 ```yaml
 - run: npm run db:migrate
 - run: npm run db:seed
@@ -270,6 +305,7 @@ The seed creates:
 ```
 
 ### GitLab CI
+
 ```yaml
 test:
   script:
@@ -283,14 +319,14 @@ test:
 
 ## 🚨 Troubleshooting
 
-| Issue | Fix |
-|---|---|
-| Login fails (401) | Create test dealer: `npm run db:seed` |
-| Search returns nothing | Run database seed: `npm run db:seed` |
-| API connection error | Start API: `npm run dev:api` |
-| Test timeout | Check API logs for slow queries |
-| Cart item fails | Verify product exists in database |
-| Order checkout fails | Check pricing rules and product setup |
+| Issue                  | Fix                                   |
+| ---------------------- | ------------------------------------- |
+| Login fails (401)      | Create test dealer: `npm run db:seed` |
+| Search returns nothing | Run database seed: `npm run db:seed`  |
+| API connection error   | Start API: `npm run dev:api`          |
+| Test timeout           | Check API logs for slow queries       |
+| Cart item fails        | Verify product exists in database     |
+| Order checkout fails   | Check pricing rules and product setup |
 
 **More details:** See DEALER_TEST_GUIDE.md troubleshooting section
 
@@ -299,6 +335,7 @@ test:
 ## 📊 Expected Results
 
 ### Automated Tests
+
 ```
 Total Tests:     13
 Passed:          13 ✅
@@ -308,6 +345,7 @@ Status:          READY FOR PRODUCTION ✅
 ```
 
 ### Manual Checklist
+
 ```
 Phases:          10
 Checkpoints:     150+
@@ -316,6 +354,7 @@ Status:          VALIDATED ✅
 ```
 
 ### Scenarios
+
 ```
 Scenarios:       9
 Edge Cases:      30+
@@ -421,12 +460,14 @@ Test suite is successful when:
 ## 📞 Support
 
 **Need help?**
+
 - Read the appropriate guide (see Documentation Map)
 - Check troubleshooting sections
 - Review test scenario details
 - Examine automated test output
 
 **Found a bug?**
+
 - Document in manual checklist
 - Note the test phase and step
 - Include error message
@@ -437,12 +478,14 @@ Test suite is successful when:
 ## 📅 Maintenance
 
 ### Regular Updates
+
 - **Weekly:** Run automated tests before releases
 - **Monthly:** Complete full manual testing
 - **Quarterly:** Review and update scenarios
 - **As-needed:** Add new test cases for new features
 
 ### Test Review Schedule
+
 - After major feature releases
 - When pricing rules change
 - After entitlement changes
@@ -452,9 +495,9 @@ Test suite is successful when:
 
 ## 📜 Version History
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0 | Jan 16, 2026 | Initial release - 13 automated tests, manual checklist, 9 scenarios |
+| Version | Date         | Changes                                                             |
+| ------- | ------------ | ------------------------------------------------------------------- |
+| 1.0     | Jan 16, 2026 | Initial release - 13 automated tests, manual checklist, 9 scenarios |
 
 ---
 
@@ -467,10 +510,10 @@ This testing suite is part of the B2B Portal project.
 ## 🎉 Ready to Test?
 
 Start with one of these:
+
 1. **Quick (5 min):** `npx ts-node test-dealer-flow.ts`
 2. **Thorough (45 min):** Open DEALER_MANUAL_TEST_CHECKLIST.md
 3. **Detailed (30 min):** Open DEALER_TEST_SCENARIOS.md
 4. **Everything (90 min):** Follow all three above
 
 **Good luck! 🚀**
-

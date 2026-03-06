@@ -57,42 +57,6 @@ export class DealerValidator {
         return { valid: errors.length === 0, errors };
     }
 
-    async validateBandAssignments(dealerAccountId: string): Promise<ValidationResult> {
-        const errors: RuleError[] = [];
-        const requiredPartTypes = ['GENUINE', 'AFTERMARKET', 'BRANDED'];
-
-        const assignments = await this.prisma.dealerBandAssignment.findMany({
-            where: { dealerAccountId },
-            select: { partType: true, bandCode: true }
-        });
-
-        const assignedTypes = assignments.map(a => a.partType);
-
-        for (const partType of requiredPartTypes) {
-            if (!assignedTypes.includes(partType as any)) {
-                errors.push({
-                    field: 'bandAssignments',
-                    message: `Missing band assignment for ${partType}`,
-                    code: 'MISSING_BAND',
-                    severity: 'critical'
-                });
-            }
-        }
-
-        for (const assignment of assignments) {
-            if (!['1', '2', '3', '4'].includes(assignment.bandCode)) {
-                errors.push({
-                    field: 'bandCode',
-                    message: `Invalid band code ${assignment.bandCode} for ${assignment.partType}`,
-                    code: 'INVALID_BAND_CODE',
-                    severity: 'error'
-                });
-            }
-        }
-
-        return { valid: errors.length === 0, errors };
-    }
-
     async validateUserAssociation(dealerAccountId: string): Promise<ValidationResult> {
         const errors: RuleError[] = [];
 
@@ -126,9 +90,6 @@ export class DealerValidator {
                 errors: [{ field: 'dealerAccountId', message: 'Dealer account not found', code: 'NOT_FOUND', severity: 'critical' }]
             };
         }
-
-        const bandResult = await this.validateBandAssignments(dealerAccountId);
-        allErrors.push(...bandResult.errors);
 
         const userResult = await this.validateUserAssociation(dealerAccountId);
         allErrors.push(...userResult.errors);

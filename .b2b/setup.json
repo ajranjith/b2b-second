@@ -1,0 +1,63 @@
+{
+  "version": "1.0",
+  "status": "IN_PROGRESS",
+  "currentStep": "S6",
+  "step": "scan_run",
+  "stepsCompleted": [
+    "S2",
+    "S1",
+    "S6"
+  ],
+  "target": {
+    "type": "local",
+    "path": "C:\\Users\\ajran\\.gemini\\b2b-second",
+    "workspaceRoot": "C:\\Users\\ajran\\.gemini\\b2b-second"
+  },
+  "selectedAgents": [
+    "codex"
+  ],
+  "detectedAgents": [
+    {
+      "id": "cursor",
+      "name": "Cursor",
+      "configPath": "C:\\Users\\ajran\\.cursor\\mcp.json",
+      "configType": "json",
+      "mcpKey": "mcpServers",
+      "gresKey": "gres-b2b",
+      "processNames": [
+        "Cursor.exe",
+        "cursor.exe",
+        "Cursor"
+      ],
+      "restartMessage": "Please close and reopen Cursor to apply changes.",
+      "icon": "code",
+      "configExists": true,
+      "configValid": true,
+      "hasGres": false,
+      "status": "DETECTED"
+    },
+    {
+      "id": "codex-cli",
+      "name": "Codex CLI",
+      "configPath": "C:\\Users\\ajran\\.codex\\config.toml",
+      "configType": "toml",
+      "mcpKey": "mcp.servers",
+      "gresKey": "gres_b2b",
+      "processNames": [
+        "codex",
+        "codex.exe"
+      ],
+      "restartMessage": "Please restart your terminal/CLI session to apply changes.",
+      "icon": "terminal",
+      "configExists": true,
+      "configValid": true,
+      "hasGres": false,
+      "status": "DETECTED"
+    }
+  ],
+  "action": {
+    "name": "scan"
+  },
+  "updatedAtUtc": "2026-02-04T18:16:33Z",
+  "resumeAvailable": true
+}

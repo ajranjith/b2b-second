@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { ShoppingCart, X } from 'lucide-react';
-import type { CartItem } from '@/types/dealer';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
+import { useRouter } from "next/navigation";
+import { ShoppingCart, X } from "lucide-react";
+import type { CartItem } from "@/types/dealer";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 interface CartPreviewProps {
   items: CartItem[];
@@ -25,18 +25,13 @@ interface CartPreviewProps {
  * - View Cart button
  * - Checkout button
  */
-export function CartPreview({
-  items,
-  subtotal,
-  onRemoveItem,
-  className,
-}: CartPreviewProps) {
+export function CartPreview({ items, subtotal, onRemoveItem, className }: CartPreviewProps) {
   const router = useRouter();
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: 'GBP',
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: "GBP",
     }).format(amount);
   };
 
@@ -46,7 +41,7 @@ export function CartPreview({
 
   if (items.length === 0) {
     return (
-      <Card className={cn('sticky top-[200px]', className)}>
+      <Card className={cn("sticky top-[200px]", className)}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" />
@@ -64,7 +59,7 @@ export function CartPreview({
   }
 
   return (
-    <Card className={cn('sticky top-[200px]', className)}>
+    <Card className={cn("sticky top-[200px]", className)}>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
@@ -72,7 +67,7 @@ export function CartPreview({
             Cart
           </span>
           <span className="text-sm font-normal text-slate-600">
-            {totalItems} {totalItems === 1 ? 'item' : 'items'}
+            {totalItems} {totalItems === 1 ? "item" : "items"}
           </span>
         </CardTitle>
       </CardHeader>
@@ -80,9 +75,7 @@ export function CartPreview({
       <CardContent className="space-y-4">
         {/* Recent Items */}
         <div>
-          <p className="text-xs text-slate-500 mb-2 uppercase tracking-wide">
-            Recently Added
-          </p>
+          <p className="text-xs text-slate-500 mb-2 uppercase tracking-wide">Recently Added</p>
           <ScrollArea className="h-[280px]">
             <div className="space-y-3">
               {recentItems.map((item) => (
@@ -98,9 +91,7 @@ export function CartPreview({
                       {item.product.description}
                     </p>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-500">
-                        Qty: {item.quantity}
-                      </span>
+                      <span className="text-xs text-slate-500">Qty: {item.quantity}</span>
                       <span className="text-sm font-semibold text-slate-900">
                         {formatCurrency(item.lineTotal)}
                       </span>
@@ -123,8 +114,7 @@ export function CartPreview({
 
           {items.length > 5 && (
             <p className="text-xs text-slate-500 mt-2 text-center">
-              +{items.length - 5} more {items.length - 5 === 1 ? 'item' : 'items'}{' '}
-              in cart
+              +{items.length - 5} more {items.length - 5 === 1 ? "item" : "items"} in cart
             </p>
           )}
         </div>
@@ -135,29 +125,21 @@ export function CartPreview({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-600">Subtotal</span>
-            <span className="text-lg font-bold text-slate-900">
-              {formatCurrency(subtotal)}
-            </span>
+            <span className="text-lg font-bold text-slate-900">{formatCurrency(subtotal)}</span>
           </div>
-          <p className="text-xs text-slate-500">
-            Excluding VAT and delivery charges
-          </p>
+          <p className="text-xs text-slate-500">Excluding VAT and delivery charges</p>
         </div>
 
         {/* Actions */}
         <div className="space-y-2">
-          <Button
-            size="lg"
-            className="w-full"
-            onClick={() => router.push('/dealer/checkout')}
-          >
+          <Button size="lg" className="w-full" onClick={() => router.push("/dealer/checkout")}>
             Checkout
           </Button>
           <Button
             variant="outline"
             size="lg"
             className="w-full"
-            onClick={() => router.push('/dealer/cart')}
+            onClick={() => router.push("/dealer/cart")}
           >
             View Cart
           </Button>

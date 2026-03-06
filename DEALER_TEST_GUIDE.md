@@ -7,17 +7,18 @@ The `test-dealer-flow.ts` script provides comprehensive end-to-end testing for t
 ## Test Phases
 
 ### Phase 1: Authentication
+
 - **Test**: `Login Dealer Account`
-- **Validates**: 
+- **Validates**:
   - Successful dealer login
   - JWT token generation
   - User and dealer account information retrieval
 
 ### Phase 2: Product Search
+
 - **Test**: `Product Search - Basic Query`
   - Validates basic product search functionality
   - Ensures search results are returned with pricing data
-  
 - **Test**: `Product Search - With Filters`
   - Validates filtering by part type (GENUINE, BRANDED, AFTERMARKET)
   - Tests in-stock filtering
@@ -28,6 +29,7 @@ The `test-dealer-flow.ts` script provides comprehensive end-to-end testing for t
   - Ensures GENUINE_ONLY, AFTERMARKET_ONLY, and SHOW_ALL work correctly
 
 ### Phase 3: Pricing & Product Details
+
 - **Test**: `Get Product Detail`
   - Retrieves single product with full details
   - Validates pricing calculation
@@ -39,6 +41,7 @@ The `test-dealer-flow.ts` script provides comprehensive end-to-end testing for t
   - Validates price availability status
 
 ### Phase 4: Cart Operations
+
 - **Test**: `Get Cart`
   - Retrieves current cart for authenticated dealer user
   - Validates cart structure and totals
@@ -63,6 +66,7 @@ The `test-dealer-flow.ts` script provides comprehensive end-to-end testing for t
   - Checks cart total is recalculated
 
 ### Phase 5: Order Placement
+
 - **Test**: `Place Order (Checkout)`
   - Creates order from cart contents
   - Validates order confirmation response
@@ -70,6 +74,7 @@ The `test-dealer-flow.ts` script provides comprehensive end-to-end testing for t
   - Validates PO reference and notes are stored
 
 ### Phase 6: Order Retrieval
+
 - **Test**: `Get Dealer Orders`
   - Retrieves list of orders for dealer
   - Validates order history is accessible
@@ -78,6 +83,7 @@ The `test-dealer-flow.ts` script provides comprehensive end-to-end testing for t
 ## Prerequisites
 
 ### Required Environment Variables
+
 ```bash
 # API endpoint
 API_BASE_URL=http://localhost:3001
@@ -88,9 +94,11 @@ DEALER_PASSWORD=password123
 ```
 
 ### Required Database Setup
+
 Before running tests, ensure:
 
 1. **Database is initialized**:
+
    ```bash
    npm run db:seed
    ```
@@ -114,7 +122,9 @@ Before running tests, ensure:
 ## Running Tests
 
 ### Prerequisites
+
 Ensure all services are running:
+
 ```bash
 # Terminal 1: Database & migrations
 npm run db:migrate
@@ -127,11 +137,13 @@ npx ts-node test-dealer-flow.ts
 ```
 
 ### Run All Tests
+
 ```bash
 npx ts-node test-dealer-flow.ts
 ```
 
 ### Expected Output
+
 ```
 🚀 STARTING DEALER E2E TESTS
 
@@ -157,22 +169,27 @@ Total Tests: 13
 ### Test Failures
 
 #### "Login failed: 401"
+
 - **Cause**: Invalid credentials or user doesn't exist
 - **Fix**: Create test dealer account in database with correct credentials
 
 #### "Search failed: 403 - Forbidden"
+
 - **Cause**: User is not a DEALER role or token is invalid
 - **Fix**: Verify user role is set to 'DEALER' and token includes dealerAccountId
 
 #### "No products found for search query"
+
 - **Cause**: Database has no products or search index is empty
 - **Fix**: Run `npm run db:seed` to populate sample data
 
 #### "Add to cart failed: 404 - Product not found"
+
 - **Cause**: Product code format issue or product doesn't exist
 - **Fix**: Verify product exists in database with correct format
 
 #### "Checkout failed: 422 - Cart is empty"
+
 - **Cause**: Items were not added to cart or cart was cleared
 - **Fix**: Verify add to cart test passed before running checkout
 
@@ -185,22 +202,22 @@ Total Tests: 13
 
 ## Test Coverage Matrix
 
-| Functionality | Covered | Status |
-|---|---|---|
-| Dealer Authentication | ✅ | Active |
-| Product Search | ✅ | Active |
-| Part Type Filtering | ✅ | Active |
-| Stock Filtering | ✅ | Active |
-| Entitlement Filtering | ✅ | Active |
-| Pricing Calculation | ✅ | Active |
-| Band Assignment | ✅ | Active |
-| Minimum Price Rules | ✅ | Active |
-| Cart CRUD | ✅ | Active |
-| Order Creation | ✅ | Active |
-| Order Retrieval | ✅ | Active |
-| Backorder Retrieval | ⏳ | Planned |
-| Order History Pagination | ⏳ | Planned |
-| Cart Persistence | ⏳ | Planned |
+| Functionality            | Covered | Status  |
+| ------------------------ | ------- | ------- |
+| Dealer Authentication    | ✅      | Active  |
+| Product Search           | ✅      | Active  |
+| Part Type Filtering      | ✅      | Active  |
+| Stock Filtering          | ✅      | Active  |
+| Entitlement Filtering    | ✅      | Active  |
+| Pricing Calculation      | ✅      | Active  |
+| Band Assignment          | ✅      | Active  |
+| Minimum Price Rules      | ✅      | Active  |
+| Cart CRUD                | ✅      | Active  |
+| Order Creation           | ✅      | Active  |
+| Order Retrieval          | ✅      | Active  |
+| Backorder Retrieval      | ⏳      | Planned |
+| Order History Pagination | ⏳      | Planned |
+| Cart Persistence         | ⏳      | Planned |
 
 ## Key Business Rules Validated
 
@@ -227,22 +244,27 @@ Total Tests: 13
 ## Next Steps
 
 ### Extending the Test Suite
+
 Add tests for:
+
 - Edge cases (zero stock, inactive products)
 - Error scenarios (invalid input, insufficient permissions)
 - Performance testing (large result sets)
 - Concurrent operations (multiple dealers ordering simultaneously)
 
 ### Automation
+
 Integrate with CI/CD:
+
 ```bash
 # GitHub Actions workflow
 npx ts-node test-dealer-flow.ts --ci --report junit
 ```
 
 ### Monitoring
+
 Set up alerts for:
+
 - Test failure notifications
 - Performance degradation
 - API error rates
-

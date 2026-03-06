@@ -1,0 +1,57 @@
+﻿Commit: 2d47738
+Summary:
+- Consolidated duplicate component families to /components/portal (AnnouncementTicker, MessageDrawer, DataTable, StatusChip, SearchInput, QtyStepper, SideNav, BottomNav, AppShell, ReferenceHeader)
+- Removed duplicate sources from /global, /layouts, /controls, /data, /dealer
+- Added canonical import gate + component audit to block duplicate exports/FIDs
+- Trimmed legacy dealer modules and moved admin routes into (app)/(auth) layouts for lighter login
+Compliance:
+- pnpm id-enforce: PASS
+- pnpm component-audit: PASS
+- pnpm ui-audit: PASS (Indexed 82 components)
+- pnpm route-audit: PASS
+- pnpm registry-build: PASS (20 routes, 18 API entries)
+CI:
+- No GitHub Actions runs found for branch b2b-second-ID (no workflow triggered yet).
+Command outputs:
+pnpm id-enforce
+----------------
+> hotbray-portal-phase1@ id-enforce C:\Users\ajran\.gemini\b2b-second
+> node tools/id-enforce.js
+ID enforce passed.
+pnpm component-audit
+--------------------
+> hotbray-portal-phase1@ component-audit C:\Users\ajran\.gemini\b2b-second
+> node tools/component-audit.js
+Component audit passed.
+pnpm ui-audit
+-------------
+> hotbray-portal-phase1@ ui-audit C:\Users\ajran\.gemini\b2b-second
+> node tools/ui-audit.js --ui-audit
+UI audit passed. Indexed 82 components.
+pnpm route-audit
+----------------
+> hotbray-portal-phase1@ route-audit C:\Users\ajran\.gemini\b2b-second
+> node tools/route-audit.js
+Route audit passed.
+pnpm registry-build
+-------------------
+> hotbray-portal-phase1@ registry-build C:\Users\ajran\.gemini\b2b-second
+> node tools/registry-build.js
+Wrote 20 routes to C:\Users\ajran\.gemini\b2b-second\routes.registry.json
+Wrote 18 API entries to C:\Users\ajran\.gemini\b2b-second\api.registry.json
+Artifacts:
+- routes.registry.json count: 20
+- api.registry.json count: 18
+- ui-index.json count: 82
+routes.registry.json excerpt:
+- { mid: MID-1-ADMIN-DASHBOARD, rid: RID-1-DASHBOARD, route: /1-admin/dashboard, version: 1.0.0 }
+- { mid: MID-1-ADMIN-DEALERS, rid: RID-1-DEALERS, route: /1-admin/dealers, version: 1.0.0 }
+- { mid: MID-1-ADMIN-IMPORTS, rid: RID-1-IMPORTS, route: /1-admin/imports, version: 1.0.0 }
+api.registry.json excerpt:
+- { apiId: API-1-ADMIN-DASHBOARD, method: GET, path: /admin/dashboard, mid: MID-1-ADMIN-DASHBOARD }
+- { apiId: API-1-ADMIN-DEALERS, method: GET, path: /admin/dealers, mid: MID-1-ADMIN-DEALERS }
+- { apiId: API-1-ADMIN-IMPORTS, method: POST, path: /admin/imports, mid: MID-1-ADMIN-IMPORTS }
+ui-index.json excerpt:
+- { fid: FID-000074, component_type: button, action_id: ACT_REMOVE_ITEM, source: apps/web/src/components/dealer/CartPreview.tsx:111 }
+- { fid: FID-000075, component_type: button, action_id: ACT_NAVIGATE, source: apps/web/src/components/dealer/CartPreview.tsx:151 }
+- { fid: FID-000076, component_type: button, action_id: ACT_NAVIGATE, source: apps/web/src/components/dealer/CartPreview.tsx:160 }

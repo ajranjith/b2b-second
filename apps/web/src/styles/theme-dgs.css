@@ -1,0 +1,268 @@
+:root {
+  --dgs-bg: #f5eddb;
+  --dgs-bg-image: linear-gradient(180deg, #f8f1e0 0%, #efe3c5 45%, #e6d9bb 100%);
+  --dgs-surface: #fff8ea;
+  --dgs-surface-2: #f6ead0;
+  --dgs-border: #d0b075;
+  --dgs-text: #6e4f21;
+  --dgs-muted: #8f6b34;
+  --dgs-primary: #b88b3f;
+  --dgs-primary-hover: #a27834;
+  --dgs-primary-active: #89642c;
+  --dgs-accent: #c99a4d;
+  --dgs-ring: rgba(184, 139, 63, 0.24);
+  --dgs-nav-bg: linear-gradient(180deg, #86622a 0%, #6c4d21 100%);
+  --dgs-nav-hover-bg: rgba(214, 175, 102, 0.26);
+  --dgs-nav-active-bg: rgba(237, 202, 130, 0.26);
+  --dgs-nav-active-indicator: #f2d394;
+  --dgs-table-head-bg: #f4e7cb;
+  --dgs-radius-sm: 8px;
+  --dgs-radius-md: 10px;
+  --dgs-shadow-1: 0 8px 18px rgba(82, 57, 20, 0.16);
+  --dgs-shadow-2: 0 14px 26px rgba(129, 93, 35, 0.2);
+  --dgs-font-sans: "Inter", "Segoe UI", Arial, sans-serif;
+  --dgs-banner-overlay: linear-gradient(90deg, rgba(105, 74, 31, 0.45), rgba(0, 0, 0, 0.1));
+  --dgs-banner-tint: rgba(183, 136, 58, 0.24);
+  --dgs-click-overlay: rgba(183, 136, 58, 0.75);
+}
+
+:root {
+  --color-background: var(--dgs-bg);
+  --color-foreground: var(--dgs-text);
+  --color-card: var(--dgs-surface);
+  --color-card-foreground: var(--dgs-text);
+  --color-popover: var(--dgs-surface);
+  --color-popover-foreground: var(--dgs-text);
+  --color-primary: var(--dgs-primary);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--dgs-surface-2);
+  --color-secondary-foreground: var(--dgs-text);
+  --color-accent: var(--dgs-accent);
+  --color-accent-foreground: #1b1f24;
+  --color-muted: var(--dgs-surface-2);
+  --color-muted-foreground: var(--dgs-muted);
+  --color-border: var(--dgs-border);
+  --color-input: var(--dgs-border);
+  --color-ring: var(--dgs-primary);
+  --radius: var(--dgs-radius-md);
+  --radius-sm: var(--dgs-radius-sm);
+  --radius-md: var(--dgs-radius-md);
+  --radius-lg: calc(var(--dgs-radius-md) + 4px);
+  --font-sans: var(--dgs-font-sans);
+}
+
+body {
+  background-color: var(--dgs-bg);
+  background-image: var(--dgs-bg-image);
+  color: var(--dgs-text);
+}
+
+.bg-slate-50 {
+  background-color: var(--dgs-bg) !important;
+}
+
+.bg-white {
+  background-color: var(--dgs-surface) !important;
+}
+
+.bg-slate-100 {
+  background-color: var(--dgs-surface-2) !important;
+}
+
+.bg-gray-50 {
+  background-color: var(--dgs-surface-2) !important;
+}
+
+.hover\:bg-slate-50:hover,
+.hover\:bg-gray-50:hover {
+  background-color: var(--dgs-surface-2) !important;
+}
+
+.border-slate-200,
+.border-gray-200,
+.border-gray-300 {
+  border-color: var(--dgs-border) !important;
+}
+
+.text-slate-500,
+.text-gray-500,
+.text-slate-600,
+.text-gray-600 {
+  color: var(--dgs-muted) !important;
+}
+
+.text-slate-700,
+.text-gray-700,
+.text-slate-900,
+.text-gray-900 {
+  color: var(--dgs-text) !important;
+}
+
+.bg-blue-600 {
+  background-color: var(--dgs-primary) !important;
+}
+
+.text-blue-600 {
+  color: var(--dgs-primary) !important;
+}
+
+.hover\:bg-blue-700:hover {
+  background-color: var(--dgs-primary-hover) !important;
+}
+
+.active\:bg-blue-700:active {
+  background-color: var(--dgs-primary-active) !important;
+}
+
+.border-blue-600 {
+  border-color: var(--dgs-primary) !important;
+}
+
+.text-blue-700 {
+  color: var(--dgs-primary) !important;
+}
+
+.bg-blue-50 {
+  background-color: var(--dgs-surface-2) !important;
+}
+
+.border-blue-200 {
+  border-color: var(--dgs-border) !important;
+}
+
+.hover\:text-blue-600:hover {
+  color: var(--dgs-primary) !important;
+}
+
+.focus-visible\:outline-blue-600:focus-visible {
+  outline-color: var(--dgs-primary) !important;
+}
+
+.focus\:ring-blue-100:focus {
+  --tw-ring-color: var(--dgs-ring) !important;
+}
+
+.shadow-sm {
+  box-shadow: var(--dgs-shadow-1) !important;
+}
+
+.hover\:shadow-md:hover {
+  box-shadow: var(--dgs-shadow-2) !important;
+}
+
+.shadow-sm:hover {
+  box-shadow: var(--dgs-shadow-2) !important;
+}
+
+.border-slate-200:hover,
+.border-gray-200:hover {
+  border-color: rgba(245, 113, 15, 0.22) !important;
+}
+
+.dgs-ticker {
+  height: 40px;
+  background: linear-gradient(90deg, var(--dgs-primary), var(--dgs-primary-hover));
+  color: #ffffff;
+}
+
+.dgs-banner {
+  height: 240px;
+  border-radius: var(--dgs-radius-md);
+  overflow: hidden;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  box-shadow: var(--dgs-shadow-1);
+}
+
+.dgs-banner-overlay {
+  height: 100%;
+  width: 100%;
+  background:
+    var(--dgs-banner-overlay),
+    linear-gradient(90deg, var(--dgs-banner-tint), rgba(255, 107, 0, 0.05));
+}
+
+.dgs-progress {
+  height: 3px;
+  background: linear-gradient(90deg, var(--dgs-primary), var(--dgs-primary-hover));
+  transition: opacity 200ms ease;
+}
+
+.dgs-click-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--dgs-click-overlay);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 250ms ease;
+  z-index: 40;
+}
+
+.dgs-click-overlay.is-active {
+  opacity: 1;
+  transition-duration: 150ms;
+}
+
+.dgs-watermark {
+  position: fixed;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  filter: blur(2px);
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@media (max-width: 768px) {
+  .dgs-banner {
+    height: 160px;
+  }
+}
+
+header,
+nav {
+  background-color: var(--dgs-nav-bg);
+}
+
+header nav a,
+header nav button {
+  color: #ffeec8;
+}
+
+header nav a:hover,
+header nav button:hover {
+  background-color: var(--dgs-nav-hover-bg);
+}
+
+header nav a[aria-current="page"],
+header nav a.active {
+  background-color: var(--dgs-nav-active-bg);
+  border-bottom: 2px solid var(--dgs-nav-active-indicator);
+}
+
+thead {
+  background-color: var(--dgs-table-head-bg);
+}
+
+thead th {
+  color: var(--dgs-text);
+}
+
+/* Rollover micro-interactions for clickable controls outside search/dashboard full-theme pages */
+a[href],
+button {
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+
+a[href]:hover,
+button:hover {
+  transform: translateY(-1px);
+}
+
+.rounded-full:hover,
+.rounded-xl:hover,
+.rounded-2xl:hover {
+  box-shadow: var(--dgs-shadow-2);
+}

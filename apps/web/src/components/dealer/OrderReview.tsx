@@ -1,8 +1,8 @@
-import type { CartItem, DispatchMethod } from '@/types/dealer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Truck } from 'lucide-react';
+import type { CartItem, DispatchMethod } from "@/types/dealer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Truck } from "lucide-react";
 
 interface OrderReviewProps {
   items: CartItem[];
@@ -15,9 +15,9 @@ interface OrderReviewProps {
 }
 
 const dispatchLabels: Record<DispatchMethod, string> = {
-  standard: 'Standard Delivery (3-5 days)',
-  express: 'Express Delivery (Next day)',
-  collection: 'Click & Collect',
+  standard: "Standard Delivery (3-5 days)",
+  express: "Express Delivery (Next day)",
+  collection: "Click & Collect",
 };
 
 /**
@@ -39,9 +39,9 @@ export function OrderReview({
   className,
 }: OrderReviewProps) {
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: 'GBP',
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: "GBP",
     }).format(amount);
   };
 
@@ -65,9 +65,7 @@ export function OrderReview({
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-slate-900">
-                        {item.product.lrNo}
-                      </span>
+                      <span className="font-medium text-slate-900">{item.product.lrNo}</span>
                       {item.product.jagAlt && (
                         <Badge variant="outline" className="text-xs">
                           {item.product.jagAlt}
@@ -78,9 +76,7 @@ export function OrderReview({
                       {item.product.description}
                     </p>
                     <div className="flex items-center gap-4 mt-1">
-                      <span className="text-sm text-slate-500">
-                        Qty: {item.quantity}
-                      </span>
+                      <span className="text-sm text-slate-500">Qty: {item.quantity}</span>
                       <span className="text-sm text-slate-500">
                         @ {formatCurrency(item.product.dealerPrice)}
                       </span>
@@ -100,17 +96,13 @@ export function OrderReview({
 
           {/* Dispatch Method */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">
-              Delivery Method
-            </h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-3">Delivery Method</h3>
             <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <Truck className="w-5 h-5 text-blue-600" />
               </div>
               <div className="flex-1">
-                <div className="font-medium text-slate-900">
-                  {dispatchLabels[dispatchMethod]}
-                </div>
+                <div className="font-medium text-slate-900">{dispatchLabels[dispatchMethod]}</div>
                 {deliveryCharge > 0 ? (
                   <div className="text-sm text-slate-600">
                     Delivery charge: {formatCurrency(deliveryCharge)}
@@ -128,32 +120,26 @@ export function OrderReview({
           <div className="space-y-3">
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-600">Subtotal</span>
-              <span className="font-medium text-slate-900">
-                {formatCurrency(subtotal)}
-              </span>
+              <span className="font-medium text-slate-900">{formatCurrency(subtotal)}</span>
             </div>
 
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-600">Delivery</span>
               <span className="font-medium text-slate-900">
-                {deliveryCharge > 0 ? formatCurrency(deliveryCharge) : 'Free'}
+                {deliveryCharge > 0 ? formatCurrency(deliveryCharge) : "Free"}
               </span>
             </div>
 
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-600">VAT (20%)</span>
-              <span className="font-medium text-slate-900">
-                {formatCurrency(vat)}
-              </span>
+              <span className="font-medium text-slate-900">{formatCurrency(vat)}</span>
             </div>
 
             <Separator />
 
             <div className="flex items-center justify-between">
               <span className="text-lg font-semibold text-slate-900">Total</span>
-              <span className="text-2xl font-bold text-slate-900">
-                {formatCurrency(total)}
-              </span>
+              <span className="text-2xl font-bold text-slate-900">{formatCurrency(total)}</span>
             </div>
           </div>
         </CardContent>

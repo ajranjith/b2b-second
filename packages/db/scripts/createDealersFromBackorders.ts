@@ -53,7 +53,6 @@ async function createDealersFromBackorders() {
                 const dealerAccount = await prisma.dealerAccount.create({
                     data: {
                         accountNo,
-                        erpAccountNo: accountNo,
                         companyName,
                         status: 'ACTIVE',
                         entitlement: 'SHOW_ALL',
@@ -83,66 +82,21 @@ async function createDealersFromBackorders() {
                 })
 
                 // Create band assignments
-                await prisma.dealerBandAssignment.createMany({
-                    data: [
-                        {
-                            dealerAccountId: dealerAccount.id,
-                            partType: 'GENUINE',
-                            bandCode: '1',
-                        },
-                        {
-                            dealerAccountId: dealerAccount.id,
-                            partType: 'AFTERMARKET',
-                            bandCode: '2',
-                        },
-                        {
-                            dealerAccountId: dealerAccount.id,
-                            partType: 'BRANDED',
-                            bandCode: '3',
-                        },
-                    ],
-                })
-
-                console.log(`  ✅ Created dealer account and user`)
-                console.log(`     Email: ${email}`)
-                console.log(`     Password: ${defaultPassword}`)
-                console.log(`     Backorders: ${customer.backorderCount}`)
+                console.log(`  ✅ Created dealer: ${accountNo}`)
                 created++
-
-            } catch (error: any) {
-                console.error(`  ❌ Error creating dealer ${accountNo}:`, error.message)
+            } catch (err) {
+                console.error(`  ❌ Error creating dealer ${accountNo}:`, err)
             }
-
-            console.log('')
         }
 
-        console.log('═══════════════════════════════════════')
-        console.log('📊 SUMMARY')
-        console.log('═══════════════════════════════════════')
-        console.log(`✅ Created: ${created} dealer accounts`)
-        console.log(`⏭️  Skipped: ${skipped} (already existed)`)
-        console.log(`📧 Default password for all: ${defaultPassword}`)
-        console.log('')
-        console.log('🔐 All dealers can login with:')
-        console.log('   Email: [accountno]@dealer.local')
-        console.log(`   Password: ${defaultPassword}`)
-        console.log('')
-
+        console.log(`\n✅ Done! Created: ${created}, Skipped: ${skipped}`)
     } catch (error) {
-        console.error('❌ Error:', error)
+        console.error('Error:', error)
         throw error
     } finally {
         await prisma.$disconnect()
     }
 }
 
-// Run the script
 createDealersFromBackorders()
-    .then(() => {
-        console.log('✅ Script completed')
-        process.exit(0)
-    })
-    .catch((error) => {
-        console.error('❌ Script failed:', error)
-        process.exit(1)
-    })
+    .catch(console.error)

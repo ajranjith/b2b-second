@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { formatDistanceToNow } from 'date-fns';
-import { Eye, Download } from 'lucide-react';
-import type { Order } from '@/types/dealer';
-import { OrderStatusChip } from '@/components/global';
-import { Button } from '@/components/ui/button';
+import { useRouter } from "next/navigation";
+import { formatDistanceToNow } from "date-fns";
+import { Eye, Download } from "lucide-react";
+import type { Order } from "@/types/dealer";
+import { OrderStatusChip } from "@/components/global";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -13,9 +13,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface RecentOrdersTableProps {
   orders: Order[];
@@ -46,9 +46,9 @@ export function RecentOrdersTable({
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: 'GBP',
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: "GBP",
     }).format(amount);
   };
 
@@ -61,10 +61,7 @@ export function RecentOrdersTable({
         <CardContent>
           <div className="text-center py-12">
             <p className="text-slate-500 mb-4">No orders yet</p>
-            <Button
-              variant="outline"
-              onClick={() => router.push('/dealer/search')}
-            >
+            <Button variant="outline" onClick={() => router.push("/dealer/search")}>
               Start Shopping
             </Button>
           </div>
@@ -77,11 +74,7 @@ export function RecentOrdersTable({
     <Card className={className}>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Recent Orders</CardTitle>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push('/dealer/orders')}
-        >
+        <Button variant="ghost" size="sm" onClick={() => router.push("/dealer/orders")}>
           View All
         </Button>
       </CardHeader>
@@ -105,9 +98,7 @@ export function RecentOrdersTable({
                   className="hover:bg-slate-50 cursor-pointer"
                   onClick={() => handleViewOrder(order.id)}
                 >
-                  <TableCell className="font-medium">
-                    {order.orderNumber}
-                  </TableCell>
+                  <TableCell className="font-medium">{order.orderNumber}</TableCell>
                   <TableCell className="text-slate-600">
                     {formatDistanceToNow(new Date(order.createdAt), {
                       addSuffix: true,
@@ -116,9 +107,7 @@ export function RecentOrdersTable({
                   <TableCell>
                     <OrderStatusChip status={order.status} />
                   </TableCell>
-                  <TableCell className="text-right">
-                    {order.items.length}
-                  </TableCell>
+                  <TableCell className="text-right">{order.items.length}</TableCell>
                   <TableCell className="text-right font-medium">
                     {formatCurrency(order.total)}
                   </TableCell>

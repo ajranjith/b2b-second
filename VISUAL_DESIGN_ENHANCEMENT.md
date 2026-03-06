@@ -1,4 +1,5 @@
 # Visual Design Enhancement Guide
+
 ## Eurospare-Inspired Professional Aesthetic
 
 **Date:** 2026-01-17
@@ -10,6 +11,7 @@
 ## 🎨 Design Philosophy
 
 ### Core Principles
+
 1. **Professional Luxury** - Corporate aesthetic targeting B2B automotive sector
 2. **Product-Centric** - Hyperrealistic imagery emphasizing quality
 3. **Clean Minimalism** - Let products speak through professional photography
@@ -21,16 +23,21 @@
 ## 🖼️ Visual Elements
 
 ### Hero Banner
+
 **Style:** Large, immersive hero with gradient overlays
+
 ```tsx
 <div className="relative overflow-hidden">
   {/* Gradient Background */}
   <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-slate-50 to-white opacity-60" />
 
   {/* Subtle Pattern */}
-  <div className="absolute inset-0 opacity-[0.03]" style={{
-    backgroundImage: `url("data:image/svg+xml,...")`,
-  }} />
+  <div
+    className="absolute inset-0 opacity-[0.03]"
+    style={{
+      backgroundImage: `url("data:image/svg+xml,...")`,
+    }}
+  />
 
   {/* Content */}
   <div className="relative">...</div>
@@ -38,7 +45,9 @@
 ```
 
 ### Product Imagery
+
 **Requirements:**
+
 - Hyperrealistic, professional photography
 - Close-up detail focus
 - Consistent lighting
@@ -47,6 +56,7 @@
 - Subtle shadows for depth
 
 **Recommended Sizes:**
+
 - Hero: 1200x900px
 - Category Cards: 800x600px
 - Product Thumbnails: 400x300px
@@ -57,27 +67,30 @@
 ## 🎨 Color Palette
 
 ### Primary Colors
+
 ```css
---primary-blue-600: #2563eb;    /* Primary actions */
---primary-blue-700: #1d4ed8;    /* Hover states */
---primary-blue-50: #eff6ff;     /* Light backgrounds */
+--primary-blue-600: #2563eb; /* Primary actions */
+--primary-blue-700: #1d4ed8; /* Hover states */
+--primary-blue-50: #eff6ff; /* Light backgrounds */
 ```
 
 ### Neutral Scale
+
 ```css
---slate-50: #f8fafc;     /* Page background */
---slate-100: #f1f5f9;    /* Card backgrounds */
---slate-200: #e2e8f0;    /* Borders */
---slate-600: #475569;    /* Body text */
---slate-900: #0f172a;    /* Headings */
+--slate-50: #f8fafc; /* Page background */
+--slate-100: #f1f5f9; /* Card backgrounds */
+--slate-200: #e2e8f0; /* Borders */
+--slate-600: #475569; /* Body text */
+--slate-900: #0f172a; /* Headings */
 ```
 
 ### Accent Colors
+
 ```css
---purple-600: #9333ea;   /* Secondary accent */
---green-600: #16a34a;    /* Success states */
---amber-600: #d97706;    /* Warnings */
---red-600: #dc2626;      /* Errors */
+--purple-600: #9333ea; /* Secondary accent */
+--green-600: #16a34a; /* Success states */
+--amber-600: #d97706; /* Warnings */
+--red-600: #dc2626; /* Errors */
 ```
 
 ---
@@ -85,6 +98,7 @@
 ## 📐 Layout Patterns
 
 ### Grid System
+
 ```tsx
 // Hero Section
 <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -104,14 +118,15 @@
 ```
 
 ### Spacing Scale
+
 ```css
---space-xs: 0.25rem;   /* 4px */
---space-sm: 0.5rem;    /* 8px */
---space-md: 1rem;      /* 16px */
---space-lg: 1.5rem;    /* 24px */
---space-xl: 2rem;      /* 32px */
---space-2xl: 3rem;     /* 48px */
---space-3xl: 4rem;     /* 64px */
+--space-xs: 0.25rem; /* 4px */
+--space-sm: 0.5rem; /* 8px */
+--space-md: 1rem; /* 16px */
+--space-lg: 1.5rem; /* 24px */
+--space-xl: 2rem; /* 32px */
+--space-2xl: 3rem; /* 48px */
+--space-3xl: 4rem; /* 64px */
 ```
 
 ---
@@ -119,30 +134,38 @@
 ## 🖌️ Typography
 
 ### Font Stack
+
 ```css
-font-family: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+font-family:
+  "Sora",
+  -apple-system,
+  BlinkMacSystemFont,
+  "Segoe UI",
+  sans-serif;
 ```
 
 ### Type Scale
+
 ```css
 /* Headings */
---text-5xl: 3rem;      /* 48px - Hero */
---text-4xl: 2.25rem;   /* 36px - Section titles */
---text-3xl: 1.875rem;  /* 30px - Page titles */
---text-2xl: 1.5rem;    /* 24px - Card titles */
---text-xl: 1.25rem;    /* 20px - Subtitles */
+--text-5xl: 3rem; /* 48px - Hero */
+--text-4xl: 2.25rem; /* 36px - Section titles */
+--text-3xl: 1.875rem; /* 30px - Page titles */
+--text-2xl: 1.5rem; /* 24px - Card titles */
+--text-xl: 1.25rem; /* 20px - Subtitles */
 
 /* Body */
---text-base: 1rem;     /* 16px - Body */
---text-sm: 0.875rem;   /* 14px - Small text */
---text-xs: 0.75rem;    /* 12px - Labels */
+--text-base: 1rem; /* 16px - Body */
+--text-sm: 0.875rem; /* 14px - Small text */
+--text-xs: 0.75rem; /* 12px - Labels */
 ```
 
 ### Font Weights
+
 ```css
---font-medium: 500;    /* Body text */
---font-semibold: 600;  /* Emphasis */
---font-bold: 700;      /* Headings */
+--font-medium: 500; /* Body text */
+--font-semibold: 600; /* Emphasis */
+--font-bold: 700; /* Headings */
 ```
 
 ---
@@ -150,6 +173,7 @@ font-family: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 ## 🎭 Component Styles
 
 ### Cards
+
 ```tsx
 // Basic Card
 <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm hover:shadow-lg transition-all">
@@ -168,6 +192,7 @@ font-family: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 ```
 
 ### Buttons
+
 ```tsx
 // Primary Button
 <button className="inline-flex items-center rounded-full bg-blue-600 px-8 py-4 text-base font-semibold text-white shadow-xl shadow-blue-600/30 hover:bg-blue-700 hover:shadow-2xl hover:shadow-blue-600/40 transition-all">
@@ -182,6 +207,7 @@ font-family: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 ```
 
 ### Badges
+
 ```tsx
 <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full text-sm font-medium">
   <Package className="w-4 h-4" />
@@ -194,6 +220,7 @@ font-family: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 ## 🌅 Background Treatments
 
 ### Gradient Overlays
+
 ```tsx
 // Subtle gradient
 <div className="bg-gradient-to-b from-slate-50 to-white" />
@@ -209,12 +236,15 @@ font-family: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 ```
 
 ### Subtle Patterns
+
 ```tsx
 // Grid pattern
-<div style={{
-  backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-  opacity: 0.03
-}} />
+<div
+  style={{
+    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+    opacity: 0.03,
+  }}
+/>
 ```
 
 ---
@@ -222,7 +252,9 @@ font-family: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 ## 📸 Image Guidelines
 
 ### Product Photography
+
 **Style Requirements:**
+
 - Professional lighting (three-point setup)
 - Neutral background (white or subtle gradient)
 - Sharp focus on product details
@@ -230,6 +262,7 @@ font-family: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 - Consistent angle (30-45° for components)
 
 **Technical Specs:**
+
 ```
 Format: WebP (with JPEG fallback)
 Resolution: 2x for retina displays
@@ -239,8 +272,9 @@ Loading: Lazy load below fold
 ```
 
 ### Example Implementation
+
 ```tsx
-import Image from 'next/image';
+import Image from "next/image";
 
 <Image
   src="/products/brake-disc.webp"
@@ -250,7 +284,7 @@ import Image from 'next/image';
   className="rounded-lg object-cover"
   loading="lazy"
   quality={85}
-/>
+/>;
 ```
 
 ---
@@ -258,6 +292,7 @@ import Image from 'next/image';
 ## 🎬 Animations & Transitions
 
 ### Hover Effects
+
 ```css
 /* Card hover */
 transition: all 0.3s ease;
@@ -272,6 +307,7 @@ group-hover:translate-x-1 transition-transform
 ```
 
 ### Entrance Animations
+
 ```tsx
 // Fade in on scroll (using Intersection Observer)
 <div className="opacity-0 translate-y-4 transition-all duration-500 data-[visible=true]:opacity-100 data-[visible=true]:translate-y-0">
@@ -284,6 +320,7 @@ group-hover:translate-x-1 transition-transform
 ## 🔧 Implementation Steps
 
 ### 1. Update Home Page
+
 ```bash
 # Backup current
 mv apps/web/src/app/page.tsx apps/web/src/app/page-old.tsx
@@ -293,7 +330,9 @@ mv apps/web/src/app/page-enhanced.tsx apps/web/src/app/page.tsx
 ```
 
 ### 2. Add Category Images
+
 Place professional product images in:
+
 ```
 apps/web/public/categories/
 ├── engine.jpg
@@ -302,12 +341,15 @@ apps/web/public/categories/
 ```
 
 ### 3. Add Hero Image
+
 ```
 apps/web/public/hero-automotive.jpg
 ```
 
 ### 4. Update Dealer Pages
+
 Apply same visual treatment to:
+
 - Dashboard banners
 - Search page hero
 - Order confirmation
@@ -318,6 +360,7 @@ Apply same visual treatment to:
 ## 📋 Visual Checklist
 
 ### Homepage
+
 - [ ] Hero section with gradient overlay
 - [ ] Professional product imagery
 - [ ] Category cards with hover effects
@@ -326,6 +369,7 @@ Apply same visual treatment to:
 - [ ] Professional footer
 
 ### Dealer Portal
+
 - [ ] Page-specific hero banners
 - [ ] KPI cards with gradients
 - [ ] Product card imagery
@@ -333,6 +377,7 @@ Apply same visual treatment to:
 - [ ] Hover transitions
 
 ### Admin Portal
+
 - [ ] Consistent header styling
 - [ ] Dashboard card treatments
 - [ ] Table visual polish
@@ -343,6 +388,7 @@ Apply same visual treatment to:
 ## 🖼️ Sample Image URLs (Placeholders)
 
 ### Category Images
+
 ```
 Engine Components: https://images.unsplash.com/photo-1486262715619-67b85e0b08d3
 Brake Systems: https://images.unsplash.com/photo-1619642751034-765dfdf7c58e
@@ -350,6 +396,7 @@ Suspension: https://images.unsplash.com/photo-1619642751059-8b5c6c7cd45b
 ```
 
 ### Hero Images
+
 ```
 Automotive Workshop: https://images.unsplash.com/photo-1486262715619-67b85e0b08d3
 Parts Display: https://images.unsplash.com/photo-1619642751034-765dfdf7c58e
@@ -364,18 +411,21 @@ Parts Display: https://images.unsplash.com/photo-1619642751034-765dfdf7c58e
 ### Before → After
 
 **Home Page:**
+
 - Basic layout → Immersive hero section
 - Simple cards → Professional category cards
 - Plain buttons → Gradient buttons with shadows
 - Minimal branding → Strong visual identity
 
 **Dealer Portal:**
+
 - Flat design → Layered with shadows
 - Stock photos → Product photography
 - Basic colors → Professional palette
 - Static cards → Interactive hover states
 
 **Admin Portal:**
+
 - Generic table → Polished data views
 - Basic buttons → Styled action buttons
 - Plain backgrounds → Subtle gradients
@@ -386,16 +436,19 @@ Parts Display: https://images.unsplash.com/photo-1619642751034-765dfdf7c58e
 ## 📚 Resources
 
 ### Design Inspiration
+
 - Eurospare.com - B2B automotive parts
 - Brembo.com - Premium brake systems
 - Bosch Automotive - Professional imagery
 
 ### Image Sources (Dev)
+
 - Unsplash - Free stock photos
 - Pexels - Automotive imagery
 - Custom photography - Production use
 
 ### Tools
+
 - Figma - Design mockups
 - TinyPNG - Image compression
 - SVGOMG - SVG optimization
@@ -405,6 +458,7 @@ Parts Display: https://images.unsplash.com/photo-1619642751034-765dfdf7c58e
 ## ✅ Status
 
 **Completed:**
+
 - ✅ Enhanced home page design
 - ✅ Professional color palette
 - ✅ Component style guide
@@ -413,6 +467,7 @@ Parts Display: https://images.unsplash.com/photo-1619642751034-765dfdf7c58e
 - ✅ Image guidelines
 
 **Ready for:**
+
 1. Add actual product photography
 2. Apply to all portal pages
 3. Optimize images

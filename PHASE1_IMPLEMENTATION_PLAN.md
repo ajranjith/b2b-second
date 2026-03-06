@@ -40,6 +40,7 @@ This document outlines the complete implementation of the Phase 1 B2B Dealer Por
    - submitOrder()
 
 ### Directory Structure:
+
 ```
 apps/web/src/
 ├── components/
@@ -70,6 +71,7 @@ apps/web/src/
 ### Component: [AppShell.tsx](apps/web/src/components/layouts/AppShell.tsx)
 
 **Structure:**
+
 ```
 ┌─────────────────────────────────────┐
 │   Header (72px desktop/64 mobile)   │ ← Sticky, z-50
@@ -90,6 +92,7 @@ apps/web/src/
 ```
 
 **Responsibilities:**
+
 - Render ReferenceHeader (sticky)
 - Render AnnouncementTicker (sticky below header)
 - Render SideNav (desktop: fixed sidebar, mobile: overlay drawer)
@@ -98,6 +101,7 @@ apps/web/src/
 - Handle announcement clicks → open MessageDrawer
 
 **Props:**
+
 ```typescript
 interface AppShellProps {
   children: React.ReactNode;
@@ -114,6 +118,7 @@ interface AppShellProps {
 **File**: `src/components/global/MessageDrawer.tsx`
 
 **Features:**
+
 - Right-side drawer (480px desktop, full-screen mobile)
 - Shows full announcement details
 - Attachments list with download links
@@ -123,6 +128,7 @@ interface AppShellProps {
 - Smooth slide-in animation
 
 **Structure:**
+
 ```tsx
 <MessageDrawer isOpen={bool} onClose={fn} announcement={Announcement}>
   <DrawerHeader>
@@ -145,6 +151,7 @@ interface AppShellProps {
 **File**: `src/components/layouts/SideNav.tsx`
 
 **Features:**
+
 - Desktop: Fixed sidebar (260px wide)
 - Mobile: Overlay drawer (triggered from AppShell)
 - Nav links with icons and active states
@@ -158,11 +165,13 @@ interface AppShellProps {
   - Logout
 
 **Active State Logic:**
+
 ```typescript
-const isActive = pathname === href || pathname.startsWith(href + '/');
+const isActive = pathname === href || pathname.startsWith(href + "/");
 ```
 
 **Styling:**
+
 - Active: `bg-blue-50 text-blue-600 border-l-4 border-blue-600`
 - Hover: `hover:bg-slate-50`
 
@@ -171,6 +180,7 @@ const isActive = pathname === href || pathname.startsWith(href + '/');
 **File**: `src/components/layouts/BottomNav.tsx`
 
 **Features:**
+
 - Mobile only (`className="lg:hidden"`)
 - Fixed bottom (height: 64px)
 - 4 nav items: Dashboard, Search, Orders, Account
@@ -182,20 +192,22 @@ const isActive = pathname === href || pathname.startsWith(href + '/');
 **File**: `src/components/global/StatusChip.tsx`
 
 **Variants:**
+
 ```typescript
-type Variant = 'neutral' | 'info' | 'success' | 'warning' | 'error' | 'urgent';
+type Variant = "neutral" | "info" | "success" | "warning" | "error" | "urgent";
 
 const statusStyles = {
-  neutral: 'bg-slate-100 text-slate-700 border-slate-200',
-  info: 'bg-blue-50 text-blue-700 border-blue-200',
-  success: 'bg-green-50 text-green-700 border-green-200',
-  warning: 'bg-amber-50 text-amber-700 border-amber-200',
-  error: 'bg-red-50 text-red-700 border-red-200',
-  urgent: 'bg-red-100 text-red-800 border-red-300',
+  neutral: "bg-slate-100 text-slate-700 border-slate-200",
+  info: "bg-blue-50 text-blue-700 border-blue-200",
+  success: "bg-green-50 text-green-700 border-green-200",
+  warning: "bg-amber-50 text-amber-700 border-amber-200",
+  error: "bg-red-50 text-red-700 border-red-200",
+  urgent: "bg-red-100 text-red-800 border-red-300",
 };
 ```
 
 **Usage:**
+
 ```tsx
 <StatusChip variant="success">In Stock</StatusChip>
 <StatusChip variant="warning">Low Stock</StatusChip>
@@ -207,6 +219,7 @@ const statusStyles = {
 **File**: `src/components/global/Table.tsx`
 
 **Features:**
+
 - Density toggle: Comfortable (56px rows) / Dense (40px rows)
 - Sortable headers (click to sort)
 - Row expansion (chevron icon)
@@ -215,11 +228,12 @@ const statusStyles = {
 - Sticky header (optional)
 
 **Props:**
+
 ```typescript
 interface TableProps<T> {
   data: T[];
   columns: ColumnDef<T>[];
-  density?: 'comfortable' | 'dense';
+  density?: "comfortable" | "dense";
   isLoading?: boolean;
   emptyMessage?: string;
   onRowClick?: (row: T) => void;
@@ -231,6 +245,7 @@ interface TableProps<T> {
 ### 3.6 Toast Notifications
 
 **Already exists**: Using `sonner` library
+
 - Success toast: `toast.success("Item added to cart")`
 - Error toast: `toast.error("Failed to load")`
 - Info toast: `toast.info("Order processing")`
@@ -283,6 +298,7 @@ interface TableProps<T> {
 3. **NewsFeedCard** - List of news items with category badges
 
 ### States:
+
 - Loading: Show skeleton cards
 - Empty orders: "No orders yet" message
 - Error: Error card with retry button
@@ -315,18 +331,21 @@ interface TableProps<T> {
 ### Features:
 
 **Sticky Filter Bar:**
+
 - Search input
 - Availability chips (All, In Stock, Low Stock, Backorder)
 - Price range sliders
 - Sort dropdown (Relevance, Price: Low-High, Price: High-Low, Part Number)
 
 **Results Table:**
+
 - Columns: Part No (LRNo + JagAlt badge), Description (2-line clamp), Price, Availability + ETA, Qty Stepper, Add Button
 - Row expansion: Shows supersession info, notes, image placeholder
 - Empty state: "No results found" with suggestions
 - Loading state: Skeleton rows
 
 **Cart Preview Panel (Right Sticky):**
+
 - Last 5 added items
 - Subtotal
 - "View Cart" button
@@ -359,6 +378,7 @@ interface TableProps<T> {
 ```
 
 ### Features:
+
 - Inline qty editing (stepper or input)
 - Remove button (× icon)
 - Order summary panel: Subtotal, VAT (optional), Total
@@ -545,6 +565,7 @@ interface TableProps<T> {
 ## 📱 TASK 9 — Responsive + Accessibility
 
 ### Mobile Breakpoints:
+
 - **Mobile**: < 768px (use BottomNav, hide SideNav)
 - **Tablet**: 768px - 1024px
 - **Desktop**: ≥ 1024px (show SideNav, hide BottomNav)
@@ -552,28 +573,33 @@ interface TableProps<T> {
 ### Accessibility Checklist:
 
 ✅ **Keyboard Navigation:**
+
 - Tab order is logical
 - All interactive elements are focusable
 - Enter/Space activates buttons
 - ESC closes modals/drawers
 
 ✅ **Focus Management:**
+
 - Visible focus rings (ring-2 ring-blue-500)
 - Focus trap in MessageDrawer
 - Focus returns to trigger after close
 
 ✅ **ARIA Attributes:**
+
 - `aria-label` on icon-only buttons
 - `aria-expanded` on dropdowns
 - `role="button"` on clickable divs
 - `aria-live` for announcements
 
 ✅ **Screen Readers:**
+
 - Semantic HTML (`<nav>`, `<main>`, `<aside>`)
 - Alt text on images
 - Table headers with `scope`
 
 ✅ **Color Contrast:**
+
 - WCAG AA compliance (4.5:1 for text)
 - Don't rely on color alone for status
 
@@ -584,6 +610,7 @@ interface TableProps<T> {
 ### Design System Consistency:
 
 **Button Hierarchy:**
+
 ```tsx
 // Primary CTA
 <Button className="bg-blue-600 hover:bg-blue-700 text-white">
@@ -607,22 +634,26 @@ interface TableProps<T> {
 ```
 
 **Spacing:**
+
 - Card padding: `p-6`
 - Section gaps: `space-y-6` or `space-y-8`
 - Content max-width: `max-w-7xl` or `max-w-[1440px]`
 
 **Shadows:**
+
 - Cards: `shadow-sm hover:shadow-md`
 - Dropdowns/Popovers: `shadow-lg`
 - Modals: `shadow-xl`
 
 **Typography:**
+
 - Page title: `text-3xl font-bold text-slate-900`
 - Section heading: `text-xl font-semibold text-slate-800`
 - Body: `text-sm text-slate-600`
 - Labels: `text-sm font-medium text-slate-700`
 
 **Transitions:**
+
 - Hover states: `transition-colors duration-200`
 - Slide-ins: `transition-transform duration-300`
 - Fade-ins: `transition-opacity duration-200`
@@ -632,6 +663,7 @@ interface TableProps<T> {
 ## 📋 Implementation Checklist
 
 ### Core Infrastructure:
+
 - ✅ Theme tokens file
 - ✅ Mock data providers
 - ✅ API service interface
@@ -643,6 +675,7 @@ interface TableProps<T> {
 - ⏳ Table component with density
 
 ### Pages:
+
 - ⏳ Dashboard (KPI cards, recent orders, news feed)
 - ⏳ Search Parts (filters, results, cart preview)
 - ⏳ Cart (table with inline edit, order summary)
@@ -653,6 +686,7 @@ interface TableProps<T> {
 - ⏳ Account Settings
 
 ### Polish:
+
 - ⏳ Mobile responsive (BottomNav)
 - ⏳ Accessibility audit
 - ⏳ Loading states (skeletons)

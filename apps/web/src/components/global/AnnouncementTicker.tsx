@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { Info, Tag, AlertTriangle, AlertCircle, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { Announcement, AnnouncementType } from '@/types/dealer';
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect, useRef } from "react";
+import { Info, Tag, AlertTriangle, AlertCircle, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { Announcement, AnnouncementType } from "@/types/dealer";
+import { Badge } from "@/components/ui/badge";
 
 interface AnnouncementTickerProps {
   announcements: Announcement[];
@@ -19,23 +19,23 @@ const typeConfig: Record<
 > = {
   info: {
     icon: Info,
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-50 hover:bg-blue-100',
+    color: "text-blue-700",
+    bgColor: "bg-blue-50 hover:bg-blue-100",
   },
   promo: {
     icon: Tag,
-    color: 'text-green-700',
-    bgColor: 'bg-green-50 hover:bg-green-100',
+    color: "text-green-700",
+    bgColor: "bg-green-50 hover:bg-green-100",
   },
   warning: {
     icon: AlertTriangle,
-    color: 'text-amber-700',
-    bgColor: 'bg-amber-50 hover:bg-amber-100',
+    color: "text-amber-700",
+    bgColor: "bg-amber-50 hover:bg-amber-100",
   },
   urgent: {
     icon: AlertCircle,
-    color: 'text-red-700',
-    bgColor: 'bg-red-50 hover:bg-red-100',
+    color: "text-red-700",
+    bgColor: "bg-red-50 hover:bg-red-100",
   },
 };
 
@@ -100,10 +100,10 @@ export function AnnouncementTicker({
   return (
     <div
       className={cn(
-        'h-full flex items-center px-4 transition-colors',
+        "h-full flex items-center px-4 transition-colors",
         config.bgColor,
-        'cursor-pointer',
-        className
+        "cursor-pointer",
+        className,
       )}
       onClick={handleClick}
       onMouseEnter={() => setIsPaused(true)}
@@ -113,7 +113,7 @@ export function AnnouncementTicker({
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           handleClick();
         }
@@ -121,21 +121,18 @@ export function AnnouncementTicker({
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
         {/* Icon */}
-        <Icon className={cn('w-5 h-5 flex-shrink-0', config.color)} />
+        <Icon className={cn("w-5 h-5 flex-shrink-0", config.color)} />
 
         {/* Type Badge */}
         <Badge
           variant="outline"
-          className={cn(
-            'text-xs font-medium capitalize flex-shrink-0',
-            config.color
-          )}
+          className={cn("text-xs font-medium capitalize flex-shrink-0", config.color)}
         >
           {currentAnnouncement.type}
         </Badge>
 
         {/* Title */}
-        <span className={cn('font-medium text-sm', config.color)}>
+        <span className={cn("font-medium text-sm", config.color)}>
           {currentAnnouncement.title}:
         </span>
 
@@ -151,10 +148,8 @@ export function AnnouncementTicker({
               <button
                 key={idx}
                 className={cn(
-                  'w-1.5 h-1.5 rounded-full transition-all',
-                  idx === currentIndex
-                    ? 'bg-slate-700 w-4'
-                    : 'bg-slate-300 hover:bg-slate-400'
+                  "w-1.5 h-1.5 rounded-full transition-all",
+                  idx === currentIndex ? "bg-slate-700 w-4" : "bg-slate-300 hover:bg-slate-400",
                 )}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -170,8 +165,8 @@ export function AnnouncementTicker({
         <button
           onClick={handleDismiss}
           className={cn(
-            'flex-shrink-0 p-1 rounded hover:bg-slate-200 transition-colors',
-            config.color
+            "flex-shrink-0 p-1 rounded hover:bg-slate-200 transition-colors",
+            config.color,
           )}
           aria-label="Dismiss announcement"
         >
