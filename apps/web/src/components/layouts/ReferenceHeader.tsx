@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link';
+import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import {
   Search,
   ShoppingCart,
@@ -12,18 +12,18 @@ import {
   Phone,
   HeartIcon,
   LogOut,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 interface ReferenceHeaderProps {
   cartItemCount?: number;
@@ -44,7 +44,7 @@ interface ReferenceHeaderProps {
  */
 export function ReferenceHeader({
   cartItemCount = 0,
-  dealerName = 'Dealer Portal',
+  dealerName = "Dealer Portal",
   onCartClick,
   onMenuToggle,
   onSearchSubmit,
@@ -52,7 +52,7 @@ export function ReferenceHeader({
 }: ReferenceHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -67,7 +67,7 @@ export function ReferenceHeader({
   };
 
   const handleLogout = () => {
-    router.push('/dealer/login');
+    router.push("/dealer/login");
   };
 
   const handleMenuToggle = () => {
@@ -76,27 +76,36 @@ export function ReferenceHeader({
   };
 
   const navLinks = [
-    { label: 'Dashboard', href: '/dealer/dashboard' },
-    { label: 'Search Parts', href: '/dealer/search' },
-    { label: 'Orders', href: '/dealer/orders' },
-    { label: 'Account', href: '/dealer/account' },
+    { label: "Dashboard", href: "/dealer/dashboard" },
+    { label: "Search Parts", href: "/dealer/search" },
+    { label: "Orders", href: "/dealer/orders" },
+    { label: "Account", href: "/dealer/account" },
   ];
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <div className={cn('bg-white border-b border-slate-200', className)}>
+    <div className={cn("bg-white border-b border-slate-200", className)}>
       {/* Row 1: Utility Strip (Optional) */}
       <div className="bg-slate-50 border-b border-slate-200 h-8">
         <div className="max-w-[1440px] mx-auto px-6 h-full flex items-center justify-between text-xs">
           <div className="flex items-center gap-4">
-            <Link href="/dealer/support" className="text-slate-600 hover:text-blue-600 transition-colors">
+            <Link
+              href="/dealer/support"
+              className="text-slate-600 hover:text-blue-600 transition-colors"
+            >
               Support
             </Link>
-            <Link href="/dealer/support" className="text-slate-600 hover:text-blue-600 transition-colors">
+            <Link
+              href="/dealer/support"
+              className="text-slate-600 hover:text-blue-600 transition-colors"
+            >
               Live Chat
             </Link>
-            <a href="tel:+441234567890" className="flex items-center gap-1 text-slate-600 hover:text-blue-600 transition-colors">
+            <a
+              href="tel:+441234567890"
+              className="flex items-center gap-1 text-slate-600 hover:text-blue-600 transition-colors"
+            >
               <Phone className="w-3 h-3" />
               Call Support
             </a>
@@ -104,9 +113,7 @@ export function ReferenceHeader({
           <div className="hidden md:block text-slate-600">
             Dealer Portal Updates - Check our latest stock additions
           </div>
-          <div className="text-slate-600">
-            Free shipping on orders over £500
-          </div>
+          <div className="text-slate-600">Free shipping on orders over £500</div>
         </div>
       </div>
 
@@ -118,9 +125,7 @@ export function ReferenceHeader({
             <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">HB</span>
             </div>
-            <span className="hidden md:block text-xl font-bold text-slate-900">
-              Dealer Portal
-            </span>
+            <span className="hidden md:block text-xl font-bold text-slate-900">Dealer Portal</span>
           </Link>
 
           {/* Search Bar */}
@@ -176,10 +181,10 @@ export function ReferenceHeader({
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  'text-sm font-medium transition-colors py-2 border-b-2',
+                  "text-sm font-medium transition-colors py-2 border-b-2",
                   isActive(link.href)
-                    ? 'text-blue-600 border-blue-600'
-                    : 'text-slate-700 border-transparent hover:text-blue-600'
+                    ? "text-blue-600 border-blue-600"
+                    : "text-slate-700 border-transparent hover:text-blue-600",
                 )}
               >
                 {link.label}
@@ -202,7 +207,7 @@ export function ReferenceHeader({
             <Button
               variant="ghost"
               size="icon"
-              onClick={onCartClick || (() => router.push('/dealer/cart'))}
+              onClick={onCartClick || (() => router.push("/dealer/cart"))}
               className="relative text-slate-700 hover:text-blue-600"
             >
               <ShoppingCart className="w-5 h-5" />
@@ -211,7 +216,7 @@ export function ReferenceHeader({
                   variant="destructive"
                   className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full"
                 >
-                  {cartItemCount > 99 ? '99+' : cartItemCount}
+                  {cartItemCount > 99 ? "99+" : cartItemCount}
                 </Badge>
               )}
             </Button>
@@ -219,22 +224,18 @@ export function ReferenceHeader({
             {/* User Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-slate-700 hover:text-blue-600"
-                >
+                <Button variant="ghost" size="icon" className="text-slate-700 hover:text-blue-600">
                   <User className="w-5 h-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <div className="px-2 py-1.5 text-sm font-semibold">{dealerName}</div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push('/dealer/account')}>
+                <DropdownMenuItem onClick={() => router.push("/dealer/account")}>
                   <User className="mr-2 h-4 w-4" />
                   <span>Account</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/dealer/orders')}>
+                <DropdownMenuItem onClick={() => router.push("/dealer/orders")}>
                   <ShoppingCart className="mr-2 h-4 w-4" />
                   <span>My Orders</span>
                 </DropdownMenuItem>

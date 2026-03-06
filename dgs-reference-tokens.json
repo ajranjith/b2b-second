@@ -1,0 +1,22 @@
+{
+  "bg": "rgb(255, 255, 255)",
+  "bgImage": "none",
+  "surface": "rgb(243, 243, 243)",
+  "surface2": "rgb(243, 243, 243)",
+  "border": "rgb(106, 106, 106)",
+  "text": "rgb(106, 106, 106)",
+  "muted": "rgb(106, 106, 106)",
+  "primary": "#f5710f",
+  "primaryHover": "#e86400",
+  "primaryActive": "#cc5500",
+  "navBg": "rgb(255, 255, 255)",
+  "navHoverBg": "rgba(245, 113, 15, 0.1)",
+  "navActiveBg": "rgba(245, 113, 15, 0.14)",
+  "navActiveIndicator": "#f5710f",
+  "tableHeadBg": "rgb(255, 255, 255)",
+  "radiusSm": "3px",
+  "radiusMd": "0px",
+  "shadow1": "0 6px 14px rgba(0, 0, 0, 0.08)",
+  "shadow2": "0 12px 24px rgba(245, 113, 15, 0.18)",
+  "font": "Roboto, sans-serif"
+}

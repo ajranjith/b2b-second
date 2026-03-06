@@ -1,18 +1,17 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
-import { getOrderById, getOrderTimeline } from '@/lib/services/dealerApi';
-import { StatusChip } from '@/components/portal/StatusChip';
-import { DataTable } from '@/components/portal/DataTable';
-import { Card, CardContent, CardHeader, CardTitle, Button } from '@/ui';
+import { useParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { getOrderById, getOrderTimeline } from "@/lib/services/dealerApi";
+import { StatusChip } from "@/components/portal/StatusChip";
+import { DataTable } from "@/components/portal/DataTable";
+import { Card, CardContent, CardHeader, CardTitle, Button } from "@/ui";
 
-const statusTone: Record<string, 'blue' | 'green' | 'amber' | 'red' | 'slate'> = {
-  Processing: 'blue',
-  Ready: 'amber',
-  Shipped: 'green',
-  Backorder: 'red',
+const statusTone: Record<string, "blue" | "green" | "amber" | "red" | "slate"> = {
+  Processing: "blue",
+  Ready: "amber",
+  Shipped: "green",
+  Backorder: "red",
 };
 
 export default function DealerOrderDetailPage() {
@@ -27,11 +26,11 @@ export default function DealerOrderDetailPage() {
   }, [params.id]);
 
   const columns = [
-    { key: 'sku', label: 'SKU' },
-    { key: 'description', label: 'Description' },
-    { key: 'qty', label: 'Qty', align: 'center' as const },
-    { key: 'price', label: 'Unit Price', align: 'right' as const },
-    { key: 'total', label: 'Total', align: 'right' as const },
+    { key: "sku", label: "SKU" },
+    { key: "description", label: "Description" },
+    { key: "qty", label: "Qty", align: "center" as const },
+    { key: "price", label: "Unit Price", align: "right" as const },
+    { key: "total", label: "Total", align: "right" as const },
   ];
 
   const rows = useMemo(() => {
@@ -61,7 +60,9 @@ export default function DealerOrderDetailPage() {
   if (!order) {
     return (
       <Card>
-        <CardContent className="py-16 text-center text-slate-500">Loading order details...</CardContent>
+        <CardContent className="py-16 text-center text-slate-500">
+          Loading order details...
+        </CardContent>
       </Card>
     );
   }
@@ -78,9 +79,6 @@ export default function DealerOrderDetailPage() {
         </div>
         <div className="flex items-center gap-3">
           <StatusChip label={order.status} tone={statusTone[order.status]} />
-          <Link href={`/dealer/process-order?id=${order.id}`}>
-            <Button variant="outline">Process Order</Button>
-          </Link>
           <Button className="bg-blue-600 text-white hover:bg-blue-700">Download PDF</Button>
         </div>
       </div>
@@ -107,7 +105,11 @@ export default function DealerOrderDetailPage() {
                 <div className="flex flex-col items-center">
                   <div
                     className={`h-3 w-3 rounded-full ${
-                      item.status === 'done' ? 'bg-emerald-500' : item.status === 'current' ? 'bg-blue-600' : 'bg-slate-300'
+                      item.status === "done"
+                        ? "bg-emerald-500"
+                        : item.status === "current"
+                          ? "bg-blue-600"
+                          : "bg-slate-300"
                     }`}
                   />
                   {index < timeline.length - 1 && <div className="h-10 w-px bg-slate-200" />}

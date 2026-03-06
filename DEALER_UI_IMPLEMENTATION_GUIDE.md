@@ -5,9 +5,11 @@
 ## ✅ Completed Components (Tasks 1-3)
 
 ### Task 1: Project Structure ✅
+
 **Created comprehensive foundation for the dealer portal:**
 
 #### 📁 Folder Structure
+
 ```
 apps/web/src/
 ├── styles/
@@ -35,6 +37,7 @@ apps/web/src/
 ```
 
 #### 🎨 Design Tokens ([tokens.ts](apps/web/src/styles/tokens.ts))
+
 - **Spacing**: xs (4px) → 4xl (96px), semantic container/section spacing
 - **Border Radius**: sm (4px) → full (9999px)
 - **Typography**: Font scales, weights, letter spacing
@@ -47,6 +50,7 @@ apps/web/src/
 - **Animation**: Ticker rotation timing
 
 #### 📝 TypeScript Types ([types/dealer.ts](apps/web/src/types/dealer.ts))
+
 - `Announcement` + `AnnouncementType` (info/promo/warning/urgent)
 - `Product`, `Cart`, `CartItem`
 - `Order`, `OrderLineItem`, `OrderStatus`, `OrderTimelineEvent`
@@ -58,7 +62,9 @@ apps/web/src/
 - `LoadingState`, `ToastMessage`
 
 #### 🔌 API Services ([services/dealer-api.ts](apps/web/src/services/dealer-api.ts))
+
 **Complete API interface layer:**
+
 - `announcementAPI`: Get all, mark as read
 - `productAPI`: Search with filters, get by part number, check availability
 - `cartAPI`: Get, add item, update item, remove item, clear
@@ -67,6 +73,7 @@ apps/web/src/
 - `accountAPI`: Get/update profile, download statement
 
 #### 🗂️ Mock Data ([mocks/dealer-data.ts](apps/web/src/mocks/dealer-data.ts))
+
 - `mockAnnouncements` (4 items: info, promo, warning, urgent)
 - `mockProducts` (5 items with various statuses)
 - `mockOrders` (3 orders in different states)
@@ -78,10 +85,13 @@ apps/web/src/
 ---
 
 ### Task 2: AppShell Layout ✅
+
 **Built responsive layout system:**
 
 #### [AppShell.tsx](apps/web/src/components/layouts/AppShell.tsx)
+
 **Main layout wrapper with:**
+
 - Sticky Header (72px desktop / 64px mobile)
 - Optional Announcement Ticker (40px desktop / 36px mobile)
 - Body split: SideNav (260px) + Content area (max-width 1440px)
@@ -90,11 +100,14 @@ apps/web/src/
 - Flexible max-width support (comfortable 1280px / full 1440px)
 
 **Helper components:**
+
 - `AppShellContent`: Consistent padding and max-width wrapper
 - `AppShellSection`: Consistent spacing between sections (small/medium/large)
 
 #### [DealerHeader.tsx](apps/web/src/components/layouts/DealerHeader.tsx)
+
 **Main header featuring:**
+
 - Logo + "Dealer Portal" branding
 - Global search input (Part No / JagAlt / Description)
 - Help/Contact button
@@ -104,7 +117,9 @@ apps/web/src/
 - Responsive: search hidden on mobile, full layout on desktop
 
 #### [SideNav.tsx](apps/web/src/components/layouts/SideNav.tsx)
+
 **Left sidebar navigation (desktop only):**
+
 - Links: Dashboard, Search Parts, Cart, Orders, Backorders, Account
 - Active state highlighting (blue background for current page)
 - Badge support (cart count, backorder count)
@@ -113,7 +128,9 @@ apps/web/src/
 - Hover states with smooth transitions
 
 #### [BottomNav.tsx](apps/web/src/components/layouts/BottomNav.tsx)
+
 **Mobile bottom navigation:**
+
 - 5 primary items: Dashboard, Search, Cart, Orders, Account
 - Active state with icon scale effect
 - Cart badge support
@@ -123,10 +140,13 @@ apps/web/src/
 ---
 
 ### Task 3: Global Components ✅
+
 **Built reusable UI components:**
 
 #### [AnnouncementTicker.tsx](apps/web/src/components/global/AnnouncementTicker.tsx)
+
 **Auto-rotating announcement banner:**
+
 - Displays announcements sorted by priority
 - Auto-rotates every 8 seconds (configurable)
 - Pauses on hover/keyboard focus
@@ -138,7 +158,9 @@ apps/web/src/
 - Loading skeleton included
 
 #### [MessageDrawer.tsx](apps/web/src/components/global/MessageDrawer.tsx)
+
 **Right-side message detail drawer:**
+
 - 480px width on desktop, full screen on mobile
 - Shows full announcement with icon, type badge, timestamp
 - Displays attachments with download buttons
@@ -149,7 +171,9 @@ apps/web/src/
 - Smooth slide-in animation
 
 #### [StatusChip.tsx](apps/web/src/components/global/StatusChip.tsx)
+
 **Consistent status badges:**
+
 - `OrderStatusChip`: submitted, processing, completed, cancelled
 - `StockStatusChip`: in_stock (with quantity), low_stock, backorder, unknown
 - `StatusChip`: Generic with variants (info, success, warning, error, neutral)
@@ -157,7 +181,9 @@ apps/web/src/
 - Consistent with design system
 
 #### [DataTable.tsx](apps/web/src/components/global/DataTable.tsx)
+
 **Enhanced table component:**
+
 - **Density Toggle**: Switch between comfortable/dense views
   - Comfortable: py-4 px-4, larger text
   - Dense: py-2 px-3, compact text
@@ -170,7 +196,9 @@ apps/web/src/
 - Responsive rounded border design
 
 #### [toast-utils.ts](apps/web/src/components/global/toast-utils.ts)
+
 **Toast notification wrapper:**
+
 - `showToast.success()`, `.error()`, `.warning()`, `.info()`
 - `showToast.loading()` - returns ID for dismissal
 - `showToast.promise()` - handles async operations
@@ -186,7 +214,9 @@ apps/web/src/
 ## 🚧 Remaining Tasks (4-10)
 
 ### Task 4: Dashboard Page
+
 **Components to build:**
+
 - KPI cards row
   - Backorders count + download button
   - Orders in progress count
@@ -197,6 +227,7 @@ apps/web/src/
 - Empty states
 
 **Files:**
+
 - `apps/web/src/app/dealer/dashboard/page.tsx`
 - `apps/web/src/components/dealer/DashboardKPICard.tsx`
 - `apps/web/src/components/dealer/RecentOrdersTable.tsx`
@@ -205,7 +236,9 @@ apps/web/src/
 ---
 
 ### Task 5: Search Parts Page
+
 **Components to build:**
+
 - Sticky in-page search/filter bar
   - Part No / JagAlt / Description search
   - Availability filters
@@ -226,6 +259,7 @@ apps/web/src/
 - States: empty, no results, loading
 
 **Files:**
+
 - `apps/web/src/app/dealer/search/page.tsx`
 - `apps/web/src/components/dealer/SearchFilters.tsx`
 - `apps/web/src/components/dealer/ProductResultsTable.tsx`
@@ -234,7 +268,9 @@ apps/web/src/
 ---
 
 ### Task 6: Cart Page
+
 **Components to build:**
+
 - Cart table with inline quantity editors
 - Remove item buttons
 - Sticky Order Summary panel
@@ -245,6 +281,7 @@ apps/web/src/
 - Empty cart state with "Browse Parts" link
 
 **Files:**
+
 - `apps/web/src/app/dealer/cart/page.tsx`
 - `apps/web/src/components/dealer/CartTable.tsx`
 - `apps/web/src/components/dealer/OrderSummary.tsx`
@@ -252,7 +289,9 @@ apps/web/src/
 ---
 
 ### Task 7: Checkout Flow (3-step)
+
 **Components to build:**
+
 - Step indicator (1→2→3)
 - **Step 1: Dispatch Method**
   - Radio cards for dispatch options
@@ -270,6 +309,7 @@ apps/web/src/
 - Email warning state banner (non-blocking)
 
 **Files:**
+
 - `apps/web/src/app/dealer/checkout/page.tsx`
 - `apps/web/src/components/dealer/CheckoutStepIndicator.tsx`
 - `apps/web/src/components/dealer/DispatchMethodSelector.tsx`
@@ -279,7 +319,9 @@ apps/web/src/
 ---
 
 ### Task 8: Orders List + Order Detail
+
 **Components to build:**
+
 - **Orders List:**
   - Filter chips: Last 7/30/90 days
   - Status dropdown filter
@@ -303,6 +345,7 @@ apps/web/src/
   - Download buttons
 
 **Files:**
+
 - `apps/web/src/app/dealer/orders/page.tsx`
 - `apps/web/src/app/dealer/orders/[id]/page.tsx`
 - `apps/web/src/components/dealer/OrdersFilterBar.tsx`
@@ -314,7 +357,9 @@ apps/web/src/
 ---
 
 ### Task 9: Responsive + Accessibility
+
 **Improvements:**
+
 - Mobile: Use BottomNav instead of SideNav
 - Ensure ticker is keyboard accessible
 - MessageDrawer focus trap working
@@ -326,7 +371,9 @@ apps/web/src/
 ---
 
 ### Task 10: Final UI Polish
+
 **Refinements:**
+
 - Consistent spacing using design tokens
 - Typography hierarchy (headings, body, labels)
 - Shadow depth consistency
@@ -344,6 +391,7 @@ apps/web/src/
 ## 🎯 Implementation Strategy
 
 ### Next Steps:
+
 1. **Update dealer layout** to use new AppShell + components
 2. **Build Dashboard page** (Task 4) - establishes patterns for other pages
 3. **Build Search page** (Task 5) - most complex interactions
@@ -352,6 +400,7 @@ apps/web/src/
 6. **Polish** (Tasks 9-10) - accessibility and final refinements
 
 ### File Organization:
+
 ```
 apps/web/src/
 ├── app/dealer/                      # Next.js app routes
@@ -375,6 +424,7 @@ apps/web/src/
 ## 📋 Design System Reference
 
 ### Colors
+
 - **Primary**: Blue (#3b82f6) - CTAs, active states
 - **Success**: Green - in stock, completed
 - **Warning**: Amber - low stock, processing
@@ -382,14 +432,17 @@ apps/web/src/
 - **Neutral**: Slate - borders, muted text, backgrounds
 
 ### Spacing Scale
+
 - xs: 4px, sm: 8px, md: 16px, lg: 24px, xl: 32px, 2xl: 48px, 3xl: 64px, 4xl: 96px
 
 ### Typography
+
 - Headings: Fraunces (display font)
 - Body: Sora (sans-serif)
 - Mono: UI monospace
 
 ### Component Patterns
+
 - **Cards**: White bg, slate border, lg radius, 24px padding
 - **Buttons**: md radius, consistent padding, clear hierarchy
 - **Inputs**: slate-50 bg, slate-200 border, focus ring
@@ -401,9 +454,10 @@ apps/web/src/
 ## 🚀 Usage Examples
 
 ### Using AppShell
+
 ```tsx
-import { AppShell, DealerHeader, SideNav, BottomNav } from '@/components/layouts';
-import { AnnouncementTicker } from '@/components/global';
+import { AppShell, DealerHeader, SideNav, BottomNav } from "@/components/layouts";
+import { AnnouncementTicker } from "@/components/global";
 
 export default function DealerLayout({ children }) {
   return (
@@ -420,40 +474,39 @@ export default function DealerLayout({ children }) {
 ```
 
 ### Using DataTable
+
 ```tsx
-import { DataTable } from '@/components/global';
+import { DataTable } from "@/components/global";
 
 <DataTable
   columns={[
-    { key: 'orderNumber', header: 'Order #', render: (o) => o.orderNumber },
-    { key: 'status', header: 'Status', render: (o) => <OrderStatusChip status={o.status} /> },
+    { key: "orderNumber", header: "Order #", render: (o) => o.orderNumber },
+    { key: "status", header: "Status", render: (o) => <OrderStatusChip status={o.status} /> },
   ]}
   data={orders}
   keyExtractor={(o) => o.id}
   allowDensityToggle
   onRowClick={(order) => router.push(`/dealer/orders/${order.id}`)}
-/>
+/>;
 ```
 
 ### Using Toasts
+
 ```tsx
-import { showToast, commonToasts } from '@/components/global';
+import { showToast, commonToasts } from "@/components/global";
 
 // Simple
-showToast.success('Saved!', 'Your changes have been saved');
+showToast.success("Saved!", "Your changes have been saved");
 
 // Pre-configured
-commonToasts.addedToCart('Oil Filter LR001234');
+commonToasts.addedToCart("Oil Filter LR001234");
 
 // Promise handling
-showToast.promise(
-  orderAPI.create({ dispatchMethod: 'standard' }),
-  {
-    loading: 'Placing order...',
-    success: (order) => `Order ${order.orderNumber} placed!`,
-    error: 'Failed to place order',
-  }
-);
+showToast.promise(orderAPI.create({ dispatchMethod: "standard" }), {
+  loading: "Placing order...",
+  success: (order) => `Order ${order.orderNumber} placed!`,
+  error: "Failed to place order",
+});
 ```
 
 ---
@@ -461,6 +514,7 @@ showToast.promise(
 ## ✅ Quality Checklist
 
 ### Before marking complete:
+
 - [ ] All TypeScript types properly defined
 - [ ] Components use design tokens (not hardcoded values)
 - [ ] Loading states for all async operations
@@ -477,6 +531,7 @@ showToast.promise(
 ---
 
 ## 📚 Related Documentation
+
 - Design Tokens: [apps/web/src/styles/tokens.ts](apps/web/src/styles/tokens.ts)
 - Type Definitions: [apps/web/src/types/dealer.ts](apps/web/src/types/dealer.ts)
 - API Services: [apps/web/src/services/dealer-api.ts](apps/web/src/services/dealer-api.ts)

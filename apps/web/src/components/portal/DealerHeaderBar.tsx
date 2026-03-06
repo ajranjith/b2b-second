@@ -1,90 +1,82 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { Bell, HelpCircle, LayoutGrid, Menu, Search, Settings, ShoppingCart, User } from 'lucide-react';
-import { SearchInput } from '@/components/portal/SearchInput';
-import { useDealerCart } from '@/context/DealerCartContext';
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useDealerCart } from "@/context/DealerCartContext";
+import { clearAuthToken } from "@/lib/auth";
 
 const navLinks = [
-  { label: 'Dashboard', href: '/dealer/dashboard' },
-  { label: 'Search Parts', href: '/dealer/search' },
-  { label: 'Cart', href: '/dealer/cart' },
-  { label: 'Orders', href: '/dealer/orders' },
-  { label: 'Account', href: '/dealer/account' },
+  { label: "Dashboard", href: "/dealer/dashboard" },
+  { label: "Search", href: "/dealer/search" },
+  { label: "Orders", href: "/dealer/orders" },
+  { label: "Cart", href: "/dealer/cart" },
+  { label: "Account", href: "/dealer/account" },
+];
+
+const heroSlides = [
+  "/brand/hotbray/jlr-dual-brand.webp",
+  "/brand/hotbray/pexels-jan-kopiva-3399938.webp",
+  "/brand/hotbray/pexels-pixabay-162553.webp",
 ];
 
 export function DealerHeaderBar() {
+  const router = useRouter();
   const { items } = useDealerCart();
   const count = items.reduce((sum, item) => sum + item.qty, 0);
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 4500);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const handleLogout = () => {
+    clearAuthToken();
+    router.push("/dealer/login");
+  };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
-      <div className="max-w-7xl mx-auto px-6 py-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_220px] items-center gap-4">
-          <Link href="/dealer/dashboard" className="text-2xl font-semibold text-slate-900">
-            Hotbray Portal
-          </Link>
-          <div className="hidden lg:block">
-            <SearchInput />
-          </div>
-          <div className="flex items-center justify-end gap-3">
-            <Link
-              href="/dealer/cart"
-              className="relative rounded-full border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
-            >
-              <ShoppingCart className="h-4 w-4" />
-              {count > 0 && (
-                <span className="absolute -top-1 -right-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-600 px-1 text-xs font-semibold text-white">
-                  {count}
-                </span>
-              )}
+    <header className="sticky top-0 z-50 border-b border-[#9d7641] bg-gradient-to-b from-[#8f6a2f] to-[#735224]">
+      <div className="px-6 py-3 flex items-center justify-between gap-4">
+        <Link href="/dealer/dashboard" className="text-3xl font-black tracking-[0.08em] text-[#fff3d7]">
+          HOTBRAY
+        </Link>
+        <nav className="flex items-center gap-4 text-sm font-extrabold uppercase tracking-wide text-[#ffe8b8]">
+          {navLinks.map((link) => (
+            <Link key={link.href} href={link.href} className="hover:text-white transition-colors">
+              {link.label}
             </Link>
-            <button
-              type="button"
-              className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
-            >
-              <Bell className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
-            >
-              <Settings className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
-            >
-              <Menu className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-        <div className="mt-4 lg:hidden">
-          <SearchInput size="lg" />
-        </div>
-      </div>
-      <div className="border-t border-slate-200 bg-white">
-        <div className="max-w-7xl mx-auto px-6 py-2 flex items-center justify-between gap-4">
-          <button
-            type="button"
-            className="rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-900 focus-visible:outline-offset-2"
-          >
-            All Categories
+          ))}
+          <button type="button" onClick={handleLogout} className="hover:text-white transition-colors">
+            Logout
           </button>
-          <nav className="hidden lg:flex items-center gap-6 text-sm font-semibold text-slate-600">
-            {navLinks.map((link) => (
-              <Link key={link.href} href={link.href} className="hover:text-slate-900">
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="flex items-center gap-3 text-slate-500">
-            <LayoutGrid className="h-4 w-4" />
-            <User className="h-4 w-4" />
-            <Search className="h-4 w-4" />
-            <HelpCircle className="h-4 w-4" />
-          </div>
-        </div>
+          <Link href="/dealer/cart" className="relative inline-flex hover:text-white transition-colors">
+            Cart
+            {count > 0 ? (
+              <span className="ml-1 inline-flex min-w-[20px] h-5 items-center justify-center rounded-full bg-[#b88b3f] px-1 text-[11px] font-black text-white">
+                {count}
+              </span>
+            ) : null}
+          </Link>
+        </nav>
+      </div>
+      <div className="relative h-[84px] overflow-hidden border-t border-[#9d7641]/60">
+        {heroSlides.map((src, index) => (
+          <Image
+            key={src}
+            src={src}
+            alt="Dealer hero"
+            fill
+            sizes="100vw"
+            className={`object-cover transition-opacity duration-700 ${index === activeSlide ? "opacity-100" : "opacity-0"}`}
+            priority={index === 0}
+          />
+        ))}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#5f431f]/70 to-transparent" />
       </div>
     </header>
   );

@@ -5,6 +5,7 @@ Fast guide to test database connectivity from the UI.
 ## 🚀 Quick Test (2 minutes)
 
 ### Step 1: Start Services
+
 ```bash
 # Terminal 1: Start PostgreSQL
 sudo systemctl start postgresql
@@ -19,12 +20,14 @@ npm run dev
 ```
 
 ### Step 2: Run Health Check
+
 ```bash
 # Simple health check
 curl http://localhost:3001/health
 ```
 
 **Expected Output:**
+
 ```json
 {
   "status": "ok",
@@ -34,6 +37,7 @@ curl http://localhost:3001/health
 ```
 
 ### Step 3: Test from Browser
+
 1. Open `http://localhost:3000`
 2. Login with dealer credentials
 3. Go to Search page
@@ -46,11 +50,13 @@ curl http://localhost:3001/health
 ## 🧪 Automated Tests (5 minutes)
 
 ### Run Complete Test Suite
+
 ```bash
 npx tsx test-db-connection.ts
 ```
 
 **Output:**
+
 ```
 ════════════════════════════════════════════════════════════════
   DATABASE CONNECTION TESTING - FROM UI
@@ -85,24 +91,25 @@ Total Duration: 0.98s
 
 ## 🔍 What Gets Tested
 
-| Test | Operation | Expected |
-|------|-----------|----------|
-| Health Check | `SELECT current_database()` | Connected to "hotbray" |
-| Admin Login | `SELECT appUser WHERE email = ...` | JWT token returned |
-| Dealer Login | `SELECT appUser WHERE email = ...` | JWT token returned |
-| List Dealers | `SELECT dealerAccount LIMIT 10` | Array of dealers |
-| Product Search | `SELECT product JOIN pricing WHERE q LIKE ...` | Search results |
-| Get Orders | `SELECT orderHeader JOIN orderLine` | Dealer's orders |
-| Get Backorders | `SELECT backorderLine WHERE accountNo = ...` | Backorder list |
-| Add to Cart | `INSERT INTO cartItem` | Item added |
-| Get Cart | `SELECT cart JOIN cartItem JOIN product` | Cart with items |
-| Concurrent Requests | 10× `SELECT current_database()` | All succeed |
+| Test                | Operation                                      | Expected               |
+| ------------------- | ---------------------------------------------- | ---------------------- |
+| Health Check        | `SELECT current_database()`                    | Connected to "hotbray" |
+| Admin Login         | `SELECT appUser WHERE email = ...`             | JWT token returned     |
+| Dealer Login        | `SELECT appUser WHERE email = ...`             | JWT token returned     |
+| List Dealers        | `SELECT dealerAccount LIMIT 10`                | Array of dealers       |
+| Product Search      | `SELECT product JOIN pricing WHERE q LIKE ...` | Search results         |
+| Get Orders          | `SELECT orderHeader JOIN orderLine`            | Dealer's orders        |
+| Get Backorders      | `SELECT backorderLine WHERE accountNo = ...`   | Backorder list         |
+| Add to Cart         | `INSERT INTO cartItem`                         | Item added             |
+| Get Cart            | `SELECT cart JOIN cartItem JOIN product`       | Cart with items        |
+| Concurrent Requests | 10× `SELECT current_database()`                | All succeed            |
 
 ---
 
 ## 🛠️ Manual Testing Checklist
 
 ### Before Testing
+
 - [ ] PostgreSQL running: `psql -U postgres`
 - [ ] API server started (no errors in logs)
 - [ ] Web app started (can access localhost:3000)
@@ -111,10 +118,11 @@ Total Duration: 0.98s
 ### Test Scenarios
 
 #### 1️⃣ Search → Results from Database
+
 ```
 Navigate: /dealer/search
 Action: Search for "bearing"
-Verify: 
+Verify:
   - Results displayed from Product table
   - Filtered by dealer entitlement
   - Prices from PricingRule table
@@ -122,6 +130,7 @@ Verify:
 ```
 
 #### 2️⃣ Add to Cart → Database Inserts
+
 ```
 Navigate: /dealer/search
 Action: Add 3 units of item to cart
@@ -133,6 +142,7 @@ Verify:
 ```
 
 #### 3️⃣ Checkout → Transaction
+
 ```
 Navigate: /dealer/cart
 Action: Complete order
@@ -145,6 +155,7 @@ Verify:
 ```
 
 #### 4️⃣ Orders Page → Data Persistence
+
 ```
 Navigate: /dealer/orders
 Verify:
@@ -156,6 +167,7 @@ Verify:
 ```
 
 #### 5️⃣ Backorders Page → Complex Query
+
 ```
 Navigate: /dealer/backorders
 Verify:
@@ -173,6 +185,7 @@ Verify:
 ### "Cannot connect to database"
 
 **Check if PostgreSQL is running:**
+
 ```bash
 sudo systemctl status postgresql
 
@@ -184,12 +197,14 @@ psql -U postgres -d hotbray -c "SELECT 1;"
 ```
 
 **Check DATABASE_URL:**
+
 ```bash
 cat packages/db/.env | grep DATABASE_URL
 # Should be: postgresql://postgres:postgres@localhost:5432/hotbray
 ```
 
 **Check API logs:**
+
 ```bash
 # Look for database connection error
 tail -20 logs/api.log | grep -i "database\|error\|prisma"
@@ -200,11 +215,13 @@ tail -20 logs/api.log | grep -i "database\|error\|prisma"
 ### "Health check failed"
 
 **Verify API is running:**
+
 ```bash
 curl http://localhost:3001/health
 ```
 
 **If no response, API not running:**
+
 ```bash
 # Start API
 cd apps/api
@@ -219,11 +236,13 @@ npm run dev
 ### "Search returns empty results"
 
 **Check data in database:**
+
 ```bash
 psql -U postgres -d hotbray -c "SELECT COUNT(*) FROM \"Product\";"
 ```
 
 **If count is 0, seed data:**
+
 ```bash
 cd packages/db
 pnpm seed
@@ -234,6 +253,7 @@ pnpm seed
 ### "Concurrent test fails"
 
 **Check connection pool:**
+
 ```sql
 -- Connect to PostgreSQL
 psql -U postgres -d hotbray
@@ -245,6 +265,7 @@ SELECT count(*) FROM pg_stat_activity WHERE datname = 'hotbray';
 ```
 
 **If too many connections:**
+
 1. Restart API server
 2. Check for connection leaks
 3. Increase max_connections if needed
@@ -255,23 +276,24 @@ SELECT count(*) FROM pg_stat_activity WHERE datname = 'hotbray';
 
 Expected response times for database operations:
 
-| Operation | Expected Time | Warning | Critical |
-|-----------|---------------|---------|----------|
-| Health Check | < 50ms | > 100ms | > 500ms |
-| Login | < 150ms | > 300ms | > 1000ms |
-| Search | < 200ms | > 500ms | > 2000ms |
-| Get Orders | < 150ms | > 300ms | > 1000ms |
-| Add to Cart | < 100ms | > 200ms | > 1000ms |
-| Checkout | < 500ms | > 1000ms | > 3000ms |
+| Operation    | Expected Time | Warning  | Critical |
+| ------------ | ------------- | -------- | -------- |
+| Health Check | < 50ms        | > 100ms  | > 500ms  |
+| Login        | < 150ms       | > 300ms  | > 1000ms |
+| Search       | < 200ms       | > 500ms  | > 2000ms |
+| Get Orders   | < 150ms       | > 300ms  | > 1000ms |
+| Add to Cart  | < 100ms       | > 200ms  | > 1000ms |
+| Checkout     | < 500ms       | > 1000ms | > 3000ms |
 
 ---
 
 ## 📋 Test Execution Log
 
-**Date:** ________________
-**Tester:** ________________
+**Date:** **\*\***\_\_\_\_**\*\***
+**Tester:** **\*\***\_\_\_\_**\*\***
 
 ### Health Check
+
 ```
 curl http://localhost:3001/health
 Status: ✅ / ❌
@@ -279,6 +301,7 @@ Response Time: _______ ms
 ```
 
 ### Login Test
+
 ```
 Email: [test credentials]
 Status: ✅ / ❌
@@ -287,6 +310,7 @@ Token Received: Yes / No
 ```
 
 ### Search Test
+
 ```
 Query: "bearing"
 Status: ✅ / ❌
@@ -296,6 +320,7 @@ Filtered by Entitlement: Yes / No
 ```
 
 ### Cart Test
+
 ```
 Add Item: "bearing" qty:3
 Status: ✅ / ❌
@@ -304,6 +329,7 @@ Data Persisted: Yes / No
 ```
 
 ### Order Test
+
 ```
 Checkout: [cart items]
 Status: ✅ / ❌
@@ -313,6 +339,7 @@ Order ID: _______
 ```
 
 ### Automated Test Suite
+
 ```
 npx tsx test-db-connection.ts
 Total Tests: _______
@@ -362,6 +389,7 @@ All database connection tests pass when:
 ## 🚨 Quick Support
 
 **API won't start?**
+
 ```bash
 # Check port 3001
 lsof -i :3001
@@ -374,6 +402,7 @@ npm run dev
 ```
 
 **Database won't connect?**
+
 ```bash
 # Check PostgreSQL
 sudo systemctl status postgresql
@@ -386,6 +415,7 @@ psql -U postgres -c "SELECT 1;"
 ```
 
 **Tests failing?**
+
 ```bash
 # Check environment
 cat packages/db/.env
@@ -396,4 +426,3 @@ curl http://localhost:3001/health -v
 # Check logs
 tail -50 logs/api.log
 ```
-

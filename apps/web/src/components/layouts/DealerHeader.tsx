@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Search, ShoppingCart, HelpCircle, User, LogOut, Menu } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Search, ShoppingCart, HelpCircle, User, LogOut, Menu } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 
 interface DealerHeaderProps {
   cartItemCount?: number;
@@ -36,13 +36,13 @@ interface DealerHeaderProps {
  */
 export function DealerHeader({
   cartItemCount = 0,
-  dealerName = 'Dealer Portal',
+  dealerName = "Dealer Portal",
   onCartClick,
   onSearchSubmit,
   className,
 }: DealerHeaderProps) {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,16 +57,11 @@ export function DealerHeader({
 
   const handleLogout = () => {
     // TODO: Implement proper logout
-    router.push('/dealer/login');
+    router.push("/dealer/login");
   };
 
   return (
-    <div
-      className={cn(
-        'h-full flex items-center justify-between px-6 gap-4',
-        className
-      )}
-    >
+    <div className={cn("h-full flex items-center justify-between px-6 gap-4", className)}>
       {/* Left: Logo + Branding */}
       <div className="flex items-center gap-3">
         <Link
@@ -105,7 +100,7 @@ export function DealerHeader({
           variant="ghost"
           size="sm"
           className="hidden lg:flex items-center gap-2"
-          onClick={() => router.push('/dealer/contact')}
+          onClick={() => router.push("/dealer/contact")}
         >
           <HelpCircle className="w-4 h-4" />
           <span className="hidden xl:inline">Help</span>
@@ -116,7 +111,7 @@ export function DealerHeader({
           variant="ghost"
           size="sm"
           className="relative"
-          onClick={onCartClick || (() => router.push('/dealer/cart'))}
+          onClick={onCartClick || (() => router.push("/dealer/cart"))}
         >
           <ShoppingCart className="w-5 h-5" />
           {cartItemCount > 0 && (
@@ -124,7 +119,7 @@ export function DealerHeader({
               variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
             >
-              {cartItemCount > 99 ? '99+' : cartItemCount}
+              {cartItemCount > 99 ? "99+" : cartItemCount}
             </Badge>
           )}
         </Button>
@@ -140,11 +135,11 @@ export function DealerHeader({
           <DropdownMenuContent align="end" className="w-56">
             <div className="px-2 py-1.5 text-sm font-semibold">{dealerName}</div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push('/dealer/account')}>
+            <DropdownMenuItem onClick={() => router.push("/dealer/account")}>
               <User className="mr-2 h-4 w-4" />
               <span>Account</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/dealer/orders')}>
+            <DropdownMenuItem onClick={() => router.push("/dealer/orders")}>
               <ShoppingCart className="mr-2 h-4 w-4" />
               <span>My Orders</span>
             </DropdownMenuItem>

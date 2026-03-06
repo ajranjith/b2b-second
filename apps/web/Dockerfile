@@ -1,24 +1,46 @@
-# Stage 1: Dependencies
+# ── Stage 1: Install dependencies ──
 FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
-WORKDIR /app
-COPY package.json pnpm-lock.yaml* ./
-RUN corepack enable pnpm && pnpm install --frozen-lockfile
+RUN corepack enable pnpm
 
-# Stage 2: Builder
+WORKDIR /app
+
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY apps/web/package.json ./apps/web/
+COPY packages/db/package.json ./packages/db/
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/rules/package.json ./packages/rules/
+COPY packages/lib/package.json ./packages/lib/
+COPY packages/domain-admin/package.json ./packages/domain-admin/
+COPY packages/domain-auth/package.json ./packages/domain-auth/
+COPY packages/domain-orders/package.json ./packages/domain-orders/
+COPY packages/domain-partners/package.json ./packages/domain-partners/
+COPY packages/domain-pricing/package.json ./packages/domain-pricing/
+
+RUN pnpm install --frozen-lockfile
+
+# ── Stage 2: Build ──
 FROM node:20-alpine AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN corepack enable pnpm && pnpm run build
+RUN corepack enable pnpm
 
-# Stage 3: Runner
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
+COPY --from=deps /app/packages/ ./packages/
+
+COPY . .
+
+RUN pnpm --filter web build
+
+# ── Stage 3: Production runner ──
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+ENV NODE_ENV=production
+
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/apps/web/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
@@ -27,5 +49,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/
 USER nextjs
 
 EXPOSE 3000
-ENV PORT 3000
-CMD ["node", "server.js"]
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["node", "apps/web/server.js"]

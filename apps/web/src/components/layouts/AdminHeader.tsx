@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link';
+import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import {
   Search,
   Settings,
@@ -16,18 +16,18 @@ import {
   Package,
   FileText,
   LayoutDashboard,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 interface AdminHeaderProps {
   notificationCount?: number;
@@ -47,14 +47,14 @@ interface AdminHeaderProps {
  */
 export function AdminHeader({
   notificationCount = 0,
-  adminName = 'Admin User',
+  adminName = "Admin User",
   onMenuToggle,
   onSearchSubmit,
   className,
 }: AdminHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +68,7 @@ export function AdminHeader({
   };
 
   const handleLogout = () => {
-    router.push('/admin/login');
+    router.push("/admin/login");
   };
 
   const handleMenuToggle = () => {
@@ -76,37 +76,48 @@ export function AdminHeader({
   };
 
   const navLinks = [
-    { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-    { label: 'Orders', href: '/admin/orders', icon: Package },
-    { label: 'Dealers', href: '/admin/dealers', icon: Users },
-    { label: 'Users', href: '/admin/users', icon: User },
-    { label: 'Templates', href: '/admin/templates', icon: FileText },
+    { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+    { label: "Orders", href: "/admin/orders", icon: Package },
+    { label: "Dealers", href: "/admin/dealers", icon: Users },
+    { label: "Users", href: "/admin/users", icon: User },
+    { label: "Templates", href: "/admin/templates", icon: FileText },
   ];
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <div className={cn('bg-white border-b border-slate-200', className)}>
+    <div className={cn("bg-white border-b border-slate-200", className)}>
       {/* Row 1: Utility Strip */}
       <div className="bg-slate-50 border-b border-slate-200 h-8">
         <div className="max-w-[1440px] mx-auto px-6 h-full flex items-center justify-between text-xs">
           <div className="flex items-center gap-4">
-            <Link href="/admin/support" className="text-slate-600 hover:text-blue-600 transition-colors">
+            <Link
+              href="/admin/support"
+              className="text-slate-600 hover:text-blue-600 transition-colors"
+            >
               Support
             </Link>
-            <Link href="/admin/docs" className="text-slate-600 hover:text-blue-600 transition-colors">
+            <Link
+              href="/admin/docs"
+              className="text-slate-600 hover:text-blue-600 transition-colors"
+            >
               Documentation
             </Link>
-            <a href="tel:+441234567890" className="flex items-center gap-1 text-slate-600 hover:text-blue-600 transition-colors">
+            <a
+              href="tel:+441234567890"
+              className="flex items-center gap-1 text-slate-600 hover:text-blue-600 transition-colors"
+            >
               <Phone className="w-3 h-3" />
               <span>Call Support</span>
             </a>
           </div>
           <div className="hidden md:block text-slate-600 text-center">
-            <span className="font-medium">Admin Portal</span> - Manage dealers, orders, and system settings
+            <span className="font-medium">Admin Portal</span> - Manage dealers, orders, and system
+            settings
           </div>
           <div className="text-slate-600">
-            System Status: <span className="text-green-600 font-medium">All Systems Operational</span>
+            System Status:{" "}
+            <span className="text-green-600 font-medium">All Systems Operational</span>
           </div>
         </div>
       </div>
@@ -152,7 +163,10 @@ export function AdminHeader({
             </div>
             <div className="flex flex-col">
               <span className="text-xs text-slate-600">Support Hotline</span>
-              <a href="tel:+441234567890" className="text-sm font-semibold text-slate-900 hover:text-blue-600">
+              <a
+                href="tel:+441234567890"
+                className="text-sm font-semibold text-slate-900 hover:text-blue-600"
+              >
                 +44 1234 567 890
               </a>
             </div>
@@ -182,11 +196,11 @@ export function AdminHeader({
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    'flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors rounded-lg',
-                    'border-b-2 border-transparent',
+                    "flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors rounded-lg",
+                    "border-b-2 border-transparent",
                     isActive(link.href)
-                      ? 'text-blue-600 border-blue-600 bg-blue-50'
-                      : 'text-slate-700 hover:text-blue-600 hover:bg-slate-50'
+                      ? "text-blue-600 border-blue-600 bg-blue-50"
+                      : "text-slate-700 hover:text-blue-600 hover:bg-slate-50",
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -203,7 +217,7 @@ export function AdminHeader({
               <Bell className="w-5 h-5" />
               {notificationCount > 0 && (
                 <Badge className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center bg-red-600 text-white text-xs px-1">
-                  {notificationCount > 9 ? '9+' : notificationCount}
+                  {notificationCount > 9 ? "9+" : notificationCount}
                 </Badge>
               )}
             </Button>

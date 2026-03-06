@@ -10,11 +10,13 @@
 The dealer dashboard was not displaying stats cards with icons and proper styling like the admin dashboard.
 
 ### Before:
+
 - Basic stats cards without icons
 - Attempted to fetch from SDUI endpoint `/api/layout/dashboard` which wasn't working
 - Missing visual hierarchy and professional styling
 
 ### After:
+
 - ✅ Stats cards with icons (ShoppingCart, Package, Clock, TrendingUp)
 - ✅ Colored icon backgrounds matching admin dashboard style
 - ✅ Trend indicators with green/red/gray badges
@@ -50,44 +52,52 @@ The dealer dashboard was not displaying stats cards with icons and proper stylin
 ### Changes Made:
 
 1. **Removed SDUI dependency:**
+
    ```typescript
    // BEFORE: Fetching from API
-   const { data: layout, isLoading, error } = useQuery({
-       queryKey: ['dealer-dashboard-layout'],
-       queryFn: async () => {
-           const response = await api.get('/api/layout/dashboard');
-           return response.data;
-       }
+   const {
+     data: layout,
+     isLoading,
+     error,
+   } = useQuery({
+     queryKey: ["dealer-dashboard-layout"],
+     queryFn: async () => {
+       const response = await api.get("/api/layout/dashboard");
+       return response.data;
+     },
    });
-   const stats = layout?.widgets?.filter((w: any) => w.type === 'stats') || [];
+   const stats = layout?.widgets?.filter((w: any) => w.type === "stats") || [];
    ```
 
    ```typescript
    // AFTER: Hardcoded with icons
    const stats = [
-       {
-           title: 'Cart Items',
-           value: '12',
-           change: '+3 from last week',
-           trend: 'up',
-           icon: ShoppingCart,
-           bgColor: 'bg-blue-50',
-           iconColor: 'text-blue-600',
-           borderColor: 'border-blue-200'
-       },
-       // ... more stats
+     {
+       title: "Cart Items",
+       value: "12",
+       change: "+3 from last week",
+       trend: "up",
+       icon: ShoppingCart,
+       bgColor: "bg-blue-50",
+       iconColor: "text-blue-600",
+       borderColor: "border-blue-200",
+     },
+     // ... more stats
    ];
    ```
 
 2. **Added Lucide icons:**
+
    ```typescript
-   import { ShoppingCart, Package, TrendingUp, Clock } from 'lucide-react';
+   import { ShoppingCart, Package, TrendingUp, Clock } from "lucide-react";
    ```
 
 3. **Updated card rendering:**
    ```tsx
-   <div className={`h-12 w-12 rounded-full ${stat.bgColor} border ${stat.borderColor} flex items-center justify-center ${stat.iconColor}`}>
-       <stat.icon className="h-6 w-6" />
+   <div
+     className={`h-12 w-12 rounded-full ${stat.bgColor} border ${stat.borderColor} flex items-center justify-center ${stat.iconColor}`}
+   >
+     <stat.icon className="h-6 w-6" />
    </div>
    ```
 
@@ -114,6 +124,7 @@ DealerLayout (apps/web/src/app/dealer/layout.tsx)
 ## Visual Design Matches Admin
 
 Both dashboards now share:
+
 - ✅ Same card styling (rounded-xl, shadow-sm, border)
 - ✅ Same icon treatment (circular backgrounds with color coding)
 - ✅ Same trend indicator badges
@@ -127,36 +138,38 @@ Both dashboards now share:
 If you want to connect to real data later:
 
 1. **Connect to real cart data:**
+
    ```typescript
    const { data: cartData } = useQuery({
-       queryKey: ['dealer-cart-summary'],
-       queryFn: async () => {
-           const response = await api.get('/dealer/cart/summary');
-           return response.data;
-       }
+     queryKey: ["dealer-cart-summary"],
+     queryFn: async () => {
+       const response = await api.get("/dealer/cart/summary");
+       return response.data;
+     },
    });
    ```
 
 2. **Connect to real order stats:**
+
    ```typescript
    const { data: orderStats } = useQuery({
-       queryKey: ['dealer-order-stats'],
-       queryFn: async () => {
-           const response = await api.get('/dealer/orders/stats');
-           return response.data;
-       }
+     queryKey: ["dealer-order-stats"],
+     queryFn: async () => {
+       const response = await api.get("/dealer/orders/stats");
+       return response.data;
+     },
    });
    ```
 
 3. **Update stats dynamically:**
    ```typescript
    const stats = [
-       {
-           title: 'Cart Items',
-           value: cartData?.itemCount?.toString() || '0',
-           change: `${cartData?.changePercent > 0 ? '+' : ''}${cartData?.changePercent}%`,
-           // ... rest of config
-       },
+     {
+       title: "Cart Items",
+       value: cartData?.itemCount?.toString() || "0",
+       change: `${cartData?.changePercent > 0 ? "+" : ""}${cartData?.changePercent}%`,
+       // ... rest of config
+     },
    ];
    ```
 

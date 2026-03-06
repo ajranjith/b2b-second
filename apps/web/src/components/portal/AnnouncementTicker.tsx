@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useCallback, useMemo, useState } from 'react';
-import { type Announcement } from '@/lib/mock/dealerData';
+import { useCallback, useMemo, useState } from "react";
+import { type Announcement } from "@/lib/mock/dealerData";
 
 type AnnouncementTickerProps = {
   announcements: Announcement[];
@@ -21,7 +21,7 @@ export function AnnouncementTicker({ announcements, onOpenMessage }: Announcemen
 
   return (
     <div
-      className="border-b border-slate-200 bg-white"
+      className="dgs-ticker border-b border-slate-200"
       role="region"
       aria-live="polite"
       onMouseEnter={handlePause}
@@ -30,16 +30,18 @@ export function AnnouncementTicker({ announcements, onOpenMessage }: Announcemen
       onBlur={handleResume}
     >
       <div className="max-w-7xl mx-auto px-6">
-        <div className="overflow-hidden py-2">
+        <div className="overflow-hidden h-full flex items-center">
           <div
             className="flex gap-6 min-w-max animate-ticker"
-            style={{ animationPlayState: isPaused ? 'paused' : 'running' }}
+            style={{ animationPlayState: isPaused ? "paused" : "running" }}
           >
             {items.map((announcement, index) => (
               <button
                 key={`${announcement.id}-${index}`}
                 type="button"
-                className="text-sm font-medium text-slate-700 hover:text-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2 whitespace-nowrap"
+                data-fid={`FID-TICKER-${String(index + 1).padStart(3, "0")}`}
+                data-action-id={`ACT-TICKER-OPEN-${String(index + 1).padStart(3, "0")}`}
+                className="text-sm font-medium text-white hover:text-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-2 whitespace-nowrap"
                 onClick={() => onOpenMessage(announcement)}
               >
                 {announcement.title}

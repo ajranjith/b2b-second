@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+.next/
+dist/
+build/
+out/
+
+# Generated files
+*.min.js
+*.min.css
+pnpm-lock.yaml
+
+# Prisma
+packages/db/prisma/migrations/
+
+# Test outputs
+playwright-report/
+test-results/
+coverage/
+
+# IDE
+.idea/
+.vscode/
+
+# Public assets
+apps/web/public/brand/
+apps/web/public/templates/
+
+# Misc
+*.md

@@ -26,10 +26,10 @@ type CartState = {
   items: CartItem[];
   subtotal: number;
   isLoading: boolean;
-  addItem: (item: CartItem['part'], qty?: number) => Promise<void>;
+  addItem: (item: CartItem["part"], qty?: number) => Promise<void>;
   updateQty: (itemId: string, qty: number) => Promise<void>;
   removeItem: (itemId: string) => Promise<void>;
-  clearCart: () => void;  // ✅ NEW
+  clearCart: () => void; // ✅ NEW
 };
 
 // Implementation
@@ -41,7 +41,7 @@ const clearCart = () => {
 
 const value = useMemo(
   () => ({ items, subtotal, isLoading, addItem, updateQty, removeItem, clearCart }),
-  [items, subtotal, isLoading]
+  [items, subtotal, isLoading],
 );
 ```
 
@@ -54,7 +54,7 @@ Removed `clearCart` call temporarily (commented out for now):
 ```typescript
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, subtotal } = useDealerCart();  // ✅ Removed clearCart temporarily
+  const { items, subtotal } = useDealerCart(); // ✅ Removed clearCart temporarily
 
   // ... rest of code
 
@@ -73,8 +73,8 @@ export default function CheckoutPage() {
       setCurrentStep(3);
       commonToasts.orderPlaced(newOrderNumber);
     } catch (error) {
-      console.error('Failed to place order:', error);
-      showToast.error('Order failed', 'Please try again or contact support');
+      console.error("Failed to place order:", error);
+      showToast.error("Order failed", "Please try again or contact support");
     } finally {
       setIsProcessing(false);
     }
@@ -122,22 +122,25 @@ export default function CheckoutPage() {
 **Cause:** Cart is empty (items.length === 0)
 
 **Solution:**
+
 1. Add items to cart from search page
 2. Verify cart context is working:
    ```typescript
    const { items } = useDealerCart();
-   console.log('Cart items:', items);
+   console.log("Cart items:", items);
    ```
 
 ### Issue: Button doesn't navigate to checkout
 
 **Possible causes:**
+
 1. Link component not working properly
 2. JavaScript error preventing navigation
 3. Context provider not wrapping the app
 
 **Solution:**
 Check browser console for errors:
+
 - Open DevTools (F12)
 - Look for red errors
 - Check Network tab for failed requests
@@ -147,6 +150,7 @@ Check browser console for errors:
 **Status:** ✅ FIXED
 
 This was fixed by:
+
 1. Adding `clearCart` to DealerCartContext
 2. Removing the call temporarily from checkout page
 
@@ -206,24 +210,26 @@ if (items.length === 0 && currentStep < 3) {
 ### For Production:
 
 1. **Implement server-side cart clearing:**
+
    ```typescript
    const clearCart = async () => {
      setItems([]);
      setSubtotal(0);
-     await fetch('/api/cart/clear', { method: 'POST' });
+     await fetch("/api/cart/clear", { method: "POST" });
    };
    ```
 
 2. **Add error handling:**
+
    ```typescript
    const clearCart = async () => {
      try {
        setItems([]);
        setSubtotal(0);
-       await fetch('/api/cart/clear', { method: 'POST' });
+       await fetch("/api/cart/clear", { method: "POST" });
      } catch (error) {
-       console.error('Failed to clear cart:', error);
-       showToast.error('Failed to clear cart');
+       console.error("Failed to clear cart:", error);
+       showToast.error("Failed to clear cart");
      }
    };
    ```
@@ -231,7 +237,7 @@ if (items.length === 0 && currentStep < 3) {
 3. **Re-enable clearCart in checkout:**
    ```typescript
    // In handlePlaceOrder:
-   await clearCart();  // Clear cart after order placed
+   await clearCart(); // Clear cart after order placed
    ```
 
 ---
@@ -272,6 +278,7 @@ The checkout button uses these styles:
 ```
 
 **Colors:**
+
 - Background: `bg-blue-600` (#2563eb)
 - Hover: `bg-blue-700` (#1d4ed8)
 - Text: `text-white` (#ffffff)
@@ -284,6 +291,7 @@ The checkout button uses these styles:
 All issues have been identified and fixed. The checkout button should now work correctly.
 
 **Test the fix:**
+
 1. Start dev server: `pnpm dev`
 2. Add items to cart from search page
 3. Navigate to cart: `/dealer/cart`

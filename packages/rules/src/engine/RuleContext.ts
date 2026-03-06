@@ -12,7 +12,6 @@ export interface RuleContextDealer {
     companyName: string;
     status: string;
     entitlement: string;
-    bandAssignments: Array<{ partType: string; bandCode: string }>;
 }
 
 export interface RuleContextData {
@@ -55,10 +54,12 @@ export class RuleContext {
         if (dealerAccountId) {
             const dealerData = await prisma.dealerAccount.findUnique({
                 where: { id: dealerAccountId },
-                include: {
-                    bandAssignments: {
-                        select: { partType: true, bandCode: true }
-                    }
+                select: {
+                    id: true,
+                    accountNo: true,
+                    companyName: true,
+                    status: true,
+                    entitlement: true
                 }
             });
 
@@ -68,23 +69,12 @@ export class RuleContext {
                     accountNo: dealerData.accountNo,
                     companyName: dealerData.companyName,
                     status: dealerData.status,
-                    entitlement: dealerData.entitlement,
-                    bandAssignments: dealerData.bandAssignments.map(ba => ({
-                        partType: ba.partType,
-                        bandCode: ba.bandCode
-                    }))
+                    entitlement: dealerData.entitlement
                 };
             }
         }
 
         return new RuleContext({ prisma, dealer, userId });
-    }
-
-    /**
-     * Get band code for a specific part type
-     */
-    getBandCodeForPartType(partType: string): string | undefined {
-        return this.dealer?.bandAssignments.find(ba => ba.partType === partType)?.bandCode;
     }
 
     /**

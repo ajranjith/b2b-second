@@ -51,7 +51,6 @@ async function createTestUsers() {
             update: {},
             create: {
                 accountNo: 'DEAL001',
-                erpAccountNo: 'ERP001',
                 companyName: 'Test Dealer Ltd',
                 status: 'ACTIVE',
                 entitlement: 'SHOW_ALL',
@@ -121,90 +120,66 @@ async function createTestUsers() {
         console.log('💰 Creating Pricing Band Assignments...')
 
         // Genuine parts - Band 1 (best pricing)
-        await prisma.dealerBandAssignment.upsert({
+        await prisma.dealerDiscountTier.upsert({
             where: {
-                dealerAccountId_partType: {
+                dealerAccountId_discountCode: {
                     dealerAccountId: dealerAccount.id,
-                    partType: 'GENUINE',
+                    discountCode: 'gn',
                 },
             },
             update: {},
             create: {
                 dealerAccountId: dealerAccount.id,
-                partType: 'GENUINE',
-                bandCode: '1',
+                discountCode: 'gn',
+                tierCode: 'Net1',
             },
         })
 
-        // Aftermarket parts - Band 2
-        await prisma.dealerBandAssignment.upsert({
+        // Aftermarket ES - Band 2
+        await prisma.dealerDiscountTier.upsert({
             where: {
-                dealerAccountId_partType: {
+                dealerAccountId_discountCode: {
                     dealerAccountId: dealerAccount.id,
-                    partType: 'AFTERMARKET',
+                    discountCode: 'es',
                 },
             },
             update: {},
             create: {
                 dealerAccountId: dealerAccount.id,
-                partType: 'AFTERMARKET',
-                bandCode: '2',
+                discountCode: 'es',
+                tierCode: 'Net2',
             },
         })
 
-        // Branded parts - Band 3
-        await prisma.dealerBandAssignment.upsert({
+        // Aftermarket BR - Band 3
+        await prisma.dealerDiscountTier.upsert({
             where: {
-                dealerAccountId_partType: {
+                dealerAccountId_discountCode: {
                     dealerAccountId: dealerAccount.id,
-                    partType: 'BRANDED',
+                    discountCode: 'br',
                 },
             },
             update: {},
             create: {
                 dealerAccountId: dealerAccount.id,
-                partType: 'BRANDED',
-                bandCode: '3',
+                discountCode: 'br',
+                tierCode: 'Net3',
             },
         })
 
-        console.log('✅ Band Assignments created:')
-        console.log(`   GENUINE: Band 1 (Best Price)`)
-        console.log(`   AFTERMARKET: Band 2`)
-        console.log(`   BRANDED: Band 3\n`)
+        console.log('✅ Pricing Bands assigned:')
+        console.log('   Genuine (gn): Net1')
+        console.log('   Aftermarket ES (es): Net2')
+        console.log('   Aftermarket BR (br): Net3\n')
 
-        // ============================================
-        // 6. SUMMARY
-        // ============================================
-        console.log('═══════════════════════════════════════════')
-        console.log('✨ TEST USERS CREATED SUCCESSFULLY!')
-        console.log('═══════════════════════════════════════════\n')
-
-        console.log('🔐 LOGIN CREDENTIALS:\n')
-
-        console.log('📊 ADMIN LOGIN:')
-        console.log('   URL: http://localhost:3000/login')
-        console.log('   Email: admin@hotbray.com')
-        console.log('   Password: Admin123!')
-        console.log('   Access: Full admin dashboard\n')
-
-        console.log('🛒 DEALER LOGIN:')
-        console.log('   URL: http://localhost:3000/login')
-        console.log('   Email: dealer@test.com')
-        console.log('   OR')
-        console.log('   Account No: DEAL001')
-        console.log('   Password: Dealer123!')
-        console.log('   Access: Search, cart, orders, backorders\n')
-
-        console.log('💡 NEXT STEPS:')
-        console.log('   1. Make sure API is running: cd apps/api && pnpm dev')
-        console.log('   2. Make sure Web is running: cd apps/web && pnpm dev')
-        console.log('   3. Import products: pnpm imports:all')
-        console.log('   4. Login with dealer credentials')
-        console.log('   5. Search for products and test cart/checkout\n')
-
+        console.log('=' .repeat(50))
+        console.log('🎉 Test users created successfully!')
+        console.log('=' .repeat(50))
+        console.log('\n📝 Login credentials:')
+        console.log('   Admin:  admin@hotbray.com / Admin123!')
+        console.log('   Dealer: dealer@test.com / Dealer123!\n')
     } catch (error) {
-        console.error('❌ Error creating test users:', error)
+        console.error('Error creating test users:', error)
         throw error
     } finally {
         await prisma.$disconnect()
@@ -212,13 +187,5 @@ async function createTestUsers() {
     }
 }
 
-// Run the script
 createTestUsers()
-    .then(() => {
-        console.log('✅ Script completed successfully')
-        process.exit(0)
-    })
-    .catch((error) => {
-        console.error('❌ Script failed:', error)
-        process.exit(1)
-    })
+    .catch(console.error)

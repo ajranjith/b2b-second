@@ -42,7 +42,6 @@ async function main() {
                     companyName: `Dealer Company ${i} Ltd`,
                     status: statuses[i % 3],
                     entitlement: entitlements[i % 3],
-                    erpAccountNo: `ERP${String(i).padStart(3, '0')}`,
                     contactFirstName: `Contact${i}`,
                     contactLastName: `Person${i}`,
                     mainEmail: `dealer${i}@test.com`
@@ -52,7 +51,6 @@ async function main() {
                     companyName: `Dealer Company ${i} Ltd`,
                     status: statuses[i % 3],
                     entitlement: entitlements[i % 3],
-                    erpAccountNo: `ERP${String(i).padStart(3, '0')}`,
                     contactFirstName: `Contact${i}`,
                     contactLastName: `Person${i}`,
                     mainEmail: `dealer${i}@test.com`
@@ -107,18 +105,8 @@ async function main() {
             ];
 
             for (const assignment of assignments) {
-                const existing = await prisma.dealerBandAssignment.findFirst({
-                    where: { dealerAccountId: dealer.id, partType: assignment.partType }
-                });
 
                 if (!existing) {
-                    await prisma.dealerBandAssignment.create({
-                        data: {
-                            dealerAccountId: dealer.id,
-                            partType: assignment.partType,
-                            bandCode: assignment.bandCode
-                        }
-                    });
                     bandAssignmentCount++;
                 }
             }

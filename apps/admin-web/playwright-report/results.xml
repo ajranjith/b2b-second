@@ -1,0 +1,60 @@
+<testsuites id="" name="" tests="7" failures="0" skipped="7" errors="0" time="18.572150999999998">
+<testsuite name="e2e\admin.spec.ts" timestamp="2026-01-21T23:19:57.240Z" hostname="chromium" tests="7" failures="0" skipped="7" time="0.834" errors="0">
+<testcase name="admin ui contract › dashboard uses API data and navigation works" classname="e2e\admin.spec.ts" time="0.25">
+<properties>
+<property name="skip" value="Set ADMIN_EMAIL and ADMIN_PASSWORD to run admin e2e tests.">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="admin ui contract › admin users page only shows admin controls" classname="e2e\admin.spec.ts" time="0.092">
+<properties>
+<property name="skip" value="Set ADMIN_EMAIL and ADMIN_PASSWORD to run admin e2e tests.">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="admin ui contract › dealer management button exists and empty state is handled" classname="e2e\admin.spec.ts" time="0.083">
+<properties>
+<property name="skip" value="Set ADMIN_EMAIL and ADMIN_PASSWORD to run admin e2e tests.">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="admin ui contract › orders export buttons exist" classname="e2e\admin.spec.ts" time="0.104">
+<properties>
+<property name="skip" value="Set ADMIN_EMAIL and ADMIN_PASSWORD to run admin e2e tests.">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="admin ui contract › news articles form has required fields" classname="e2e\admin.spec.ts" time="0.105">
+<properties>
+<property name="skip" value="Set ADMIN_EMAIL and ADMIN_PASSWORD to run admin e2e tests.">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="admin ui contract › imports upload supports templates and file upload" classname="e2e\admin.spec.ts" time="0.102">
+<properties>
+<property name="skip" value="Set ADMIN_EMAIL and ADMIN_PASSWORD to run admin e2e tests.">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="admin ui contract › admin logout works" classname="e2e\admin.spec.ts" time="0.098">
+<properties>
+<property name="skip" value="Set ADMIN_EMAIL and ADMIN_PASSWORD to run admin e2e tests.">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+</testsuites>

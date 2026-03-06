@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import { X, Download, FileText } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import type { Announcement, AnnouncementType } from '@/types/dealer';
-import { cn } from '@/lib/utils';
+import { useEffect, useRef } from "react";
+import { X, Download, FileText } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import type { Announcement, AnnouncementType } from "@/types/dealer";
+import { cn } from "@/lib/utils";
 
 interface MessageDrawerProps {
   isOpen: boolean;
@@ -13,25 +13,22 @@ interface MessageDrawerProps {
   announcement: Announcement | null;
 }
 
-const typeConfig: Record<
-  AnnouncementType,
-  { color: string; bgColor: string }
-> = {
+const typeConfig: Record<AnnouncementType, { color: string; bgColor: string }> = {
   info: {
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-50',
+    color: "text-blue-700",
+    bgColor: "bg-blue-50",
   },
   promo: {
-    color: 'text-green-700',
-    bgColor: 'bg-green-50',
+    color: "text-green-700",
+    bgColor: "bg-green-50",
   },
   warning: {
-    color: 'text-amber-700',
-    bgColor: 'bg-amber-50',
+    color: "text-amber-700",
+    bgColor: "bg-amber-50",
   },
   urgent: {
-    color: 'text-red-700',
-    bgColor: 'bg-red-50',
+    color: "text-red-700",
+    bgColor: "bg-red-50",
   },
 };
 
@@ -50,13 +47,13 @@ export function MessageDrawer({ isOpen, onClose, announcement }: MessageDrawerPr
     closeButtonRef.current?.focus();
 
     const focusableElements = drawer.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
     );
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
 
     const handleTabKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return;
+      if (e.key !== "Tab") return;
 
       if (e.shiftKey) {
         if (document.activeElement === firstElement) {
@@ -71,8 +68,8 @@ export function MessageDrawer({ isOpen, onClose, announcement }: MessageDrawerPr
       }
     };
 
-    drawer.addEventListener('keydown', handleTabKey);
-    return () => drawer.removeEventListener('keydown', handleTabKey);
+    drawer.addEventListener("keydown", handleTabKey);
+    return () => drawer.removeEventListener("keydown", handleTabKey);
   }, [isOpen]);
 
   // ESC key handler
@@ -80,24 +77,24 @@ export function MessageDrawer({ isOpen, onClose, announcement }: MessageDrawerPr
     if (!isOpen) return;
 
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         onClose();
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
   }, [isOpen, onClose]);
 
   // Prevent body scroll when drawer is open
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [isOpen]);
 
@@ -120,8 +117,8 @@ export function MessageDrawer({ isOpen, onClose, announcement }: MessageDrawerPr
       <div
         ref={drawerRef}
         className={cn(
-          'fixed top-0 right-0 bottom-0 w-full md:w-[480px] bg-white shadow-xl z-50 transform transition-transform duration-300',
-          isOpen ? 'translate-x-0' : 'translate-x-full'
+          "fixed top-0 right-0 bottom-0 w-full md:w-[480px] bg-white shadow-xl z-50 transform transition-transform duration-300",
+          isOpen ? "translate-x-0" : "translate-x-full",
         )}
         role="dialog"
         aria-modal="true"
@@ -131,23 +128,17 @@ export function MessageDrawer({ isOpen, onClose, announcement }: MessageDrawerPr
         <div className="p-6 border-b border-slate-200">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <Badge
-                variant="outline"
-                className={cn('mb-2', config.color, config.bgColor)}
-              >
+              <Badge variant="outline" className={cn("mb-2", config.color, config.bgColor)}>
                 {announcement.type.charAt(0).toUpperCase() + announcement.type.slice(1)}
               </Badge>
-              <h2
-                id="drawer-title"
-                className="text-2xl font-bold text-slate-900"
-              >
+              <h2 id="drawer-title" className="text-2xl font-bold text-slate-900">
                 {announcement.title}
               </h2>
               <p className="text-sm text-slate-500 mt-1">
-                {new Date(announcement.createdAt).toLocaleDateString('en-GB', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
+                {new Date(announcement.createdAt).toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
                 })}
               </p>
             </div>
@@ -189,12 +180,8 @@ export function MessageDrawer({ isOpen, onClose, announcement }: MessageDrawerPr
                       <FileText className="h-5 w-5 text-blue-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 truncate">
-                        {file.name}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {(file.size / 1024).toFixed(1)} KB
-                      </p>
+                      <p className="text-sm font-medium text-slate-900 truncate">{file.name}</p>
+                      <p className="text-xs text-slate-500">{(file.size / 1024).toFixed(1)} KB</p>
                     </div>
                     <Download className="h-4 w-4 text-slate-400 group-hover:text-blue-600 transition-colors" />
                   </a>

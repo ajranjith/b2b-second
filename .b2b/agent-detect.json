@@ -1,0 +1,48 @@
+{
+  "clients": [
+    {
+      "clientName": "Cursor",
+      "installed": true,
+      "configPath": "C:\\Users\\ajran\\.cursor\\mcp.json",
+      "configFormat": "json",
+      "canWrite": true,
+      "alreadyConfigured": false
+    },
+    {
+      "clientName": "Claude Desktop",
+      "installed": false,
+      "configPath": "",
+      "configFormat": "json",
+      "canWrite": false,
+      "alreadyConfigured": false,
+      "notes": "config not found"
+    },
+    {
+      "clientName": "Windsurf",
+      "installed": false,
+      "configPath": "",
+      "configFormat": "json",
+      "canWrite": false,
+      "alreadyConfigured": false,
+      "notes": "config not found"
+    },
+    {
+      "clientName": "Codex CLI",
+      "installed": true,
+      "configPath": "C:\\Users\\ajran\\.codex\\config.toml",
+      "configFormat": "toml",
+      "canWrite": true,
+      "alreadyConfigured": false
+    },
+    {
+      "clientName": "Generic MCP",
+      "installed": false,
+      "configPath": "",
+      "configFormat": "json",
+      "canWrite": false,
+      "alreadyConfigured": false,
+      "notes": "config not found"
+    }
+  ],
+  "generatedAtUtc": "2026-02-03T20:50:55Z"
+}

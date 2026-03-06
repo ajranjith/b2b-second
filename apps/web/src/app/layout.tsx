@@ -3,6 +3,7 @@ import { Fraunces, Sora } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 import { Toaster } from "@/ui";
+import { PageLoader } from "@/components/global/PageLoader";
 
 const sora = Sora({
   variable: "--font-sora",
@@ -33,6 +34,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Providers>
+          <PageLoader />
           {children}
           <Toaster />
         </Providers>

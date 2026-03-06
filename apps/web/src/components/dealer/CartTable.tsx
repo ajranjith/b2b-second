@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Trash2, Plus, Minus } from 'lucide-react';
-import type { CartItem } from '@/types/dealer';
-import { StockStatusChip } from '@/components/global';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { useState } from "react";
+import { Trash2, Plus, Minus } from "lucide-react";
+import type { CartItem } from "@/types/dealer";
+import { StockStatusChip } from "@/components/global";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -14,7 +14,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,8 +25,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 interface CartTableProps {
   items: CartItem[];
@@ -45,14 +45,9 @@ interface CartTableProps {
  * - Line total
  * - Remove button with confirmation
  */
-export function CartTable({
-  items,
-  onUpdateQuantity,
-  onRemoveItem,
-  className,
-}: CartTableProps) {
+export function CartTable({ items, onUpdateQuantity, onRemoveItem, className }: CartTableProps) {
   const [quantities, setQuantities] = useState<Record<string, number>>(
-    items.reduce((acc, item) => ({ ...acc, [item.id]: item.quantity }), {})
+    items.reduce((acc, item) => ({ ...acc, [item.id]: item.quantity }), {}),
   );
 
   const handleQuantityChange = (itemId: string, newQuantity: number) => {
@@ -74,9 +69,9 @@ export function CartTable({
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: 'GBP',
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: "GBP",
     }).format(amount);
   };
 
@@ -85,7 +80,7 @@ export function CartTable({
   }
 
   return (
-    <div className={cn('rounded-lg border border-slate-200 overflow-hidden', className)}>
+    <div className={cn("rounded-lg border border-slate-200 overflow-hidden", className)}>
       <Table>
         <TableHeader>
           <TableRow className="bg-slate-50">
@@ -103,18 +98,14 @@ export function CartTable({
               <TableCell>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-slate-900">
-                      {item.product.lrNo}
-                    </span>
+                    <span className="font-medium text-slate-900">{item.product.lrNo}</span>
                     {item.product.jagAlt && (
                       <Badge variant="outline" className="text-xs">
                         {item.product.jagAlt}
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-slate-600 max-w-md">
-                    {item.product.description}
-                  </p>
+                  <p className="text-sm text-slate-600 max-w-md">{item.product.description}</p>
                   <div className="mt-1">
                     <StockStatusChip
                       status={item.product.availability}
@@ -145,9 +136,7 @@ export function CartTable({
                     type="number"
                     min="1"
                     value={quantities[item.id] || item.quantity}
-                    onChange={(e) =>
-                      handleQuantityChange(item.id, parseInt(e.target.value) || 1)
-                    }
+                    onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 1)}
                     className="h-9 w-20 text-center"
                   />
                   <Button
@@ -182,9 +171,8 @@ export function CartTable({
                     <AlertDialogHeader>
                       <AlertDialogTitle>Remove Item</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to remove{' '}
-                        <span className="font-medium">{item.product.lrNo}</span> from
-                        your cart?
+                        Are you sure you want to remove{" "}
+                        <span className="font-medium">{item.product.lrNo}</span> from your cart?
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

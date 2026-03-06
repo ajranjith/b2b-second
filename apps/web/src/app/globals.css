@@ -1,152 +1,182 @@
 @import "tailwindcss";
+@import "../styles/theme-dgs.css";
 
 /* Global loading cursor state */
 body.app-loading,
 body.app-loading * {
-    cursor: progress !important;
+  cursor: progress !important;
+}
+
+/* Page Loader Spinner */
+#spinner-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: white;
+  z-index: 9999;
+}
+
+/* Wheel Image Spinner - Responsive sizing handled by Tailwind classes */
+.loader-wheel {
+  animation: spin 2s linear infinite;
+  filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.25));
+}
+
+/* Smooth Rotation Animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @theme {
-    /* === COLORS === */
-    /* Base colors */
-    --color-background: #ffffff;
-    --color-foreground: #09090b;
-    --color-card: #ffffff;
-    --color-card-foreground: #09090b;
-    --color-popover: #ffffff;
-    --color-popover-foreground: #09090b;
+  /* === COLORS === */
+  /* Base colors */
+  --color-background: #ffffff;
+  --color-foreground: #09090b;
+  --color-card: #ffffff;
+  --color-card-foreground: #09090b;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #09090b;
 
-    /* Brand colors */
-    --color-primary: #3b82f6;
-    --color-primary-foreground: #ffffff;
-    --color-secondary: #f1f5f9;
-    --color-secondary-foreground: #0f172a;
-    --color-accent: #f1f5f9;
-    --color-accent-foreground: #0f172a;
+  /* Brand colors */
+  --color-primary: #3b82f6;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f1f5f9;
+  --color-secondary-foreground: #0f172a;
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #0f172a;
 
-    /* UI colors */
-    --color-muted: #f1f5f9;
-    --color-muted-foreground: #64748b;
-    --color-destructive: #ef4444;
-    --color-destructive-foreground: #ffffff;
-    --color-border: #e2e8f0;
-    --color-input: #e2e8f0;
-    --color-ring: #3b82f6;
+  /* UI colors */
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+  --color-ring: #3b82f6;
 
-    /* Chart colors */
-    --color-chart-1: #3b82f6;
-    --color-chart-2: #10b981;
-    --color-chart-3: #f59e0b;
-    --color-chart-4: #ef4444;
-    --color-chart-5: #8b5cf6;
+  /* Chart colors */
+  --color-chart-1: #3b82f6;
+  --color-chart-2: #10b981;
+  --color-chart-3: #f59e0b;
+  --color-chart-4: #ef4444;
+  --color-chart-5: #8b5cf6;
 
-    /* === SPACING === */
-    --spacing-container: 2rem;
+  /* === SPACING === */
+  --spacing-container: 2rem;
 
-    /* === BORDER RADIUS === */
-    --radius: 0.5rem;
-    --radius-sm: calc(var(--radius) - 4px);
-    --radius-md: var(--radius);
-    --radius-lg: calc(var(--radius) + 4px);
+  /* === BORDER RADIUS === */
+  --radius: 0.5rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
 
-    /* === FONTS === */
-    --font-sans: var(--font-sora, "Trebuchet MS"), sans-serif;
-    --font-display: var(--font-fraunces, "Times New Roman"), serif;
-    --font-mono: ui-monospace, monospace;
+  /* === FONTS === */
+  --font-sans: var(--font-sora, "Trebuchet MS"), sans-serif;
+  --font-display: var(--font-fraunces, "Times New Roman"), serif;
+  --font-mono: ui-monospace, monospace;
 }
 
 /* Dark mode intentionally disabled to keep a consistent light UI. */
 
 /* Base styles */
 @layer base {
-    * {
-        border-color: var(--color-border);
-    }
+  * {
+    border-color: var(--color-border);
+  }
 
-body {
+  body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-}
+  }
 
-body.app-loading {
+  body.app-loading {
     cursor: progress;
-}
+  }
 
-body.app-loading * {
+  body.app-loading * {
     cursor: progress !important;
-}
+  }
 
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-        font-family: var(--font-display);
-        font-weight: 600;
-        line-height: 1.2;
-    }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: 1.2;
+  }
 }
 
 /* Component styles */
 @layer components {
-    .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--radius-md);
-        font-size: 0.875rem;
-        font-weight: 500;
-        padding: 0.5rem 1rem;
-        transition: all 150ms;
-        cursor: pointer;
-    }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 150ms;
+    cursor: pointer;
+  }
 
-    .btn-primary {
-        background-color: var(--color-primary);
-        color: var(--color-primary-foreground);
-    }
+  .btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+  }
 
-    .btn-primary:hover {
-        opacity: 0.9;
-    }
+  .btn-primary:hover {
+    opacity: 0.9;
+  }
 
-    .card {
-        background-color: var(--color-card);
-        color: var(--color-card-foreground);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-    }
+  .card {
+    background-color: var(--color-card);
+    color: var(--color-card-foreground);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+  }
 
-    /* Global Loading State */
-    body.app-loading,
-    body.app-loading * {
-        cursor: progress !important;
-    }
+  /* Global Loading State */
+  body.app-loading,
+  body.app-loading * {
+    cursor: progress !important;
+  }
 }
 
 /* Utility styles */
 @layer utilities {
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--spacing-container);
+    padding-right: var(--spacing-container);
+  }
+
+  @media (min-width: 1400px) {
     .container {
-        width: 100%;
-        margin-left: auto;
-        margin-right: auto;
-        padding-left: var(--spacing-container);
-        padding-right: var(--spacing-container);
+      max-width: 1400px;
     }
+  }
 
-    @media (min-width: 1400px) {
-        .container {
-            max-width: 1400px;
-        }
-    }
-
-    .text-balance {
-        text-wrap: balance;
-    }
+  .text-balance {
+    text-wrap: balance;
+  }
 }

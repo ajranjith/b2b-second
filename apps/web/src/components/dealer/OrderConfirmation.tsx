@@ -1,8 +1,8 @@
-import { useRouter } from 'next/navigation';
-import { CheckCircle, Download, Eye, ShoppingBag } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { useRouter } from "next/navigation";
+import { CheckCircle, Download, Eye, ShoppingBag } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 interface OrderConfirmationProps {
   orderNumber: string;
@@ -33,17 +33,17 @@ export function OrderConfirmation({
   const router = useRouter();
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: 'GBP',
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: "GBP",
     }).format(amount);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
+    return new Date(dateString).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
     });
   };
 
@@ -56,11 +56,9 @@ export function OrderConfirmation({
             <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mb-4">
               <CheckCircle className="w-12 h-12 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">
-              Order Placed Successfully!
-            </h2>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Order Placed Successfully!</h2>
             <p className="text-slate-600">
-              Thank you for your order. We'll send you a confirmation email shortly.
+              Thank you for your order. {"We'll"} send you a confirmation email shortly.
             </p>
           </div>
 
@@ -75,24 +73,18 @@ export function OrderConfirmation({
 
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-600">Order Date</span>
-              <span className="font-medium text-slate-900">
-                {formatDate(orderDate)}
-              </span>
+              <span className="font-medium text-slate-900">{formatDate(orderDate)}</span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-600">Order Total</span>
-              <span className="text-lg font-bold text-slate-900">
-                {formatCurrency(total)}
-              </span>
+              <span className="text-lg font-bold text-slate-900">{formatCurrency(total)}</span>
             </div>
 
             {estimatedDelivery && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-600">Estimated Delivery</span>
-                <span className="font-medium text-slate-900">
-                  {estimatedDelivery}
-                </span>
+                <span className="font-medium text-slate-900">{estimatedDelivery}</span>
               </div>
             )}
           </div>
@@ -105,7 +97,7 @@ export function OrderConfirmation({
             <ul className="space-y-2 text-sm text-slate-600">
               <li className="flex items-start gap-2">
                 <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <span>You'll receive an email confirmation shortly</span>
+                <span>{"You'll"} receive an email confirmation shortly</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
@@ -117,7 +109,7 @@ export function OrderConfirmation({
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <span>You'll receive tracking details once dispatched</span>
+                <span>{"You'll"} receive tracking details once dispatched</span>
               </li>
             </ul>
           </div>
@@ -134,12 +126,7 @@ export function OrderConfirmation({
             </Button>
 
             {onDownloadInvoice && (
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full"
-                onClick={onDownloadInvoice}
-              >
+              <Button variant="outline" size="lg" className="w-full" onClick={onDownloadInvoice}>
                 <Download className="w-4 h-4 mr-2" />
                 Download Invoice
               </Button>
@@ -149,7 +136,7 @@ export function OrderConfirmation({
               variant="ghost"
               size="lg"
               className="w-full"
-              onClick={() => router.push('/dealer/search')}
+              onClick={() => router.push("/dealer/search")}
             >
               <ShoppingBag className="w-4 h-4 mr-2" />
               Continue Shopping
