@@ -6,7 +6,7 @@ RUN corepack enable pnpm
 WORKDIR /app
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY apps/web/package.json ./apps/web/
+COPY apps/api/package.json ./apps/api/
 COPY packages/db/package.json ./packages/db/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/rules/package.json ./packages/rules/
@@ -26,12 +26,12 @@ RUN corepack enable pnpm
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
+COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=deps /app/packages/ ./packages/
 
 COPY . .
 
-RUN pnpm --filter web build
+RUN pnpm --filter api build
 
 # ── Stage 3: Production runner ──
 FROM node:20-alpine AS runner
@@ -42,14 +42,14 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/apps/web/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder /app/apps/api/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/apps/api/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/api/.next/static ./apps/api/.next/static
 
 USER nextjs
 
-EXPOSE 3000
-ENV PORT=3000
+EXPOSE 3001
+ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "apps/web/server.js"]
+CMD ["node", "apps/api/server.js"]
