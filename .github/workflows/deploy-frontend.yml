@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_REGISTRY: ${{ vars.AZURE_REGISTRY }}       # e.g. myregistry.azurecr.io
+  AZURE_REGISTRY: ${{ secrets.AZURE_REGISTRY }}
   IMAGE_NAME: b2b-frontend
   DOCKERFILE: apps/web/Dockerfile
   CONTAINER_APP_NAME: hb-frontend
@@ -20,6 +20,7 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment: main                                # must match federated credential entity
 
     permissions:
       contents: read
